@@ -1,0 +1,127 @@
+import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { apiClient } from '../../api/client';
+import { abrirPdfVenta } from '../../utils/pdf';
+import '../../styles/business.css';
+
+const VentaDetalle = ({ id: propId }) => {
+    const { id: paramId } = useParams();
+    const id = propId || paramId;
+    const navigate = useNavigate();
+    const [venta, setVenta] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [generandoPdf, setGenerandoPdf] = useState(false);
+
+    const verPDF = async () => {
+        setGenerandoPdf(true);
+        try {
+            await abrirPdfVenta(id, import.meta.env.VITE_API_URL);
+        } catch (e) {
+            console.error('Error al generar PDF:', e);
+            alert('Error al generar el PDF');
+        } finally {
+            setGenerandoPdf(false);
+        }
+    };
+
+    useEffect(() => {
+        const fetchVenta = async () => {
+            try {
+                const resp = await apiClient.get(`/api/ventas/${id}`);
+                setVenta(resp.data);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchVenta();
+    }, [id]);
+
+    if (loading) return <div>Cargando detalle de venta...</div>;
+    if (!venta) return <div>No se encontró la venta.</div>;
+
+    return (
+        <div className="venta-detalle">
+            <header className="page-header">
+                <h1>Detalle de Comprobante</h1>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                        onClick={verPDF}
+                        disabled={generandoPdf}
+                        className="btn-primary"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: generandoPdf ? 'wait' : 'pointer', opacity: generandoPdf ? 0.6 : 1 }}
+                    >
+                        📄 {generandoPdf ? 'Generando...' : 'Ver PDF'}
+                    </button>
+                    <button onClick={() => navigate('/ventas')} className="btn-secondary">Volver</button>
+                </div>
+            </header>
+
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="stat-info">
+                        <h3>Nro. Comprobante</h3>
+                        <p className="stat-value" style={{ fontSize: '1.2rem' }}>
+                            {venta.serie}-{String(venta.correlativo).padStart(8, '0')}
+                        </p>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-info">
+                        <h3>Estado SUNAT</h3>
+                        <span className={`badge badge-${venta.estado_sunat === 'ACEPTADO' ? 'success' : 'warning'}`}>
+                            {venta.estado_sunat}
+                        </span>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-info">
+                        <h3>Fecha Emisión</h3>
+                        <p className="stat-value" style={{ fontSize: '1.2rem' }}>{venta.fecha_emision}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="table-container" style={{ marginTop: '2rem' }}>
+                <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--color-borde)' }}>
+                    <h3>Información del Cliente</h3>
+                    <p><strong>Razón Social:</strong> {venta.cliente_nombre || 'Cliente Final'}</p>
+                    <p><strong>Documento:</strong> {venta.cliente_documento || '—'}</p>
+                    <p><strong>Email:</strong> {venta.cliente_email || 'n/a'}</p>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Descripción</th>
+                            <th>Cant</th>
+                            <th>V. Unit</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {venta.detalles?.map((d) => (
+                            <tr key={d.id}>
+                                <td>{d.item}</td>
+                                <td>{d.descripcion}</td>
+                                <td>{d.cantidad}</td>
+                                <td>{parseFloat(d.valor_unitario || 0).toFixed(2)}</td>
+                                <td>S/ {parseFloat(d.precio_total || d.precio_unitario * d.cantidad || 0).toFixed(2)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <p>Op. Gravada: S/ {parseFloat(venta.op_gravada || 0).toFixed(2)}</p>
+                    <p>IGV (18%): S/ {parseFloat(venta.igv || 0).toFixed(2)}</p>
+                    <h2 style={{ color: 'var(--color-cta-primario)' }}>TOTAL: S/ {parseFloat(venta.importe_total || 0).toFixed(2)}</h2>
+                </div>
+            </div>
+        </div >
+    );
+};
+
+export default VentaDetalle;

@@ -1,0 +1,100 @@
+/* Estilos comunes para tablas y vistas de negocio */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    font-size: 1.8rem;
+}
+
+.btn-primary {
+    background-color: var(--color-cta-primario);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    font-weight: bold;
+}
+
+.btn-primary:hover {
+    background-color: var(--color-cta-hover);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--color-texto-secundario);
+    border: 1px solid var(--color-borde);
+    padding: 0.75rem 1.5rem;
+}
+
+.btn-secondary:hover {
+    border-color: var(--color-texto-secundario);
+    color: var(--color-texto-principal);
+}
+
+/* Tablas */
+.table-container {
+    background-color: var(--color-bg-secundario);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-borde);
+    overflow: hidden;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background-color: rgba(255, 255, 255, 0.05);
+    text-align: left;
+    padding: 1rem;
+    color: var(--color-texto-secundario);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--color-borde);
+}
+
+td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-borde);
+    font-size: 0.95rem;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tr:hover td {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Badges de Estado */
+.badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.badge-success {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: var(--color-exito);
+}
+
+.badge-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: var(--color-acento);
+}
+
+.badge-error {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--color-error);
+}
+
+.badge-info {
+    background-color: rgba(23, 162, 184, 0.1);
+    color: var(--color-info);
+}
