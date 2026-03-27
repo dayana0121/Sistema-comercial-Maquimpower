@@ -7,7 +7,7 @@ const http = require('http');
 
 // CONFIGURACIÓN (Ajusta si tus rutas son distintas)
 const CONFIG = {
-    BACKEND_DIRECTO: 'http://localhost/Maquimpower_Sistema_Comercial_1.0/antigravity-backend',
+    BACKEND_DIRECTO: 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend',
     FRONTEND_PROXY: 'http://localhost:5173/api',
     ENDPOINTS_TEST: ['/auth/login', '/inventario/alertas', '/dashboard/stats']
 };

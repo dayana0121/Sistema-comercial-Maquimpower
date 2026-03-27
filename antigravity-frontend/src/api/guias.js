@@ -28,6 +28,18 @@ export const guiasApi = {
     },
 
     /**
+     * Envía la guía a SUNAT
+     */
+    enviar: async (id) => {
+        try {
+            return await apiClient.post(`/guias/${id}/enviar`);
+        } catch (error) {
+            console.error(`❌ [guiasApi.enviar] Error enviando guía ID ${id}:`, error);
+            throw error;
+        }
+    },
+
+    /**
      * Consulta el estado del ticket en SUNAT para obtener el CDR
      */
     consultarEstado: async (id) => {

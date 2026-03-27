@@ -91,8 +91,9 @@ const ClienteForm = ({ clienteToEdit = null, isReadOnly = false, onSuccess, onCa
                             onFound={(data) => {
                                 setFormData(prev => ({
                                     ...prev,
+                                    tipo_documento: (data.ruc ? '6' : (data.dni ? '1' : prev.tipo_documento)),
                                     numero_documento: data.ruc || data.dni || prev.numero_documento,
-                                    razon_social: data.razon_social || prev.razon_social,
+                                    razon_social: data.razon_social || data.nombres || prev.razon_social,
                                     direccion_fiscal: data.direccion || data.direccion_fiscal || prev.direccion_fiscal,
                                     departamento: data.departamento || prev.departamento,
                                     provincia: data.provincia || prev.provincia,
@@ -120,7 +121,13 @@ const ClienteForm = ({ clienteToEdit = null, isReadOnly = false, onSuccess, onCa
                     </div>
                 </div>
                 <div className="grid grid-cols-1 gap-4 mt-4">
-                    <Input label="Razón Social" name="razon_social" value={formData.razon_social} onChange={handleChange} disabled={isReadOnly} />
+                    <Input 
+                        label={formData.tipo_documento === '1' ? "Nombres y Apellidos" : "Razón Social"} 
+                        name="razon_social" 
+                        value={formData.razon_social} 
+                        onChange={handleChange} 
+                        disabled={isReadOnly} 
+                    />
                 </div>
             </div>
 

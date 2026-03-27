@@ -10,7 +10,7 @@ import {
 import '../../styles/sidebar.css';
 
 const Sidebar = () => {
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
     const navigate = useNavigate();
 
     // Estados para submenús
@@ -30,6 +30,8 @@ const Sidebar = () => {
     const [comprasPendientesCount, setComprasPendientesCount] = useState(0);
 
     useEffect(() => {
+        if (!user) return;
+
         const fetchAlertas = async () => {
             try {
                 // ✅ Corregido: Quitamos el /api manual porque el proxy ya lo maneja
@@ -118,7 +120,7 @@ const Sidebar = () => {
                     </div>
                     {openMenus.ventas && (
                         <div className="submenu">
-                            <NavLink to="/ventas?nueva=true" className="submenu-item">→ Facturas y Boletas</NavLink>
+                            <NavLink to="/ventas/nueva" className="submenu-item">→ Facturas y Boletas</NavLink>
                             <NavLink to="/ventas" className="submenu-item" end>→ Listado de ventas</NavLink>
 
                             {/* ✅ AGREGADO: Guías de Remisión */}

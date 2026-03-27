@@ -136,7 +136,7 @@ const VentasCreatePage = () => {
 
     const actualizarLinea = (id, campo, valor) => {
         setDetalles(detalles.map(det =>
-            det.producto_id === id ? { ...det, [campo]: Number(valor) } : det
+            det.producto_id === id ? { ...det, [campo]: ['cantidad', 'precio_unitario', 'descuento_unitario'].includes(campo) ? Number(valor) : valor } : det
         ));
     };
 
@@ -148,9 +148,43 @@ const VentasCreatePage = () => {
     // Cálculos
     // ==========================================
     const totales = useMemo(() => {
-        const gravada = detalles.reduce((acc, det) => acc + (det.cantidad * (det.precio_unitario / 1.18)), 0);
-        const igv = gravada * 0.18;
-        return { gravada, igv, total: gravada + igv };
+        let gravada = 0;
+        let exonerada = 0;
+        let inafecta = 0;
+        let gratuita = 0;
+        let igv = 0;
+
+        detalles.forEach(det => {
+            const precio = parseFloat(det.precio_unitario);
+            const cantidad = parseFloat(det.cantidad);
+            const descuento = parseFloat(det.descuento_unitario || 0);
+            const unitarioNeto = precio - descuento;
+            const subtotalFila = unitarioNeto * cantidad;
+
+            const tipo = det.tipo_afectacion_igv || '10';
+
+            // 10: Gravado - Operación Onerosa
+            if (tipo === '10') {
+                const sub = subtotalFila / 1.18;
+                gravada += sub;
+                igv += (subtotalFila - sub);
+            } 
+            // 20: Exonerado - Operación Onerosa
+            else if (tipo === '20') {
+                exonerada += subtotalFila;
+            }
+            // 30: Inafecto - Operación Onerosa
+            else if (tipo === '30') {
+                inafecta += subtotalFila;
+            }
+            // 21, 31, etc: Gratuito
+            else if (['11', '12', '13', '14', '15', '16', '21', '31', '32', '33', '34', '35', '36'].includes(tipo)) {
+                gratuita += subtotalFila;
+            }
+        });
+
+        const total = gravada + igv + exonerada + inafecta;
+        return { gravada, exonerada, inafecta, gratuita, igv, total };
     }, [detalles]);
 
     // ==========================================
@@ -174,7 +208,11 @@ const VentasCreatePage = () => {
             serie: form.serie,
             moneda: form.moneda,
             condicion_pago: form.condicion_pago,
+            metodo_pago: form.metodo_pago || 'EFECTIVO',
             op_gravada: totales.gravada.toFixed(2),
+            op_exonerada: totales.exonerada.toFixed(2),
+            op_inafecta: totales.inafecta.toFixed(2),
+            op_gratuita: totales.gratuita.toFixed(2),
             igv: totales.igv.toFixed(2),
             importe_total: totales.total.toFixed(2),
             detraccion_codigo: form.detraccion_codigo,
@@ -188,7 +226,9 @@ const VentasCreatePage = () => {
                 descripcion: det.descripcion,
                 unidad_medida: det.unidad_medida,
                 cantidad: parseFloat(det.cantidad),
-                valor_unitario: (det.precio_unitario / 1.18).toFixed(4),
+                valor_unitario: det.tipo_afectacion_igv === '10' 
+                    ? (det.precio_unitario / 1.18).toFixed(4) 
+                    : parseFloat(det.precio_unitario).toFixed(4),
                 precio_unitario: parseFloat(det.precio_unitario),
                 descuento_unitario: parseFloat(det.descuento_unitario || 0),
                 tipo_afectacion_igv: det.tipo_afectacion_igv || '10',
@@ -246,7 +286,7 @@ const VentasCreatePage = () => {
                             <BuscadorDocumento
                                 label="Búsqueda SUNAT (Externo)"
                                 onFound={(data) => {
-                                    toast.info(`Encontrado: ${data.razon_social}`);
+                                    toast.success(`Encontrado: ${data.razon_social || data.nombres}`);
                                     setSearchCliente(data.ruc || data.dni || '');
                                 }}
                             />
@@ -290,6 +330,9 @@ const VentasCreatePage = () => {
                         {/* Cliente seleccionado */}
                         {selectedCliente && (
                             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-300">
+                                <div className="text-[10px] text-blue-500 font-bold uppercase mb-1">
+                                    {selectedCliente.tipo_documento === '1' ? 'Cliente (Persona)' : 'Empresa (RUC)'}
+                                </div>
                                 <div className="font-bold text-blue-900 text-sm">{selectedCliente.razon_social}</div>
                                 <div className="text-xs text-blue-700 mt-1">✓ Seleccionado</div>
                             </div>
@@ -320,14 +363,16 @@ const VentasCreatePage = () => {
                                 <select
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                     value={form.tipo_comprobante}
-                                    onChange={e => setForm({ 
-                                        ...form, 
-                                        tipo_comprobante: e.target.value, 
-                                        serie: e.target.value === '01' ? 'F001' : 'B001' 
-                                    })}
+                                    onChange={e => {
+                                        let s = 'F001';
+                                        if (e.target.value === '03') s = 'B001';
+                                        if (e.target.value === '00') s = 'NV01';
+                                        setForm({ ...form, tipo_comprobante: e.target.value, serie: s });
+                                    }}
                                 >
                                     <option value="01">Factura</option>
                                     <option value="03">Boleta</option>
+                                    <option value="00">Nota de Venta</option>
                                 </select>
                             </div>
 
@@ -342,16 +387,19 @@ const VentasCreatePage = () => {
                                 />
                             </div>
 
-                            {/* Condición Pago */}
+                             {/* Método de Pago */}
                             <div>
-                                <label className="text-xs font-semibold text-slate-600 block mb-1">Condición</label>
+                                <label className="text-xs font-semibold text-slate-600 block mb-1">Método de Pago</label>
                                 <select
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                                    value={form.condicion_pago}
-                                    onChange={e => setForm({ ...form, condicion_pago: e.target.value })}
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold text-blue-600"
+                                    value={form.metodo_pago}
+                                    onChange={e => setForm({ ...form, metodo_pago: e.target.value })}
                                 >
-                                    <option value="CONTADO">Contado</option>
-                                    <option value="CREDITO">Crédito</option>
+                                    <option value="EFECTIVO">Efectivo</option>
+                                    <option value="YAPE">Yape</option>
+                                    <option value="PLIN">Plin</option>
+                                    <option value="TRANSFERENCIA">Transferencia</option>
+                                    <option value="TARJETA">Tarjeta</option>
                                 </select>
                             </div>
                         </div>
@@ -426,7 +474,14 @@ const VentasCreatePage = () => {
                                     <div key={det.producto_id} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
                                         <div className="flex justify-between items-start mb-2">
                                             <div className="flex-1">
-                                                <div className="font-semibold text-sm text-slate-800">{det.descripcion}</div>
+                                                <div className="font-semibold text-sm text-slate-800">
+                                                    <input 
+                                                        type="text" 
+                                                        value={det.descripcion} 
+                                                        onChange={e => actualizarLinea(det.producto_id, 'descripcion', e.target.value)}
+                                                        className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white outline-none px-1 py-0.5 rounded transition-all"
+                                                    />
+                                                </div>
                                                 <div className="text-xs text-slate-500 mt-1">
                                                     S/ {det.precio_unitario.toFixed(2)} c/u
                                                 </div>
@@ -438,16 +493,55 @@ const VentasCreatePage = () => {
                                                 <X size={16} />
                                             </button>
                                         </div>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={det.cantidad}
-                                                onChange={e => actualizarLinea(det.producto_id, 'cantidad', e.target.value)}
-                                                className="w-16 px-2 py-1 border border-slate-300 rounded text-sm text-center outline-none focus:ring-2 focus:ring-orange-500"
-                                            />
-                                            <span className="text-sm font-bold text-slate-700 flex-1">
-                                                S/ {(det.cantidad * det.precio_unitario).toFixed(2)}
+                                        <div className="grid grid-cols-4 gap-2 mt-2">
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 block uppercase font-bold">Cant.</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={det.cantidad}
+                                                    onChange={e => actualizarLinea(det.producto_id, 'cantidad', e.target.value)}
+                                                    className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-center outline-none focus:ring-2 focus:ring-orange-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 block uppercase font-bold">P. Unit</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={det.precio_unitario}
+                                                    onChange={e => actualizarLinea(det.producto_id, 'precio_unitario', e.target.value)}
+                                                    className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-center outline-none focus:ring-2 focus:ring-orange-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 block uppercase font-bold text-red-600">Desc.</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={det.descuento_unitario}
+                                                    onChange={e => actualizarLinea(det.producto_id, 'descuento_unitario', e.target.value)}
+                                                    className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-center outline-none focus:ring-2 focus:ring-orange-500 text-red-600"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] text-slate-500 block uppercase font-bold">IGV</label>
+                                                <select
+                                                    value={det.tipo_afectacion_igv || '10'}
+                                                    onChange={e => actualizarLinea(det.producto_id, 'tipo_afectacion_igv', e.target.value)}
+                                                    className="w-full px-1 py-1 border border-slate-300 rounded text-[10px] outline-none focus:ring-2 focus:ring-orange-500"
+                                                >
+                                                    <option value="10">Gravado</option>
+                                                    <option value="20">Exonerado</option>
+                                                    <option value="30">Inafecto</option>
+                                                    <option value="11">Gratuito</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
+                                            <span className="text-xs text-slate-500">Subtotal:</span>
+                                            <span className="text-sm font-bold text-slate-700">
+                                                S/ {(det.cantidad * (det.precio_unitario - (det.descuento_unitario || 0))).toFixed(2)}
                                             </span>
                                         </div>
                                     </div>
@@ -459,14 +553,34 @@ const VentasCreatePage = () => {
                     {/* Totales y Acciones */}
                     <div className="border-t border-slate-200 px-6 py-4 space-y-4">
                         {/* Resumen Totales */}
-                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-4 rounded-lg space-y-2">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-300">Op. Gravada:</span>
-                                <span className="font-bold">S/ {totales.gravada.toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-300">IGV (18%):</span>
-                                <span className="font-bold">S/ {totales.igv.toFixed(2)}</span>
+                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-4 rounded-lg space-y-1">
+                            {totales.gravada > 0 && (
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-400">Op. Gravada:</span>
+                                    <span className="font-medium">S/ {totales.gravada.toFixed(2)}</span>
+                                </div>
+                            )}
+                            {totales.exonerada > 0 && (
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-400">Op. Exonerada:</span>
+                                    <span className="font-medium">S/ {totales.exonerada.toFixed(2)}</span>
+                                </div>
+                            )}
+                            {totales.inafecta > 0 && (
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-400">Op. Inafecta:</span>
+                                    <span className="font-medium">S/ {totales.inafecta.toFixed(2)}</span>
+                                </div>
+                            )}
+                            {totales.gratuita > 0 && (
+                                <div className="flex justify-between text-xs text-green-400">
+                                    <span className="text-green-500/80">Op. Gratuita:</span>
+                                    <span className="font-medium">S/ {totales.gratuita.toFixed(2)}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between text-xs border-t border-slate-700/50 mt-1 pt-1">
+                                <span className="text-slate-400">IGV (18%):</span>
+                                <span className="font-medium">S/ {totales.igv.toFixed(2)}</span>
                             </div>
                             <div className="border-t border-slate-700 pt-2 flex justify-between">
                                 <span className="text-lg font-bold">TOTAL:</span>

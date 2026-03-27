@@ -3,7 +3,7 @@ import { guiasApi } from '../../api/guias';
 import { useToast } from '../../hooks/useToast';
 import BuscadorDocumento from '../../components/ui/BuscadorDocumento';
 
-const GuiaForm = ({ onSuccess, onCancel }) => {
+const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
     const toast = useToast();
     const [activeTab, setActiveTab] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -22,10 +22,18 @@ const GuiaForm = ({ onSuccess, onCancel }) => {
         destinatario_nombre: '',
         partida_ubigeo: '150101', // Lima por defecto
         partida_direccion: 'Av. Principal 123, Lima',
-        llegada_ubigeo: '',
-        llegada_direccion: '',
+        llegada_ubigeo: preData?.cliente_ubigeo || '',
+        llegada_direccion: preData?.direccion || preData?.cliente_direccion || '',
         peso_total: 0,
-        items: []
+        agencia_destino: '',
+        destinatario_ruc: preData?.cliente_documento || preData?.destinatario_ruc || '',
+        destinatario_nombre: preData?.cliente_nombre || preData?.destinatario_nombre || '',
+        items: (preData?.detalles || preData?.items || []).map(d => ({
+            codigo: d.codigo_producto || d.codigo || '',
+            descripcion: d.descripcion || '',
+            cantidad: d.cantidad || 1,
+            unidad_medida: d.unidad_medida || 'NIU'
+        }))
     });
 
     const [itemActual, setItemActual] = useState({
@@ -135,8 +143,16 @@ const GuiaForm = ({ onSuccess, onCancel }) => {
                                 })}
                             />
                             <div className="grid grid-cols-2 gap-4 mt-2">
-                                <input type="text" placeholder="RUC/DNI" value={form.destinatario_ruc} readOnly className="block w-full border-gray-300 bg-gray-50 rounded-md shadow-sm" />
-                                <input type="text" placeholder="Razón Social / Nombres" value={form.destinatario_nombre} readOnly className="block w-full border-gray-300 bg-gray-50 rounded-md shadow-sm" />
+                                <div className="space-y-1">
+                                    <label className="text-[10px] text-slate-500 uppercase font-bold">Documento</label>
+                                    <input type="text" placeholder="RUC/DNI" value={form.destinatario_ruc} readOnly className="block w-full border-gray-300 bg-gray-50 rounded-md shadow-sm text-sm" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] text-slate-500 uppercase font-bold">
+                                        {form.destinatario_ruc?.length === 8 ? 'Nombres y Apellidos' : 'Razón Social'}
+                                    </label>
+                                    <input type="text" placeholder="Nombre completo" value={form.destinatario_nombre} readOnly className="block w-full border-gray-300 bg-gray-50 rounded-md shadow-sm text-sm" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -174,6 +190,17 @@ const GuiaForm = ({ onSuccess, onCancel }) => {
                                 <div>
                                     <label className="block text-xs text-gray-500">Dirección completa</label>
                                     <input type="text" name="llegada_direccion" value={form.llegada_direccion} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+                                </div>
+                                <div className="pt-2">
+                                    <label className="block text-xs font-bold text-blue-700 uppercase">Agencia / Destino (Ej: Shalom)</label>
+                                    <input 
+                                        type="text" 
+                                        name="agencia_destino" 
+                                        value={form.agencia_destino} 
+                                        onChange={handleChange} 
+                                        placeholder="Ingrese agencia de transporte"
+                                        className="mt-1 block w-full border-blue-300 bg-blue-50 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -256,7 +283,7 @@ const GuiaForm = ({ onSuccess, onCancel }) => {
                     </button>
                 ) : (
                     <button type="submit" disabled={loading} className={`px-4 py-2 text-white rounded-md ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                        {loading ? 'Emitiendo...' : 'Firmar y Enviar a SUNAT'}
+                        {loading ? 'Registrando...' : 'Registrar Guía'}
                     </button>
                 )}
             </div>

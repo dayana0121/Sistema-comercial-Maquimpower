@@ -71,7 +71,7 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
 
             const resp = await apiClient.post('/api/inventario/movimiento', payload);
 
-            if (resp.data?.success) {
+            if (resp.success) {
                 // Mostrar animación de resultado
                 setResultado(resp.data.data);
                 // Cerrar después de 2.5s y llamar onSuccess
@@ -79,7 +79,7 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
                     onSuccess();
                 }, 2500);
             } else {
-                throw new Error(resp.data?.message || 'Error registrando movimiento');
+                throw new Error(resp.message || 'Error registrando movimiento');
             }
 
         } catch (err) {

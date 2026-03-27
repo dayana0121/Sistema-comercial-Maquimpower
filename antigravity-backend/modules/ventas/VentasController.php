@@ -63,33 +63,12 @@ class VentasController
             $this->sendResponse(false, "Datos incompletos.", null, 422);
         }
 
-        $op_gravada = 0;
-        $igv_total = 0;
-        $importe_total = 0;
-        $detallesProcesados = [];
-
-        foreach ($body['detalles'] as $linea) {
-            $precio = (float) $linea['precio_unitario'];
-            $cantidad = (float) $linea['cantidad'];
-            $sub = ($precio / 1.18) * $cantidad;
-            $igv = ($precio * $cantidad) - $sub;
-
-            $op_gravada += $sub;
-            $igv_total += $igv;
-            $importe_total += ($precio * $cantidad);
-
-            $detallesProcesados[] = [
-                'producto_id' => $linea['producto_id'],
-                'producto_nombre' => $linea['producto_nombre'] ?? 'Producto',
-                'producto_codigo' => $linea['codigo_producto'] ?? '000',
-                'cantidad' => $cantidad,
-                'unidad_medida' => $linea['unidad_medida'] ?? 'NIU',
-                'precio_unitario' => $precio,
-                'igv_linea' => $igv,
-                'subtotal' => $sub,
-                'total_linea' => ($precio * $cantidad)
-            ];
-        }
+        $op_gravada = (float)($body['op_gravada'] ?? 0);
+        $op_exonerada = (float)($body['op_exonerada'] ?? 0);
+        $op_inafecta = (float)($body['op_inafecta'] ?? 0);
+        $op_gratuita = (float)($body['op_gratuita'] ?? 0);
+        $igv_total = (float)($body['igv'] ?? 0);
+        $importe_total = (float)($body['importe_total'] ?? 0);
 
         $serie = $body['serie'] ?? ($body['tipo_comprobante'] === '01' ? 'F001' : 'B001');
 
@@ -106,7 +85,7 @@ class VentasController
                 ? round($importe_total * ($detraccion_porcentaje / 100), 2)
                 : 0;
 
-            $stmtVenta = $this->pdo->prepare("INSERT INTO ventas (id, cliente_id, usuario_id, vendedor_id, tipo_comprobante, serie, correlativo, numero_completo, fecha_emision, moneda, op_gravada, igv, importe_total, estado_sunat, detraccion_codigo, detraccion_porcentaje, detraccion_monto, detraccion_cuenta, detraccion_medio_pago) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, ?, 'PENDIENTE', ?, ?, ?, ?, ?)");
+            $stmtVenta = $this->pdo->prepare("INSERT INTO ventas (id, cliente_id, usuario_id, vendedor_id, tipo_comprobante, serie, correlativo, numero_completo, fecha_emision, moneda, op_gravada, op_exonerada, op_inafecta, op_gratuita, igv, importe_total, metodo_pago, estado_sunat, detraccion_codigo, detraccion_porcentaje, detraccion_monto, detraccion_cuenta, detraccion_medio_pago) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', ?, ?, ?, ?, ?)");
             $stmtVenta->execute([
                 $body['cliente_id'],
                 $usuario['user_id'],
@@ -117,8 +96,12 @@ class VentasController
                 $num_completo,
                 $body['moneda'] ?? 'PEN',
                 $op_gravada,
+                $op_exonerada,
+                $op_inafecta,
+                $op_gratuita,
                 $igv_total,
                 $importe_total,
+                $body['metodo_pago'] ?? 'EFECTIVO',
                 $body['detraccion_codigo'] ?? null,
                 $detraccion_porcentaje,
                 $detraccion_monto,
@@ -128,17 +111,32 @@ class VentasController
 
             $venta_id = $this->pdo->query("SELECT id FROM ventas WHERE numero_completo = '$num_completo' LIMIT 1")->fetchColumn();
 
-            $stmtDet = $this->pdo->prepare("INSERT INTO ventas_detalle (id, venta_id, item, producto_id, codigo_producto, descripcion, unidad_medida, cantidad, valor_unitario, precio_unitario, descuento_unitario, tipo_afectacion_igv, porcentaje_igv) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '10', 18)");
+            $stmtDet = $this->pdo->prepare("INSERT INTO ventas_detalle (id, venta_id, item, producto_id, codigo_producto, descripcion, unidad_medida, cantidad, valor_unitario, precio_unitario, descuento_unitario, tipo_afectacion_igv, porcentaje_igv) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             $i = 1;
-            foreach ($detallesProcesados as $d) {
-                $stmtDet->execute([$venta_id, $i++, $d['producto_id'], $d['producto_codigo'], $d['producto_nombre'], $d['unidad_medida'], $d['cantidad'], round($d['precio_unitario'] / 1.18, 4), $d['precio_unitario']]);
+            foreach ($body['detalles'] as $d) {
+                $ta = $d['tipo_afectacion_igv'] ?? '10';
+                $pct_igv = $ta === '10' ? 18 : 0;
+                
+                $stmtDet->execute([
+                    $venta_id, 
+                    $i++, 
+                    $d['producto_id'], 
+                    $d['codigo_producto'] ?? '000', 
+                    $d['descripcion'], 
+                    $d['unidad_medida'] ?? 'NIU', 
+                    $d['cantidad'], 
+                    $d['valor_unitario'], 
+                    $d['precio_unitario'],
+                    $d['descuento_unitario'] ?? 0,
+                    $ta,
+                    $pct_igv
+                ]);
             }
 
             $this->pdo->commit();
 
-            if (getenv('SUNAT_HABILITADO') === 'true') {
-                $this->procesarEnvioSunat($venta_id, $body['cliente_id']);
-            }
+            // DESACOPLADO: Ya no se envía automáticamente a SUNAT aquí.
+            // El usuario lo hará desde el listado.
 
             $this->sendResponse(true, "Venta registrada.", ['id' => $venta_id, 'numero_completo' => $num_completo], 201);
         } catch (Exception $e) {
@@ -152,7 +150,33 @@ class VentasController
     {
         AuthMiddleware::verificar();
         try {
-            // ✅ SOLUCIÓN COLLATION: Agregamos COLLATE al JOIN
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+            $offset = ($page - 1) * $limit;
+
+            $where = " WHERE 1=1 ";
+            $params = [];
+
+            if (!empty($_GET['estado_sunat'])) {
+                $where .= " AND v.estado_sunat = ? ";
+                $params[] = $_GET['estado_sunat'];
+            }
+            if (!empty($_GET['fecha_desde'])) {
+                $where .= " AND v.fecha_emision >= ? ";
+                $params[] = $_GET['fecha_desde'];
+            }
+            if (!empty($_GET['fecha_hasta'])) {
+                $where .= " AND v.fecha_emision <= ? ";
+                $params[] = $_GET['fecha_hasta'];
+            }
+
+            // Contar total
+            $stmtCount = $this->pdo->prepare("SELECT COUNT(*) FROM ventas v $where");
+            $stmtCount->execute($params);
+            $total = (int)$stmtCount->fetchColumn();
+            $pages = ceil($total / $limit);
+
+            // Obtener datos
             $sql = "SELECT 
                         v.id, 
                         v.tipo_comprobante, 
@@ -165,14 +189,28 @@ class VentasController
                         v.estado_pago,
                         v.moneda,
                         v.condicion_pago,
+                        v.metodo_pago,
                         c.razon_social as cliente_nombre,
                         c.numero_documento as cliente_documento,
                         c.telefono as cliente_telefono
                     FROM ventas v 
                     LEFT JOIN clientes c ON v.cliente_id COLLATE utf8mb4_unicode_ci = c.id COLLATE utf8mb4_unicode_ci 
-                    ORDER BY v.created_at DESC LIMIT 100";
-            $stmt = $this->pdo->query($sql);
-            $this->sendResponse(true, "Lista obtenida", ['ventas' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+                    $where
+                    ORDER BY v.created_at DESC 
+                    LIMIT $limit OFFSET $offset";
+                    
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            
+            $this->sendResponse(true, "Lista obtenida", [
+                'ventas' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+                'pagination' => [
+                    'total' => $total,
+                    'pages' => $pages,
+                    'current' => $page,
+                    'limit' => $limit
+                ]
+            ]);
         } catch (Exception $e) {
             $this->sendResponse(false, "Error listar: " . $e->getMessage(), null, 500);
         }
@@ -184,6 +222,7 @@ class VentasController
         try {
             $stmt = $this->pdo->prepare("
                 SELECT v.*, 
+                       v.metodo_pago,
                        c.razon_social AS cliente_nombre, 
                        c.numero_documento AS cliente_documento, 
                        c.email AS cliente_email,

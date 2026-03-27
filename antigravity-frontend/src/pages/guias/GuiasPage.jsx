@@ -125,11 +125,32 @@ const GuiasPage = () => {
                                                 {guia.estado.toUpperCase()}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-3">
+                                            {(guia.estado === 'borrador' || guia.estado === 'rechazado' || guia.estado === 'pendiente') && (
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            toast.success('Firmando y Enviando...');
+                                                            const res = await guiasApi.enviar(guia.id);
+                                                            if (res.success) {
+                                                                toast.success('Guía enviada con éxito');
+                                                                fetchGuias();
+                                                            } else {
+                                                                toast.error(res.message || 'Error al enviar guía');
+                                                            }
+                                                        } catch (err) {
+                                                            toast.error('Error de red al enviar');
+                                                        }
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-900"
+                                                >
+                                                    Enviar a SUNAT
+                                                </button>
+                                            )}
                                             {guia.estado === 'enviada' && (
                                                 <button
                                                     onClick={() => handleConsultarEstado(guia.id)}
-                                                    className="text-indigo-600 hover:text-indigo-900 mr-4"
+                                                    className="text-indigo-600 hover:text-indigo-900"
                                                 >
                                                     Consultar Ticket
                                                 </button>

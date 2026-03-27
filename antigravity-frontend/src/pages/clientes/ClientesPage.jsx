@@ -20,29 +20,33 @@ export default function ClientesPage() {
 
     // Estados de Filtros y Paginación
     const [search, setSearch] = useState("");
-    const [filtroTipo, setFiltroTipo] = useState(""); // Requerimiento: Filtro tipo_doc
+    const [filtroTipo, setFiltroTipo] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10; // Requerimiento: 10 por página
+    const [totalPages, setTotalPages] = useState(1);
 
-    // Estados del Modal
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [clienteToEdit, setClienteToEdit] = useState(null);
-    const [isReadOnly, setIsReadOnly] = useState(false);
-
-    useEffect(() => { cargarClientes(); }, []);
+    useEffect(() => { cargarClientes(); }, [currentPage, search, filtroTipo]);
 
     async function cargarClientes() {
         try {
             setLoading(true);
-            const res = await apiClient.get("/clientes");
-            if (res.success) setData(res.data);
-            else setError(res.message);
+            const res = await apiClient.get(`/clientes?page=${currentPage}&limit=20&search=${search}&tipo_documento=${filtroTipo}`);
+            if (res.success) {
+                setData(res.data);
+                if (res.pagination) {
+                    setTotalPages(res.pagination.pages);
+                }
+            } else setError(res.message);
         } catch (e) {
             setError("Error de conexión con el servidor.");
         } finally {
             setLoading(false);
         }
     }
+
+    // Estados del Modal
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [clienteToEdit, setClienteToEdit] = useState(null);
+    const [isReadOnly, setIsReadOnly] = useState(false);
 
     // Handlers de Acciones
     const handleNew = () => {
@@ -73,22 +77,6 @@ export default function ClientesPage() {
             } else toast.error(res.message);
         } catch (e) { toast.error("Error al conectar con el servidor."); }
     };
-
-    // Lógica de Filtrado (Búsqueda + Tipo de Documento)
-    const filtrados = data.filter(c => {
-        const matchesSearch = (
-            c.razon_social?.toLowerCase().includes(search.toLowerCase()) ||
-            c.numero_documento?.includes(search)
-        );
-        const matchesTipo = filtroTipo === "" || c.tipo_documento === filtroTipo;
-        return matchesSearch && matchesTipo;
-    });
-
-    // Lógica de Paginación
-    const totalPages = Math.ceil(filtrados.length / itemsPerPage);
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = filtrados.slice(indexOfFirstItem, indexOfLastItem);
 
     const columns = [
         {
@@ -159,7 +147,6 @@ export default function ClientesPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    {/* Filtro por Tipo de Documento */}
                     <select
                         value={filtroTipo}
                         onChange={(e) => { setFiltroTipo(e.target.value); setCurrentPage(1); }}
@@ -184,29 +171,14 @@ export default function ClientesPage() {
             {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-semibold">{error}</div>}
 
             {/* Tabla Principal */}
-            <DataTable columns={columns} data={currentItems} loading={loading} />
-
-            {/* Paginación */}
-            {!loading && filtrados.length > 0 && (
-                <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4 text-sm text-slate-500">
-                    <p>Mostrando <b>{indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filtrados.length)}</b> de {filtrados.length} clientes</p>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="secondary"
-                            disabled={currentPage === 1}
-                            onClick={() => setCurrentPage(prev => prev - 1)}
-                            className="px-4"
-                        > Anterior </Button>
-                        <span className="px-4 font-bold text-slate-700">Página {currentPage} de {totalPages || 1}</span>
-                        <Button
-                            variant="secondary"
-                            disabled={currentPage >= totalPages}
-                            onClick={() => setCurrentPage(prev => prev + 1)}
-                            className="px-4"
-                        > Siguiente </Button>
-                    </div>
-                </div>
-            )}
+            <DataTable
+                columns={columns}
+                data={data}
+                loading={loading}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
 
             {/* Modal de Formulario */}
             <Modal

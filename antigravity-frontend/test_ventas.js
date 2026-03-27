@@ -1,7 +1,7 @@
 // Script de Pruebas de Integración - Módulo Ventas
 // Ejecutar con: node test_ventas.js
 
-const API_URL = 'http://localhost/Maquimpower_Sistema_Comercial_1.0/antigravity-backend/api';
+const API_URL = 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend/api';
 // ⚠️ ASEGÚRATE DE QUE ESTE TOKEN SEA VÁLIDO
 const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYTU2NjUxMWEtMWE2Ni0xMWYxLTk2YzUtNWNjY2ViMzc0ZWU0IiwiZW1haWwiOiJhZG1pbkBtYXF1aW1wb3dlci5jb20iLCJyb2wiOiJhZG1pbiIsIm5vbWJyZSI6IkFkbWluaXN0cmFkb3IgU2lzdGVtYSIsImlhdCI6MTc3MzQxODc2MywiZXhwIjoxNzczNDYxOTYzfQ.1ltC93DLyVrO9Qa76Vdge6gUNn-wnkaAQY0o0tHyCsQ';
 

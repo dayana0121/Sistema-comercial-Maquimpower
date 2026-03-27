@@ -27,7 +27,8 @@ export default function BuscadorDocumento({ onFound, label = "Documento (DNI/RUC
                 setError(res.message || 'No se encontraron resultados');
             }
         } catch (err) {
-            setError('Error al consultar el documento');
+            console.error("Error en BuscadorDocumento:", err);
+            setError(err.message || 'Error al consultar el documento');
         } finally {
             setLoading(false);
         }

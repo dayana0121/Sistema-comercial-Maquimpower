@@ -6,7 +6,7 @@
 // Requisito: Node 18+ (fetch nativo)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const API = 'http://localhost/Maquimpower_Sistema_Comercial_1.0/antigravity-backend';
+const API = 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
 
 // ─── IDs reales de la BD ───────────────────────────────────────────────────────
 const IDS = {

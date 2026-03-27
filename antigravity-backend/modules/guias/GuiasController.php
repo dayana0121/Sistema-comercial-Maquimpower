@@ -40,11 +40,13 @@ class GuiasController
                     break;
 
                 case 'POST':
-                    AuthMiddleware::requerirRol(['admin'], $user);
+                    AuthMiddleware::requerirRol(['admin', 'vendedor'], $user);
                     if ($action === 'crear') {
                         $this->crear();
                     } elseif (is_numeric($action) && $subAction === 'consultar-estado') {
                         $this->consultarEstado((int) $action);
+                    } elseif (is_numeric($action) && $subAction === 'enviar') {
+                        $this->enviar((int) $action);
                     }
                     break;
 
@@ -79,12 +81,8 @@ class GuiasController
         // 1. Guardar en BD
         $guia = $this->service->guardar($data);
 
-        // 2. Procesar con SUNAT si está habilitado
-        if (getenv('SUNAT_HABILITADO') === 'true') {
-            $resultado = $this->sunat->procesarGuia($guia, $detalles);
-            $this->service->actualizarEstado($guia['id'], $resultado);
-            $guia = array_merge($guia, $resultado);
-        }
+        // 2. Procesar con SUNAT DESACOPLADO (ahora se hace por separado)
+        // El usuario debe hacer clic en "Enviar a SUNAT" en el listado.
 
         echo json_encode(['success' => true, 'message' => 'Guía registrada.', 'data' => $guia]);
     }
@@ -96,6 +94,32 @@ class GuiasController
 
     private function consultarEstado($id)
     {
-        // Lógica para re-consultar el ticket en SUNAT
+        $guia = $this->service->obtener($id);
+        if (!$guia) throw new Exception("Guía no encontrada");
+        if (empty($guia['numero_ticket'])) throw new Exception("Esta guía no tiene un ticket asociado.");
+        
+        $ruc = getenv('SUNAT_RUC');
+        $nombreArchivo = $ruc . '-09-' . $guia['serie'] . '-' . $guia['numero_correlativo'];
+        
+        $token = $this->sunat->obtenerToken();
+        $res = $this->sunat->consultarTicket($guia['numero_ticket'], $token, $ruc, $nombreArchivo);
+        
+        $this->service->actualizarEstado($id, $res);
+        echo json_encode(["success" => true, "data" => $res]);
+    }
+
+    private function enviar($id)
+    {
+        $guia = $this->service->obtener($id);
+        if (!$guia) throw new Exception("Guía no encontrada");
+        
+        // Obtener detalles de la guía para el envío
+        $detalles = $this->service->listarDetalles($id);
+        
+        $resultado = $this->sunat->procesarGuia($guia, $detalles);
+        $this->service->actualizarEstado($id, $resultado);
+        
+        http_response_code($resultado['success'] ? 200 : 400);
+        echo json_encode($resultado);
     }
 }

@@ -1,7 +1,7 @@
 // src/components/ui/DataTable.jsx
 import Spinner from './Spinner';
 
-export default function DataTable({ columns, data, loading = false, onRowClick }) {
+export default function DataTable({ columns, data, loading = false, onRowClick, currentPage = 1, totalPages = 1, onPageChange }) {
     if (loading) {
         return (
             <div className="w-full bg-white border border-slate-200 rounded-lg p-10 flex flex-col items-center justify-center">
@@ -57,13 +57,53 @@ export default function DataTable({ columns, data, loading = false, onRowClick }
                 </table>
             </div>
 
-            {/* Paginador Básico (Puedes expandirlo luego) */}
-            <div className="px-6 py-4 border-t border-slate-100 bg-white flex justify-between items-center">
-                <span className="text-sm text-slate-500 font-medium">
-                    Mostrando {data.length} registros
-                </span>
-                {/* Aquí irían los controles de paginación en el futuro */}
-            </div>
+            {/* Paginación */}
+            {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-slate-100 bg-white flex justify-between items-center">
+                    <span className="text-sm text-slate-500 font-medium">
+                        Página {currentPage} de {totalPages}
+                    </span>
+                    
+                    <div className="flex gap-2">
+                        <button
+                            disabled={currentPage === 1}
+                            onClick={() => onPageChange && onPageChange(currentPage - 1)}
+                            className="px-3 py-1.5 text-xs font-bold border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Anterior
+                        </button>
+                        
+                        <div className="flex gap-1">
+                            {[...Array(totalPages)].map((_, i) => {
+                                const p = i + 1;
+                                if (totalPages > 10) {
+                                  if (p > 3 && p < totalPages - 2 && (p < currentPage - 1 || p > currentPage + 1)) {
+                                    if (p === 4 || p === totalPages - 3) return <span key={p} className="px-2">...</span>;
+                                    return null;
+                                  }
+                                }
+                                return (
+                                    <button
+                                        key={p}
+                                        onClick={() => onPageChange && onPageChange(p)}
+                                        className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${currentPage === p ? 'bg-orange-500 text-white' : 'hover:bg-slate-100 text-slate-600 border border-transparent'}`}
+                                    >
+                                        {p}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            disabled={currentPage === totalPages}
+                            onClick={() => onPageChange && onPageChange(currentPage + 1)}
+                            className="px-3 py-1.5 text-xs font-bold border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            Siguiente
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
-}
+}

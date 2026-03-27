@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, RefreshCw, X, FileText, MessageCircle } from 'lucide-react';
+import { Eye, RefreshCw, X, FileText, MessageCircle, Truck } from 'lucide-react';
 import Button from "../../components/ui/Button";
 import DataTable from "../../components/ui/DataTable";
 import SearchInput from "../../components/ui/SearchInput";
@@ -11,7 +11,8 @@ import { useToast } from "../../hooks/useToast";
 import VentaDetalle from "./VentaDetalle"; // Componente simple de visualización
 import { exportToExcel } from "../../utils/exportar";
 import { abrirPdfVenta } from "../../utils/pdf";
-import { FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet, Package } from "lucide-react";
+import GuiaForm from "../guias/GuiaForm";
 
 const VentasPage = () => {
     const navigate = useNavigate();
@@ -25,11 +26,20 @@ const VentasPage = () => {
     const [fechaDesde, setFechaDesde] = useState("");
     const [fechaHasta, setFechaHasta] = useState("");
     const [ventaToView, setVentaToView] = useState(null);
+    const [ventaForGuia, setVentaForGuia] = useState(null);
+    const [isGuiaModalOpen, setIsGuiaModalOpen] = useState(false);
+    
+    // Paginación
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
 
     const cargarVentas = async () => {
         setLoading(true);
         try {
-            const params = {};
+            const params = {
+                page: currentPage,
+                limit: 20
+            };
             if (filtroEstado) params.estado_sunat = filtroEstado;
             if (fechaDesde) params.fecha_desde = fechaDesde;
             if (fechaHasta) params.fecha_hasta = fechaHasta;
@@ -37,6 +47,9 @@ const VentasPage = () => {
             const res = await ventasApi.listar(params);
             if (res.success) {
                 setData(res.data.ventas || res.data);
+                if (res.data.pagination) {
+                    setTotalPages(res.data.pagination.pages);
+                }
             }
         } catch (err) {
             toast.error(err.message || "Error al cargar los comprobantes");
@@ -47,7 +60,7 @@ const VentasPage = () => {
 
     useEffect(() => {
         cargarVentas();
-    }, [filtroEstado]); // Recargar automáticamente al cambiar el estado
+    }, [filtroEstado, currentPage]); // Recargar al cambiar estado o página
 
     // Filtrado local por búsqueda (Número o Cliente)
     const filteredData = useMemo(() => {
@@ -129,7 +142,7 @@ const VentasPage = () => {
                 <div className="flex flex-col">
                     <span className="font-bold text-slate-800 text-sm">{row.numero_completo}</span>
                     <span className="text-xs text-slate-400 capitalize">
-                        {row.tipo_comprobante === '01' ? 'Factura' : 'Boleta'}
+                        {row.tipo_comprobante === '01' ? 'Factura' : (row.tipo_comprobante === '03' ? 'Boleta' : 'Nota de Venta')}
                     </span>
                 </div>
             ),
@@ -145,6 +158,10 @@ const VentasPage = () => {
         {
             header: "Total",
             render: (row) => <span className="font-bold text-orange-600">S/ {row.importe_total}</span>
+        },
+        {
+            header: "Método",
+            render: (row) => <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{row.metodo_pago || 'EFECTIVO'}</span>
         },
         { header: "SUNAT", render: (row) => badgeSunat(row.estado_sunat) },
         { header: "Pago", render: (row) => badgePago(row.estado_pago) },
@@ -198,6 +215,29 @@ const VentasPage = () => {
                             📋
                         </button>
                     )}
+
+                    <button
+                        onClick={async () => {
+                            setLoading(true);
+                            try {
+                                const res = await ventasApi.obtener(row.id);
+                                if (res.success) {
+                                    setVentaForGuia(res.data);
+                                    setIsGuiaModalOpen(true);
+                                } else {
+                                    toast.error("No se pudo obtener el detalle de la venta");
+                                }
+                            } catch (err) {
+                                toast.error("Error al conectar con el servidor");
+                            } finally {
+                                setLoading(false);
+                            }
+                        }}
+                        className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 transition-colors"
+                        title="Generar Guía de Envío (Shalom)"
+                    >
+                        <Truck size={16} />
+                    </button>
 
                     {row.estado_sunat !== 'ANULADO' && (
                         <button
@@ -269,6 +309,9 @@ const VentasPage = () => {
                 columns={columns}
                 data={filteredData}
                 loading={loading}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
             />
 
             {/* Modal de Detalle de Venta */}
@@ -279,6 +322,34 @@ const VentasPage = () => {
                 size="xl"
             >
                 {ventaToView && <VentaDetalle id={ventaToView.id} />}
+            </Modal>
+            
+            <Modal
+                isOpen={isGuiaModalOpen}
+                onClose={() => setIsGuiaModalOpen(false)}
+                title={`Generar Guía para: ${ventaForGuia?.numero_completo}`}
+                size="xl"
+            >
+                {ventaForGuia && (
+                    <GuiaForm
+                        preData={{
+                            destinatario_ruc: ventaForGuia.cliente_numero_documento || '',
+                            destinatario_nombre: ventaForGuia.cliente_nombre || '',
+                            llegada_direccion: ventaForGuia.cliente_direccion || '',
+                            items: ventaForGuia.detalles?.map(d => ({
+                                codigo: d.producto_codigo,
+                                descripcion: d.descripcion,
+                                cantidad: d.cantidad,
+                                unidad_medida: d.unidad_medida
+                            })) || []
+                        }}
+                        onSuccess={() => {
+                            setIsGuiaModalOpen(false);
+                            toast.success("Guía generada correctamente");
+                        }}
+                        onCancel={() => setIsGuiaModalOpen(false)}
+                    />
+                )}
             </Modal>
         </div>
     );

@@ -18,23 +18,30 @@ export default function ProductosPage() {
     const [search, setSearch] = useState("");
     const [filtroStock, setFiltroStock] = useState(""); // Filtro por estado de stock
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const [totalPages, setTotalPages] = useState(1);
 
     // Estados Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [productoToEdit, setProductoToEdit] = useState(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
 
-    useEffect(() => { cargarProductos(); }, []);
+    useEffect(() => { cargarProductos(); }, [currentPage, search]); // Dependencia de currentPage y search para recargar al cambiar de página o buscar
 
     const cargarProductos = async () => {
         try {
-            const res = await apiClient.get("/api/productos");
+            setLoading(true);
+            // Modificar la llamada a la API para incluir paginación y búsqueda
+            const res = await apiClient.get(`/api/productos?page=${currentPage}&limit=20&search=${search}`);
             if (res.success) {
                 setData(res.data);
+                if (res.pagination) {
+                    setTotalPages(res.pagination.pages); // Actualizar el total de páginas
+                }
             }
         } catch (error) {
             toast.error("Error al cargar el inventario");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -81,18 +88,11 @@ export default function ProductosPage() {
     };
 
     // --- FILTRADO INTELIGENTE ---
-    const filtrados = data.filter(p => {
-        const matchesSearch = p.descripcion?.toLowerCase().includes(search.toLowerCase()) ||
-            p.codigo_interno?.toLowerCase().includes(search.toLowerCase()) ||
-            p.sku?.toLowerCase().includes(search.toLowerCase());
-
+    // Este filtrado ahora solo aplica al filtro de stock, ya que la búsqueda se hace en la API
+    const filteredData = data.filter(p => {
         const matchesStock = filtroStock === "" || p.estado_stock === filtroStock;
-        return matchesSearch && matchesStock;
+        return matchesStock;
     });
-
-    // Paginación
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const currentItems = filtrados.slice(indexOfLastItem - itemsPerPage, indexOfLastItem);
 
     const columns = [
         {
@@ -179,7 +179,7 @@ export default function ProductosPage() {
 
                     <SearchInput onSearch={setSearch} placeholder="Buscar por código, descripción..." />
 
-                    <Button variant="secondary" onClick={() => exportToExcel(filtrados, 'catalogo_maquimpower', 'Productos')} icon={FileSpreadsheet}>
+                    <Button variant="secondary" onClick={() => exportToExcel(filteredData, 'catalogo_maquimpower', 'Productos')} icon={FileSpreadsheet}>
                         Exportar Excel
                     </Button>
 
@@ -193,7 +193,15 @@ export default function ProductosPage() {
                 </div>
             </div>
 
-            <DataTable columns={columns} data={currentItems} loading={loading} />
+            {/* Tabla Principal */}
+            <DataTable
+                columns={columns}
+                data={filteredData}
+                loading={loading}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
 
             {/* Modal de Formulario con Pestañas */}
             <Modal

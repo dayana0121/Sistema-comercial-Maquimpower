@@ -103,10 +103,14 @@ class VentaPdfController
         $pdf->Ln(2);
 
         // Tipo de comprobante
-        $tipo = ($venta['tipo_comprobante'] === '01') ? 'FACTURA' : 'BOLETA';
-        $pdf->Cell(74, 6, utf8_decode($tipo . ' DE VENTA ELECTRONICA'), 0, 1, 'L');
+        $tipo = 'BOLETA';
+        if ($venta['tipo_comprobante'] === '01') $tipo = 'FACTURA';
+        if ($venta['tipo_comprobante'] === '00') $tipo = 'NOTA DE VENTA';
+
+        $pdf->Cell(74, 6, utf8_decode($tipo . ' ELECTRONICA'), 0, 1, 'L');
         $pdf->Cell(74, 5, $venta['serie'] . '-' . str_pad($venta['correlativo'], 8, '0', STR_PAD_LEFT), 0, 1, 'L');
         $pdf->Cell(74, 5, 'Fecha: ' . $venta['fecha_emision'], 0, 1, 'L');
+        $pdf->Cell(74, 5, utf8_decode('Método: ' . ($venta['metodo_pago'] ?? 'EFECTIVO')), 0, 1, 'L');
         $pdf->Cell(74, 1, str_repeat('-', 77), 0, 1, 'C');
         $pdf->Ln(2);
 
@@ -161,6 +165,12 @@ class VentaPdfController
         $pdf->SetFont('Arial', 'I', 8);
         $pdf->MultiCell(74, 4, utf8_decode($totalLetras));
         $pdf->Ln(2);
+
+        if ($venta['tipo_comprobante'] === '00') {
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(74, 5, utf8_decode('DOCUMENTO INTERNO SIN VALOR TRIBUTARIO'), 0, 1, 'C');
+            $pdf->Ln(2);
+        }
 
         // QR SUNAT
         $qr_path = $this->generarQR($venta, $empresa, $nombre);

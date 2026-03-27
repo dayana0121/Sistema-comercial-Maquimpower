@@ -8,7 +8,7 @@ export default defineConfig({
       // Cada vez que el frontend pida algo que empiece con /api
       // Vite lo enviará automáticamente a tu XAMPP
       '/api': {
-        target: 'http://localhost/Maquimpower_Sistema_Comercial_1.0/antigravity-backend',
+        target: 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''), // Quita el /api antes de enviar al PHP
       },

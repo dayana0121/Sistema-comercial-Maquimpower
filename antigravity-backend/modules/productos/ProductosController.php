@@ -75,17 +75,48 @@ class ProductosController
     private function listar()
     {
         try {
-            $query = "SELECT * FROM productos WHERE activo = 1 ORDER BY created_at DESC";
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+            $offset = ($page - 1) * $limit;
+
+            $search = $_GET['search'] ?? '';
+            $where = " WHERE activo = 1 ";
+            $params = [];
+
+            if (!empty($search)) {
+                $where .= " AND (descripcion LIKE ? OR codigo_interno LIKE ? OR sku LIKE ?) ";
+                $params[] = "%$search%";
+                $params[] = "%$search%";
+                $params[] = "%$search%";
+            }
+
+            // Contar total
+            $stmtCount = $this->conn->prepare("SELECT COUNT(*) FROM productos $where");
+            $stmtCount->execute($params);
+            $total = (int)$stmtCount->fetchColumn();
+            $pages = ceil($total / $limit);
+
+            // Obtener registros
+            $query = "SELECT * FROM productos $where ORDER BY created_at DESC LIMIT $limit OFFSET $offset";
             $stmt = $this->conn->prepare($query);
-            $stmt->execute();
+            $stmt->execute($params);
             $productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Decodificar galería para el frontend
+            // Decodificar galería
             foreach ($productos as &$p) {
                 $p['galeria'] = json_decode($p['galeria'] ?? '[]', true);
             }
 
-            echo json_encode(["success" => true, "data" => $productos]);
+            echo json_encode([
+                "success" => true, 
+                "data" => $productos,
+                "pagination" => [
+                    "total" => $total,
+                    "pages" => $pages,
+                    "current" => $page,
+                    "limit" => $limit
+                ]
+            ]);
         } catch (PDOException $e) {
             $this->manejarError($e);
         }
