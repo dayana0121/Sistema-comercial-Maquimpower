@@ -8,7 +8,7 @@
 function getDB(): PDO
 {
     $host = 'localhost';
-    $db = 'u264219614_maquimpower';
+    $db = 'maquimpower_sistema_comercial';
     $user = 'root';
     $pass = '';
     $port = '3306';
