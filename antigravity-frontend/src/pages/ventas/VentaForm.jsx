@@ -1,0 +1,583 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import apiClient from '../../api/client';
+import { ventasApi } from '../../api/ventas';
+import { vendedoresApi } from '../../api/vendedores';
+import { useToast } from '../../hooks/useToast';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Modal from '../../components/ui/Modal';
+import BuscadorDocumento from '../../components/ui/BuscadorDocumento';
+
+// Opciones de afectación (solo 3)
+const TIPO_AFECTACION = [
+    { code: '10', name: 'Op. Gravadas' },
+    { code: '11', name: 'Op. Exoneradas' },
+    { code: '12', name: 'Gratuito' },
+];
+
+// Métodos de pago
+const METODOS_PAGO = [
+    { code: 'EFECTIVO', name: 'Efectivo', icon: '💵' },
+    { code: 'TARJETA', name: 'Tarjeta de Crédito', icon: '💳' },
+    { code: 'YAPE', name: 'Yape', icon: '📱' },
+    { code: 'TRANSFERENCIA', name: 'Transferencia Bancaria', icon: '🏦' },
+    { code: 'MIXTO', name: 'Mixto', icon: '🔀' },
+];
+
+const CAT54 = [
+    { code: '022', name: 'Otros servicios empresariales', percent: 10 },
+    { code: '037', name: 'Arrendamiento de bienes', percent: 10 },
+    { code: '001', name: 'Azúcar y melaza de caña', percent: 10 },
+];
+
+const VentaForm = ({ isOpen, onClose, onSuccess }) => {
+    const toast = useToast();
+    const [loading, setLoading] = useState(false);
+    const [showCotizacionesModal, setShowCotizacionesModal] = useState(false);
+    const [cotizaciones, setCotizaciones] = useState([]);
+
+    const [form, setForm] = useState({
+        cliente_id: '',
+        vendedor_id: '',
+        tipo_comprobante: '01',
+        serie: 'F001',
+        condicion_pago: 'CONTADO',
+        moneda: 'PEN',
+        observacion: '',
+        metodo_pago: 'EFECTIVO',
+        detraccion_codigo: '',
+        detraccion_porcentaje: 0,
+        detraccion_monto: 0,
+        detraccion_cuenta: '',
+        detraccion_medio_pago: '001',
+    });
+
+    const [searchCliente, setSearchCliente] = useState('');
+    const [clientesOptions, setClientesOptions] = useState([]);
+    const [selectedCliente, setSelectedCliente] = useState(null);
+
+    const [searchProducto, setSearchProducto] = useState('');
+    const [todos_productos, setTodosProductos] = useState([]);
+    const [productosOptions, setProductosOptions] = useState([]);
+    const [detalles, setDetalles] = useState([]);
+
+    const [vendedores, setVendedores] = useState([]);
+
+    // Cargar vendedores y productos al montar
+    useEffect(() => {
+        const cargar = async () => {
+            try {
+                const [resVend, resProd] = await Promise.all([
+                    vendedoresApi.listar(),
+                    apiClient.get('/productos')
+                ]);
+
+                if (resVend.success) {
+                    setVendedores(resVend.data.vendedores || []);
+                }
+                if (resProd.success) {
+                    setTodosProductos(resProd.data || []);
+                    setProductosOptions(resProd.data || []);
+                }
+            } catch (err) {
+                console.error('Error cargando datos:', err);
+            }
+        };
+        if (isOpen) cargar();
+    }, [isOpen]);
+
+    // Buscar clientes
+    useEffect(() => {
+        if (searchCliente.trim().length < 3) return setClientesOptions([]);
+        const timer = setTimeout(async () => {
+            try {
+                const res = await apiClient.get(`/clientes?search=${encodeURIComponent(searchCliente)}`);
+                if (res.success) setClientesOptions(res.data || []);
+            } catch (err) { console.error(err); }
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchCliente]);
+
+    // Buscar productos
+    useEffect(() => {
+        if (searchProducto.trim().length === 0) {
+            setProductosOptions(todos_productos);
+        } else {
+            const filtered = todos_productos.filter(p =>
+                p.descripcion.toLowerCase().includes(searchProducto.toLowerCase()) ||
+                p.codigo_interno?.toLowerCase().includes(searchProducto.toLowerCase())
+            );
+            setProductosOptions(filtered);
+        }
+    }, [searchProducto, todos_productos]);
+
+    // Agregar producto al carrito
+    const agregarProducto = (producto) => {
+        const existe = detalles.find(d => d.producto_id === producto.id);
+        if (existe) {
+            actualizarLinea(existe.producto_id, 'cantidad', existe.cantidad + 1);
+        } else {
+            const precioVenta = parseFloat(producto.precio_venta || producto.precio_unitario_con_igv);
+            setDetalles([...detalles, {
+                producto_id: producto.id,
+                codigo_producto: producto.codigo_interno || 'S/C',
+                descripcion: producto.descripcion,
+                unidad_medida: producto.unidad_medida || 'NIU',
+                cantidad: 1,
+                precio_unitario: precioVenta,
+                descuento_unitario: 0,
+                tipo_afectacion_igv: '10'
+            }]);
+            toast.success(`${producto.descripcion} agregado`);
+        }
+    };
+
+    const actualizarLinea = (id, campo, valor) => {
+        setDetalles(detalles.map(det =>
+            det.producto_id === id ? { ...det, [campo]: Number(valor) || 0 } : det
+        ));
+    };
+
+    const totales = useMemo(() => {
+        const subtotal = detalles.reduce((acc, det) => {
+            const subtotalLinea = (det.cantidad * det.precio_unitario) - (det.descuento_unitario || 0);
+            return acc + subtotalLinea;
+        }, 0);
+        const gravada = subtotal / 1.18;
+        const igv = subtotal - gravada;
+        return { subtotal, gravada, igv, total: subtotal };
+    }, [detalles]);
+
+    // Cargar cotizaciones
+    const cargarCotizaciones = async () => {
+        try {
+            const res = await apiClient.get('/cotizaciones');
+            if (res.success) {
+                setCotizaciones(res.data || []);
+                setShowCotizacionesModal(true);
+            }
+        } catch (err) {
+            toast.error('Error cargando cotizaciones');
+        }
+    };
+
+    // Importar cotización
+    const importarCotizacion = async (cotizacionId) => {
+        try {
+            const res = await apiClient.get(`/cotizaciones/${cotizacionId}`);
+            if (res.success) {
+                const cot = res.data;
+                setSelectedCliente(cot.cliente);
+                setForm(prev => ({
+                    ...prev,
+                    cliente_id: cot.cliente_id,
+                }));
+                setDetalles(cot.detalles.map(d => ({
+                    producto_id: d.producto_id,
+                    codigo_producto: d.codigo_producto || 'S/C',
+                    descripcion: d.descripcion,
+                    unidad_medida: d.unidad_medida || 'NIU',
+                    cantidad: d.cantidad,
+                    precio_unitario: d.precio_unitario,
+                    descuento_unitario: d.descuento_unitario || 0,
+                    tipo_afectacion_igv: d.tipo_afectacion_igv || '10'
+                })));
+                setShowCotizacionesModal(false);
+                toast.success('Cotización importada');
+            }
+        } catch (err) {
+            toast.error('Error importando cotización');
+        }
+    };
+
+    const handleGuardar = async () => {
+        if (!form.cliente_id) return toast.error('Selecciona un cliente');
+        if (detalles.length === 0) return toast.error('El carrito está vacío');
+
+        setLoading(true);
+        const payload = {
+            cliente_id: form.cliente_id,
+            vendedor_id: form.vendedor_id || null,
+            tipo_comprobante: form.tipo_comprobante,
+            serie: form.serie,
+            moneda: form.moneda,
+            condicion_pago: form.condicion_pago,
+            metodo_pago: form.metodo_pago,
+            op_gravada: totales.gravada.toFixed(2),
+            igv: totales.igv.toFixed(2),
+            importe_total: totales.total.toFixed(2),
+            detraccion_codigo: form.detraccion_codigo,
+            detraccion_porcentaje: form.detraccion_porcentaje,
+            detraccion_monto: form.detraccion_monto,
+            detraccion_cuenta: form.detraccion_cuenta,
+            detraccion_medio_pago: form.detraccion_medio_pago,
+            detalles: detalles.map(det => ({
+                producto_id: det.producto_id,
+                codigo_producto: det.codigo_producto,
+                descripcion: det.descripcion,
+                unidad_medida: det.unidad_medida,
+                cantidad: parseFloat(det.cantidad),
+                valor_unitario: (det.precio_unitario / 1.18).toFixed(4),
+                precio_unitario: parseFloat(det.precio_unitario),
+                descuento_unitario: parseFloat(det.descuento_unitario || 0),
+                tipo_afectacion_igv: det.tipo_afectacion_igv || '10',
+            }))
+        };
+
+        try {
+            const res = await ventasApi.crear(payload);
+            if (res.success) {
+                toast.success('Comprobante emitido correctamente');
+                onSuccess();
+                onClose();
+            } else {
+                toast.error(res.message || 'Error al emitir comprobante');
+            }
+        } catch (error) {
+            toast.error('Error al procesar la venta');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <>
+            <Modal isOpen={isOpen} onClose={onClose} title="Nueva Venta Electrónica" size="6xl">
+                <div className="grid grid-cols-3 gap-6 p-6">
+                    {/* COLUMNA 1: CLIENTE Y DATOS */}
+                    <div className="space-y-4 border-r pr-6">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">Datos Principales</h3>
+
+                        {/* SUNAT/RENIEC Búsqueda */}
+                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
+                            <BuscadorDocumento
+                                label="Buscar en SUNAT/RENIEC"
+                                onFound={(data) => {
+                                    toast.success(`Encontrado: ${data.razon_social}`);
+                                    setSearchCliente(data.ruc || data.dni || '');
+                                }}
+                            />
+                        </div>
+
+                        {/* Búsqueda de Cliente */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-bold text-gray-700">Buscar Cliente</label>
+                            <Input
+                                placeholder="RUC o Nombre..."
+                                value={searchCliente}
+                                onChange={e => setSearchCliente(e.target.value)}
+                            />
+                            {clientesOptions.length > 0 && (
+                                <div className="border rounded-md shadow-sm max-h-40 overflow-y-auto">
+                                    {clientesOptions.map(cli => (
+                                        <div
+                                            key={cli.id}
+                                            className="p-2 hover:bg-blue-50 cursor-pointer border-b last:border-0 text-xs"
+                                            onClick={() => {
+                                                setSelectedCliente(cli);
+                                                setForm(prev => ({ ...prev, cliente_id: cli.id }));
+                                                setClientesOptions([]);
+                                                setSearchCliente('');
+                                            }}
+                                        >
+                                            <p className="font-semibold">{cli.razon_social || cli.nombre_razon_social}</p>
+                                            <p className="text-gray-500">{cli.numero_documento}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Cliente Seleccionado */}
+                        {selectedCliente && (
+                            <div className="bg-green-50 border border-green-200 p-3 rounded-lg text-xs">
+                                <p className="font-bold text-green-900">✓ {selectedCliente.razon_social || selectedCliente.nombre_razon_social}</p>
+                                <p className="text-green-700">{selectedCliente.numero_documento}</p>
+                            </div>
+                        )}
+
+                        {/* Vendedor */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-bold text-gray-700">Vendedor</label>
+                            <select
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                value={form.vendedor_id}
+                                onChange={e => setForm({ ...form, vendedor_id: e.target.value })}
+                            >
+                                <option value="">-- Seleccionar --</option>
+                                {vendedores.map(v => (
+                                    <option key={v.id} value={v.id}>{v.nombre} {v.apellido}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Comprobante */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-sm font-bold text-gray-700">Comprobante</label>
+                                <select
+                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={form.tipo_comprobante}
+                                    onChange={e => setForm({
+                                        ...form,
+                                        tipo_comprobante: e.target.value,
+                                        serie: e.target.value === '01' ? 'F001' : 'B001'
+                                    })}
+                                >
+                                    <option value="01">Factura</option>
+                                    <option value="03">Boleta</option>
+                                </select>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-sm font-bold text-gray-700">Serie</label>
+                                <Input value={form.serie} readOnly className="bg-gray-100" />
+                            </div>
+                        </div>
+
+                        {/* Método de Pago */}
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-bold text-gray-700">Método de Pago</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {METODOS_PAGO.map(mp => (
+                                    <button
+                                        key={mp.code}
+                                        onClick={() => setForm({ ...form, metodo_pago: mp.code })}
+                                        className={`p-2 rounded-lg border-2 text-center text-xs font-semibold transition-all ${
+                                            form.metodo_pago === mp.code
+                                                ? 'border-blue-600 bg-blue-50 text-blue-700'
+                                                : 'border-gray-200 hover:border-gray-300'
+                                        }`}
+                                    >
+                                        {mp.icon} {mp.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Observaciones */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-bold text-gray-700">Observaciones</label>
+                            <textarea
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm h-20 resize-none"
+                                value={form.observacion}
+                                onChange={e => setForm({ ...form, observacion: e.target.value })}
+                                placeholder="Notas adicionales..."
+                            />
+                        </div>
+
+                        {/* Botón Importar Cotización */}
+                        <Button
+                            variant="secondary"
+                            className="w-full text-sm"
+                            onClick={cargarCotizaciones}
+                        >
+                            📋 Importar Cotización
+                        </Button>
+                    </div>
+
+                    {/* COLUMNA 2: PRODUCTOS Y CARRITO */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-bold text-gray-800">Productos</h3>
+
+                        {/* Búsqueda de productos */}
+                        <Input
+                            placeholder="Buscar producto..."
+                            value={searchProducto}
+                            onChange={e => setSearchProducto(e.target.value)}
+                        />
+
+                        {/* Productos disponibles */}
+                        <div className="border rounded-lg p-3 bg-gray-50 max-h-64 overflow-y-auto">
+                            <div className="grid grid-cols-1 gap-2">
+                                {productosOptions.map(p => (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => agregarProducto(p)}
+                                        className="text-left p-2 border border-gray-200 rounded hover:bg-blue-50 hover:border-blue-300 transition-all text-xs"
+                                    >
+                                        <p className="font-semibold text-gray-800">{p.descripcion}</p>
+                                        <p className="text-gray-500">{p.codigo_interno} • S/ {parseFloat(p.precio_venta).toFixed(2)}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Tabla de carrito */}
+                        <div className="border rounded-lg overflow-hidden">
+                            <div className="bg-gray-100 p-2 text-xs font-bold text-gray-700 grid grid-cols-4 gap-1">
+                                <div>Producto</div>
+                                <div className="text-center">Cant.</div>
+                                <div className="text-right">Precio</div>
+                                <div className="text-right">Total</div>
+                            </div>
+                            <div className="max-h-96 overflow-y-auto">
+                                {detalles.length === 0 ? (
+                                    <div className="p-4 text-center text-gray-500 text-sm">Carrito vacío</div>
+                                ) : (
+                                    detalles.map((det, idx) => (
+                                        <div key={idx} className="border-t p-2 text-xs space-y-1">
+                                            <div className="font-semibold text-gray-800 flex justify-between">
+                                                <span>{det.descripcion}</span>
+                                                <button
+                                                    onClick={() => setDetalles(detalles.filter((_, i) => i !== idx))}
+                                                    className="text-red-500 hover:text-red-700 font-bold"
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-4 gap-1">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={det.cantidad}
+                                                    onChange={e => actualizarLinea(det.producto_id, 'cantidad', e.target.value)}
+                                                    className="border rounded px-1 py-1 text-center"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    placeholder="0.00"
+                                                    value={det.descuento_unitario}
+                                                    onChange={e => actualizarLinea(det.producto_id, 'descuento_unitario', e.target.value)}
+                                                    className="border rounded px-1 py-1 text-center text-red-600"
+                                                    title="Descuento"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={det.precio_unitario}
+                                                    onChange={e => actualizarLinea(det.producto_id, 'precio_unitario', e.target.value)}
+                                                    className="border rounded px-1 py-1 text-right font-semibold"
+                                                    title="Editar precio"
+                                                />
+                                                <div className="text-right font-bold">
+                                                    S/ {((det.cantidad * det.precio_unitario) - det.descuento_unitario).toFixed(2)}
+                                                </div>
+                                            </div>
+                                            <select
+                                                value={det.tipo_afectacion_igv}
+                                                onChange={e => actualizarLinea(det.producto_id, 'tipo_afectacion_igv', e.target.value)}
+                                                className="border rounded px-1 py-1 text-xs w-full"
+                                            >
+                                                {TIPO_AFECTACION.map(af => (
+                                                    <option key={af.code} value={af.code}>{af.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* COLUMNA 3: TOTALES Y FINALIZAR */}
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-bold text-gray-800">Resumen</h3>
+
+                        {/* Card de totales */}
+                        <div className="bg-slate-800 text-white p-4 rounded-lg space-y-2">
+                            <div className="flex justify-between text-sm text-slate-300">
+                                <span>Subtotal:</span>
+                                <span>S/ {totales.subtotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between text-sm text-slate-300">
+                                <span>IGV (18%):</span>
+                                <span>S/ {totales.igv.toFixed(2)}</span>
+                            </div>
+                            <div className="border-t border-slate-600 pt-2 flex justify-between font-bold text-lg">
+                                <span>TOTAL:</span>
+                                <span className="text-orange-400">S/ {totales.total.toFixed(2)}</span>
+                            </div>
+                        </div>
+
+                        {/* Detracción (si aplica) */}
+                        {form.tipo_comprobante === '01' && totales.total >= 700 && (
+                            <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg space-y-3">
+                                <h4 className="text-sm font-bold text-orange-900">⚠️ Detracción (Ley 26702)</h4>
+                                <select
+                                    className="w-full px-3 py-2 border border-orange-300 rounded-lg text-sm"
+                                    value={form.detraccion_codigo}
+                                    onChange={(e) => {
+                                        const item = CAT54.find(c => c.code === e.target.value);
+                                        const pct = item ? item.percent : 0;
+                                        const monto = (totales.total * pct / 100).toFixed(2);
+                                        setForm({ ...form, detraccion_codigo: e.target.value, detraccion_porcentaje: pct, detraccion_monto: monto });
+                                    }}
+                                >
+                                    <option value="">-- Seleccione --</option>
+                                    {CAT54.map(c => <option key={c.code} value={c.code}>{c.name} ({c.percent}%)</option>)}
+                                </select>
+                                {form.detraccion_codigo && (
+                                    <>
+                                        <Input
+                                            label="Monto"
+                                            value={form.detraccion_monto}
+                                            readOnly
+                                        />
+                                        <Input
+                                            label="Cuenta (00-000-0000)"
+                                            placeholder="Cuenta"
+                                            value={form.detraccion_cuenta}
+                                            onChange={e => setForm({ ...form, detraccion_cuenta: e.target.value })}
+                                        />
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Botones de acción */}
+                        <div className="space-y-2 pt-4 border-t">
+                            <Button
+                                variant="primary"
+                                className="w-full py-3 text-base"
+                                isLoading={loading}
+                                onClick={handleGuardar}
+                            >
+                                ✓ EMITIR COMPROBANTE
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                className="w-full"
+                                onClick={onClose}
+                            >
+                                Cancelar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal para Cotizaciones */}
+            <Modal isOpen={showCotizacionesModal} onClose={() => setShowCotizacionesModal(false)} title="Importar Cotización" size="2xl">
+                <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
+                    {cotizaciones.length === 0 ? (
+                        <p className="text-gray-500 text-center">No hay cotizaciones disponibles</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {cotizaciones.map(cot => (
+                                <button
+                                    key={cot.id}
+                                    onClick={() => importarCotizacion(cot.id)}
+                                    className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all"
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-semibold text-gray-800">{cot.cliente?.razon_social || 'Cliente'}</p>
+                                            <p className="text-sm text-gray-500">Cotización #{cot.numero_correlativo}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-blue-600">S/ {parseFloat(cot.total).toFixed(2)}</p>
+                                            <p className="text-xs text-gray-500">{cot.estado}</p>
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </Modal>
+        </>
+    );
+};
+
+export default VentaForm;
