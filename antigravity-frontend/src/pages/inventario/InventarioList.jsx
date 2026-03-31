@@ -104,6 +104,9 @@ const InventarioList = () => {
                     <p className="text-secundario">Gestión de existencias y movimientos</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
+                    <button onClick={() => abrirMovimiento('TRASLADO')} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', borderColor: 'var(--color-naranja)', color: 'var(--color-naranja)' }}>
+                        <LuTrendingUp size={18} style={{ transform: 'rotate(90deg)' }} /> Traslado Físico
+                    </button>
                     <button onClick={() => abrirMovimiento('AJUSTE')} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                         <LuTrendingDown size={18} /> Ajuste/Salida
                     </button>

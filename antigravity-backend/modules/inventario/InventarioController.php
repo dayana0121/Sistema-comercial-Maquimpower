@@ -26,6 +26,12 @@ class InventarioController {
             return;
         }
 
+        // GET /inventario/almacenes (Nuevo)
+        if ($method === 'GET' && str_contains($route, '/almacenes')) {
+            $this->listarAlmacenes();
+            return;
+        }
+
         // POST /inventario/movimiento
         if ($method === 'POST' && str_contains($route, '/movimiento')) {
             AuthMiddleware::requerirRol(['admin', 'administrador', 'almacen'], $user);
@@ -106,10 +112,10 @@ class InventarioController {
                 return;
             }
 
-            $tipos = ['ENTRADA', 'SALIDA', 'AJUSTE', 'DEVOLUCION'];
+            $tipos = ['ENTRADA', 'SALIDA', 'AJUSTE', 'DEVOLUCION', 'TRASLADO'];
             if (!in_array(strtoupper($data->tipo_movimiento), $tipos)) {
                 http_response_code(422);
-                echo json_encode(["success" => false, "message" => "tipo_movimiento debe ser: ENTRADA, SALIDA, AJUSTE o DEVOLUCION"]);
+                echo json_encode(["success" => false, "message" => "tipo_movimiento debe ser: ENTRADA, SALIDA, AJUSTE, DEVOLUCION o TRASLADO"]);
                 return;
             }
 
@@ -128,18 +134,31 @@ class InventarioController {
                 return;
             }
 
-            // Calcular nuevo stock
+            // Calcular nuevo stock global
             $tipo = strtoupper($data->tipo_movimiento);
             $stockAnterior = (float) $producto['stock_actual'];
             $cantidad = (float) $data->cantidad;
 
-            $stockNuevo = match($tipo) {
-                'ENTRADA', 'DEVOLUCION' => $stockAnterior + $cantidad,
-                'SALIDA'  => $stockAnterior - $cantidad,
-                'AJUSTE'  => $cantidad, // ajuste directo al valor
-            };
+            // Almacenes
+            $almOrigen = $data->almacen_origen_id ?? null;
+            $almDestino = $data->almacen_destino_id ?? null;
 
-            if ($stockNuevo < 0) {
+            if ($tipo === 'TRASLADO') {
+                if (!$almOrigen || !$almDestino || $almOrigen === $almDestino) {
+                    $this->conn->rollBack();
+                    $this->error422("Para traslado se requiere almacén origen y destino diferentes.");
+                    return;
+                }
+                $stockNuevo = $stockAnterior; // El stock global no cambia, solo se mueven
+            } else {
+                $stockNuevo = match($tipo) {
+                    'ENTRADA', 'DEVOLUCION' => $stockAnterior + $cantidad,
+                    'SALIDA'  => $stockAnterior - $cantidad,
+                    'AJUSTE'  => $cantidad, // ajuste directo al valor global (simplificado por ahora)
+                };
+            }
+
+            if ($stockNuevo < 0 && $tipo !== 'TRASLADO') {
                 $this->conn->rollBack();
                 http_response_code(422);
                 echo json_encode(["success" => false, "message" => "Stock insuficiente. Stock actual: $stockAnterior"]);
@@ -150,9 +169,9 @@ class InventarioController {
             $movId = $this->conn->query("SELECT UUID()")->fetchColumn();
             $stmtMov = $this->conn->prepare("
                 INSERT INTO inventario_movimientos
-                    (id, producto_id, tipo_movimiento, cantidad, stock_anterior, stock_nuevo, motivo, referencia, usuario_email)
+                    (id, producto_id, tipo_movimiento, cantidad, stock_anterior, stock_nuevo, motivo, referencia, usuario_email, almacen_origen_id, almacen_destino_id)
                 VALUES
-                    (:id, :prod_id, :tipo, :cant, :stock_ant, :stock_nvo, :motivo, :referencia, :usuario_email)
+                    (:id, :prod_id, :tipo, :cant, :stock_ant, :stock_nvo, :motivo, :referencia, :usuario_email, :alm_origen, :alm_destino)
             ");
             $stmtMov->bindValue(':id', $movId);
             $stmtMov->bindValue(':prod_id', $data->producto_id);
@@ -163,13 +182,69 @@ class InventarioController {
             $stmtMov->bindValue(':motivo', $data->motivo ?? 'Sin motivo');
             $stmtMov->bindValue(':referencia', $data->documento_referencia ?? null);
             $stmtMov->bindValue(':usuario_email', null);
+            $stmtMov->bindValue(':alm_origen', $almOrigen);
+            $stmtMov->bindValue(':alm_destino', $almDestino);
             $stmtMov->execute();
 
-            // Actualizar stock en productos
-            $stmtUpd = $this->conn->prepare("UPDATE productos SET stock_actual = :stock WHERE id = :id");
-            $stmtUpd->bindValue(':stock', $stockNuevo);
-            $stmtUpd->bindValue(':id', $data->producto_id);
-            $stmtUpd->execute();
+            // Actualizar stock en productos (Global)
+            if ($tipo !== 'TRASLADO') {
+                $stmtUpd = $this->conn->prepare("UPDATE productos SET stock_actual = :stock WHERE id = :id");
+                $stmtUpd->bindValue(':stock', $stockNuevo);
+                $stmtUpd->bindValue(':id', $data->producto_id);
+                $stmtUpd->execute();
+            }
+
+            // Actualizar stocks en inventario_stock por almacén
+            if ($tipo === 'TRASLADO') {
+                // Descuento en origen
+                $stmtUpdOrig = $this->conn->prepare("UPDATE inventario_stock SET stock_actual = stock_actual - :cant WHERE producto_id = :id AND almacen_id = :almacen");
+                $stmtUpdOrig->bindValue(':cant', $cantidad);
+                $stmtUpdOrig->bindValue(':id', $data->producto_id);
+                $stmtUpdOrig->bindValue(':almacen', $almOrigen);
+                $stmtUpdOrig->execute();
+                
+                // Aumento en destino
+                $stmtVerDest = $this->conn->prepare("SELECT 1 FROM inventario_stock WHERE producto_id = :id AND almacen_id = :almacen");
+                $stmtVerDest->bindValue(':id', $data->producto_id);
+                $stmtVerDest->bindValue(':almacen', $almDestino);
+                $stmtVerDest->execute();
+                if ($stmtVerDest->fetchColumn()) {
+                    $stmtUpdDest = $this->conn->prepare("UPDATE inventario_stock SET stock_actual = stock_actual + :cant WHERE producto_id = :id AND almacen_id = :almacen");
+                    $stmtUpdDest->bindValue(':cant', $cantidad);
+                    $stmtUpdDest->bindValue(':id', $data->producto_id);
+                    $stmtUpdDest->bindValue(':almacen', $almDestino);
+                    $stmtUpdDest->execute();
+                } else {
+                    $stmtInsDest = $this->conn->prepare("INSERT INTO inventario_stock (producto_id, almacen_id, stock_actual) VALUES (:id, :almacen, :cant)");
+                    $stmtInsDest->bindValue(':id', $data->producto_id);
+                    $stmtInsDest->bindValue(':almacen', $almDestino);
+                    $stmtInsDest->bindValue(':cant', $cantidad);
+                    $stmtInsDest->execute();
+                }
+            } else {
+                // Entrada/Salida regular afecta al almacén default / designado (por ahora almOrigen funciona como el pivot)
+                $almEfectivo = $almOrigen ?? $almDestino;
+                if ($almEfectivo && $tipo !== 'AJUSTE') { // Ajuste es global en esta fase sencilla o podemos obviar el por almacén si no se pasa ID
+                    $op = ($tipo === 'ENTRADA' || $tipo === 'DEVOLUCION') ? '+' : '-';
+                    $stmtVerDest = $this->conn->prepare("SELECT 1 FROM inventario_stock WHERE producto_id = :id AND almacen_id = :almacen");
+                    $stmtVerDest->bindValue(':id', $data->producto_id);
+                    $stmtVerDest->bindValue(':almacen', $almEfectivo);
+                    $stmtVerDest->execute();
+                    if ($stmtVerDest->fetchColumn()) {
+                        $stmtUpdDest = $this->conn->prepare("UPDATE inventario_stock SET stock_actual = stock_actual $op :cant WHERE producto_id = :id AND almacen_id = :almacen");
+                        $stmtUpdDest->bindValue(':cant', $cantidad);
+                        $stmtUpdDest->bindValue(':id', $data->producto_id);
+                        $stmtUpdDest->bindValue(':almacen', $almEfectivo);
+                        $stmtUpdDest->execute();
+                    } else if ($op === '+') {
+                        $stmtInsDest = $this->conn->prepare("INSERT INTO inventario_stock (producto_id, almacen_id, stock_actual) VALUES (:id, :almacen, :cant)");
+                        $stmtInsDest->bindValue(':id', $data->producto_id);
+                        $stmtInsDest->bindValue(':almacen', $almEfectivo);
+                        $stmtInsDest->bindValue(':cant', $cantidad);
+                        $stmtInsDest->execute();
+                    }
+                }
+            }
 
             $this->conn->commit();
 
@@ -222,6 +297,19 @@ class InventarioController {
             $stmt->execute();
             echo json_encode(["success" => true, "data" => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
         } catch (PDOException $e) { $this->manejarError($e); }
+    }
+
+    private function listarAlmacenes() {
+        try {
+            $stmt = $this->conn->prepare("SELECT id, nombre, es_principal FROM almacenes WHERE activo = 1 ORDER BY es_principal DESC, nombre ASC");
+            $stmt->execute();
+            echo json_encode(["success" => true, "data" => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+        } catch (PDOException $e) { $this->manejarError($e); }
+    }
+
+    private function error422($msg) {
+        http_response_code(422);
+        echo json_encode(["success" => false, "message" => $msg]);
     }
 
     private function manejarError($e) {

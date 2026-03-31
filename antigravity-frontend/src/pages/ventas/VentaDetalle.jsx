@@ -15,13 +15,13 @@ const VentaDetalle = ({ id: propId }) => {
     const [generandoPdf, setGenerandoPdf] = useState(false);
     const [isGuiaModalOpen, setIsGuiaModalOpen] = useState(false);
 
-    const verPDF = async () => {
+    const verPDF = async (formato = 'ticket') => {
         setGenerandoPdf(true);
         try {
-            await abrirPdfVenta(id, import.meta.env.VITE_API_URL);
+            await abrirPdfVenta(id, import.meta.env.VITE_API_URL, formato);
         } catch (e) {
-            console.error('Error al generar PDF:', e);
-            alert('Error al generar el PDF');
+            console.error(`Error al generar PDF ${formato}:`, e);
+            alert(`Error al generar el PDF en formato ${formato}`);
         } finally {
             setGenerandoPdf(false);
         }
@@ -50,12 +50,20 @@ const VentaDetalle = ({ id: propId }) => {
                 <h1>Detalle de Comprobante</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
-                        onClick={verPDF}
+                        onClick={() => verPDF('ticket')}
+                        disabled={generandoPdf}
+                        className="btn-primary"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: generandoPdf ? 'wait' : 'pointer', opacity: generandoPdf ? 0.6 : 1, backgroundColor: '#475569' }}
+                    >
+                        📄 {generandoPdf ? '...' : 'Imprimir Ticket'}
+                    </button>
+                    <button
+                        onClick={() => verPDF('a4')}
                         disabled={generandoPdf}
                         className="btn-primary"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: generandoPdf ? 'wait' : 'pointer', opacity: generandoPdf ? 0.6 : 1 }}
                     >
-                        📄 {generandoPdf ? 'Generando...' : 'Ver PDF'}
+                        📄 {generandoPdf ? '...' : 'Imprimir A4'}
                     </button>
                     <button
                         onClick={() => setIsGuiaModalOpen(true)}

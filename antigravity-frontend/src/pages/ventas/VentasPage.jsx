@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, RefreshCw, X, FileText, MessageCircle, Truck } from 'lucide-react';
+import { Eye, RefreshCw, X, FileText, MessageCircle, Truck, Printer } from 'lucide-react';
 import Button from "../../components/ui/Button";
 import DataTable from "../../components/ui/DataTable";
 import SearchInput from "../../components/ui/SearchInput";
@@ -10,7 +10,7 @@ import { notasCreditoApi } from "../../api/notas-credito";
 import { useToast } from "../../hooks/useToast";
 import VentaDetalle from "./VentaDetalle"; // Componente simple de visualización
 import { exportToExcel } from "../../utils/exportar";
-import { abrirPdfVenta } from "../../utils/pdf";
+import { abrirPdfVenta, abrirTicketVenta, abrirGuiaEnvio } from "../../utils/pdf";
 import { FileSpreadsheet, Package } from "lucide-react";
 import GuiaForm from "../guias/GuiaForm";
 
@@ -117,13 +117,16 @@ const VentasPage = () => {
 
     const handleWhatsApp = (venta) => {
         if (!venta.cliente_telefono) {
-            toast.error('Cliente no tiene teléfono registrado');
+            toast.error('El cliente de esta venta no tiene un teléfono celular registrado en su ficha.');
             return;
         }
         
         const numero = venta.cliente_telefono.replace(/\D/g, '');
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
+        const linkPdf = `${baseUrl}/api/ventas/${venta.id}/pdf`;
+        
         const mensaje = encodeURIComponent(
-            `Estimado/a ${venta.cliente_nombre},\n\nAdjunto su ${venta.tipo_comprobante === '01' ? 'factura' : 'boleta'} ${venta.numero_completo} por un monto de S/ ${venta.importe_total}.\n\n¡Gracias por su compra!`
+            `Estimado/a ${venta.cliente_nombre},\n\nAdjuntamos su ${venta.tipo_comprobante === '01' ? 'factura' : 'boleta'} ${venta.numero_completo} por el monto de S/ ${parseFloat(venta.importe_total).toFixed(2)}.\n\nPuede ver y descargar su comprobante aquí:\n${linkPdf}\n\n¡Gracias por su preferencia!`
         );
         const url = `https://wa.me/51${numero}?text=${mensaje}`;
         window.open(url, '_blank');
@@ -164,7 +167,7 @@ const VentasPage = () => {
             render: (row) => <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{row.metodo_pago || 'EFECTIVO'}</span>
         },
         { header: "SUNAT", render: (row) => badgeSunat(row.estado_sunat) },
-        { header: "Pago", render: (row) => badgePago(row.estado_pago) },
+        { header: "Canal", render: (row) => <span className="text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded capitalize">{row.canal_venta?.replace('_', ' ') || 'Tienda'}</span> },
         {
             header: "Acciones",
             render: (row) => (
@@ -181,9 +184,17 @@ const VentasPage = () => {
                     </button>
 
                     <button
-                        onClick={() => abrirPdfVenta(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar PDF'))}
+                        onClick={() => abrirTicketVenta(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar Ticket'))}
+                        className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
+                        title="Imprimir Ticket Térmico"
+                    >
+                        <Printer size={16} />
+                    </button>
+
+                    <button
+                        onClick={() => abrirPdfVenta(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar PDF A4'))}
                         className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                        title="Ver PDF"
+                        title="Ver PDF A4"
                     >
                         <FileText size={16} />
                     </button>
@@ -217,24 +228,9 @@ const VentasPage = () => {
                     )}
 
                     <button
-                        onClick={async () => {
-                            setLoading(true);
-                            try {
-                                const res = await ventasApi.obtener(row.id);
-                                if (res.success) {
-                                    setVentaForGuia(res.data);
-                                    setIsGuiaModalOpen(true);
-                                } else {
-                                    toast.error("No se pudo obtener el detalle de la venta");
-                                }
-                            } catch (err) {
-                                toast.error("Error al conectar con el servidor");
-                            } finally {
-                                setLoading(false);
-                            }
-                        }}
-                        className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 transition-colors"
-                        title="Generar Guía de Envío (Shalom)"
+                        onClick={() => abrirGuiaEnvio(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar Guía de Envío'))}
+                        className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                        title="Generar Guía de Envío (Shalom/Agencia)"
                     >
                         <Truck size={16} />
                     </button>

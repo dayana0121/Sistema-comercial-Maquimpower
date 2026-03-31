@@ -110,8 +110,10 @@ export default function ProductoForm({ productoToEdit, onCancel, onSuccess, isRe
                 {activeTab === "precios" && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-right-4 duration-300">
                         <Input label="Precio Unitario SIN IGV *" type="number" step="0.01" name="precio_unitario_sin_igv" value={formData.precio_unitario_sin_igv} onChange={handleChange} required disabled={isReadOnly} />
+                        <Input label="Costo Promedio Unitario *" type="number" step="0.01" name="costo_promedio" value={formData.costo_promedio} onChange={handleChange} required disabled={isReadOnly} />
+                        
                         <div className="flex flex-col gap-1">
-                            <label className="text-xs font-bold text-slate-400 uppercase">Precio CON IGV (Referencial)</label>
+                            <label className="text-xs font-bold text-slate-400 uppercase">Precio Venta (Referencial IGV)</label>
                             <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-700">
                                 S/ {precioConIgv}
                             </div>

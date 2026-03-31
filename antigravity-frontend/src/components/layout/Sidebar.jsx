@@ -120,6 +120,9 @@ const Sidebar = () => {
                     </div>
                     {openMenus.ventas && (
                         <div className="submenu">
+                            {/* ✅ AGREGADO: Cotizaciones */}
+                            <NavLink to="/cotizaciones" className="submenu-item">→ Cotizaciones</NavLink>
+
                             <NavLink to="/ventas/nueva" className="submenu-item">→ Facturas y Boletas</NavLink>
                             <NavLink to="/ventas" className="submenu-item" end>→ Listado de ventas</NavLink>
 
@@ -129,9 +132,6 @@ const Sidebar = () => {
                                     <LuTruck size={14} /> → Guías de Remisión <span className="bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded text-[9px] font-bold">GRE</span>
                                 </span>
                             </NavLink>
-
-                            {/* ✅ AGREGADO: Cotizaciones */}
-                            <NavLink to="/cotizaciones" className="submenu-item">→ Cotizaciones</NavLink>
 
                             <div className="submenu-item disabled">→ Punto de Venta <span className="badge-soon">Pronto</span></div>
                         </div>

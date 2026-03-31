@@ -10,21 +10,41 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
     const [resultado, setResultado] = useState(null); // Para animación final { stockAnterior, stockNuevo, mov }
     const [error, setError] = useState('');
 
+    const [almacenes, setAlmacenes] = useState([]);
+
     const [form, setForm] = useState({
         tipo: tipoInicial || 'ENTRADA',
         cantidad: '',
         motivo: '',
-        referencia: ''
+        referencia: '',
+        almacen_origen_id: '',
+        almacen_destino_id: ''
     });
+
+    const fetchAlmacenes = async () => {
+        try {
+            const resp = await apiClient.get('/api/inventario/almacenes');
+            if (resp.success) {
+                setAlmacenes(resp.data);
+                const principal = resp.data.find(a => a.es_principal === 1);
+                if (principal && !form.almacen_origen_id) {
+                    setForm(prev => ({ ...prev, almacen_origen_id: principal.id }));
+                }
+            }
+        } catch (e) { console.error(e); }
+    };
 
     // Resetear form al abrir
     useEffect(() => {
         if (isOpen) {
+            fetchAlmacenes();
             setForm({
                 tipo: tipoInicial || 'ENTRADA',
                 cantidad: '',
                 motivo: '',
-                referencia: ''
+                referencia: '',
+                almacen_origen_id: '',
+                almacen_destino_id: ''
             });
             setResultado(null);
             setError('');
@@ -46,9 +66,20 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
             return;
         }
 
-        if (form.tipo === 'SALIDA' || form.tipo === 'DEVOLUCION') {
+        if (form.tipo === 'SALIDA' || form.tipo === 'DEVOLUCION' || form.tipo === 'TRASLADO') {
             if (cant > parseFloat(producto.stock_actual)) {
-                setError(`Stock insuficiente. Stock actual: ${producto.stock_actual}`);
+                setError(`Stock global insuficiente. Stock actual: ${producto.stock_actual}`);
+                return;
+            }
+        }
+
+        if (form.tipo === 'TRASLADO') {
+            if (!form.almacen_origen_id || !form.almacen_destino_id) {
+                setError('Debe seleccionar almacén origen y destino para un traslado.');
+                return;
+            }
+            if (form.almacen_origen_id === form.almacen_destino_id) {
+                setError('El almacén origen y destino deben ser diferentes.');
                 return;
             }
         }
@@ -66,7 +97,9 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
                 cantidad: cant,
                 motivo: form.motivo,
                 referencia: form.referencia,
-                usuario_email: user?.email || 'Sistema'
+                usuario_email: user?.email || 'Sistema',
+                almacen_origen_id: form.almacen_origen_id,
+                almacen_destino_id: form.almacen_destino_id
             };
 
             const resp = await apiClient.post('/api/inventario/movimiento', payload);
@@ -177,6 +210,7 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
                                         <option value="SALIDA">Salida (-)</option>
                                         <option value="AJUSTE">Ajuste (+)</option>
                                         <option value="DEVOLUCION">Devolución (-)</option>
+                                        <option value="TRASLADO">Traslado (0)</option>
                                     </select>
                                 </div>
                                 <div className="form-group" style={{ flex: 1 }}>
@@ -194,6 +228,33 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
                                     />
                                 </div>
                             </div>
+
+                            {form.tipo === 'TRASLADO' ? (
+                                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+                                    <div className="form-group" style={{ flex: 1 }}>
+                                        <label className="form-label" htmlFor="alm_origen">Almacén Origen <span className="text-error">*</span></label>
+                                        <select id="alm_origen" className="form-input" value={form.almacen_origen_id} onChange={(e) => setForm({...form, almacen_origen_id: e.target.value})} required>
+                                            <option value="">Seleccione origen...</option>
+                                            {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre} {a.es_principal === 1 ? '(Principal)' : ''}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group" style={{ flex: 1 }}>
+                                        <label className="form-label" htmlFor="alm_destino">Almacén Destino <span className="text-error">*</span></label>
+                                        <select id="alm_destino" className="form-input" value={form.almacen_destino_id} onChange={(e) => setForm({...form, almacen_destino_id: e.target.value})} required>
+                                            <option value="">Seleccione destino...</option>
+                                            {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre} {a.es_principal === 1 ? '(Principal)' : ''}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="form-group" style={{ marginBottom: '1rem' }}>
+                                    <label className="form-label" htmlFor="alm_origen">Almacén Afectado <span className="text-error">*</span></label>
+                                    <select id="alm_origen" className="form-input" value={form.almacen_origen_id} onChange={(e) => setForm({...form, almacen_origen_id: e.target.value})} required>
+                                        <option value="">Seleccione almacén...</option>
+                                        {almacenes.map(a => <option key={a.id} value={a.id}>{a.nombre} {a.es_principal === 1 ? '(Principal)' : ''}</option>)}
+                                    </select>
+                                </div>
+                            )}
 
                             <div className="form-group" style={{ marginBottom: '1rem' }}>
                                 <label className="form-label" htmlFor="motivo">Motivo / Descripción <span className="text-error">*</span></label>

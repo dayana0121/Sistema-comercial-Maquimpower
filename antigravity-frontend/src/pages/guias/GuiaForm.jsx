@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { guiasApi } from '../../api/guias';
+import { ventasApi } from '../../api/ventas';
 import { useToast } from '../../hooks/useToast';
 import BuscadorDocumento from '../../components/ui/BuscadorDocumento';
+import Modal from '../../components/ui/Modal';
 
 const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
     const toast = useToast();
     const [activeTab, setActiveTab] = useState(1);
     const [loading, setLoading] = useState(false);
+    
+    // Estados para la importación
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [loadingVentas, setLoadingVentas] = useState(false);
+    const [ventasDisponibles, setVentasDisponibles] = useState([]);
+    const [ventasSeleccionadas, setVentasSeleccionadas] = useState([]);
 
     // Estado centralizado alineado con el payload del backend
     const [form, setForm] = useState({
@@ -33,7 +41,8 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
             descripcion: d.descripcion || '',
             cantidad: d.cantidad || 1,
             unidad_medida: d.unidad_medida || 'NIU'
-        }))
+        })),
+        observaciones: ''
     });
 
     const [itemActual, setItemActual] = useState({
@@ -61,6 +70,94 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
             ...prev,
             items: prev.items.filter((_, i) => i !== index)
         }));
+    };
+
+    // ==========================================
+    // LÓGICA DE IMPORTACIÓN MULTIPLE
+    // ==========================================
+    const abrirImportador = async () => {
+        setShowImportModal(true);
+        setLoadingVentas(true);
+        try {
+            const res = await ventasApi.listar({ limit: 50 }); // Últimas 50
+            if (res?.success) {
+                const arr = Array.isArray(res.data) ? res.data : (res.data?.ventas || []);
+                setVentasDisponibles(arr);
+            }
+        } catch (e) {
+            toast.error('Error al cargar ventas recientes');
+        } finally {
+            setLoadingVentas(false);
+        }
+    };
+
+    const toggleSeleccionVenta = (venta) => {
+        if (ventasSeleccionadas.find(v => v.id === venta.id)) {
+            setVentasSeleccionadas(ventasSeleccionadas.filter(v => v.id !== venta.id));
+        } else {
+            setVentasSeleccionadas([...ventasSeleccionadas, venta]);
+        }
+    };
+
+    const confirmarImportacion = async () => {
+        if (ventasSeleccionadas.length === 0) {
+            return toast.error('Debe seleccionar al menos una venta');
+        }
+
+        setLoading(true);
+        try {
+            let nuevosItems = [];
+            let documentosAsociados = [];
+
+            // Obtener detalles de cada venta seleccionada
+            for (const venta of ventasSeleccionadas) {
+                const res = await ventasApi.obtener(venta.id);
+                if (res?.success && res.data?.detalles) {
+                    const dets = res.data.detalles.map(d => ({
+                        codigo: d.codigo_producto || '000',
+                        descripcion: d.descripcion,
+                        cantidad: d.cantidad,
+                        unidad_medida: d.unidad_medida || 'NIU'
+                    }));
+                    nuevosItems = [...nuevosItems, ...dets];
+                    documentosAsociados.push(res.data.numero_completo);
+                }
+            }
+
+            // Consolidar ítems (agrupar por código/descripción) o simplemente appends
+            // Aquí hacemos append directo para no perder detalles si hay precios distintos
+            // Pero en Guía solo importa código, descripción y cantidad. Se agruparán si son exactos.
+            const agrupados = [];
+            nuevosItems.forEach(item => {
+                const existe = agrupados.find(a => a.descripcion === item.descripcion && a.codigo === item.codigo && a.unidad_medida === item.unidad_medida);
+                if (existe) {
+                    existe.cantidad += parseFloat(item.cantidad);
+                } else {
+                    agrupados.push({ ...item, cantidad: parseFloat(item.cantidad) });
+                }
+            });
+
+            // Usamos datos del cliente de la primera venta para auto-completar destinatorio
+            const primera = ventasSeleccionadas[0];
+            const nuevaObs = `Doc. Asociados: ${documentosAsociados.join(', ')}`;
+            
+            setForm(prev => ({
+                ...prev,
+                destinatario_ruc: primera.cliente_documento || prev.destinatario_ruc,
+                destinatario_nombre: primera.cliente_nombre || prev.destinatario_nombre,
+                items: [...prev.items, ...agrupados],
+                observaciones: prev.observaciones ? `${prev.observaciones}\n${nuevaObs}` : nuevaObs
+            }));
+
+            toast.success('Comprobantes importados y agrupados correctamente');
+            setShowImportModal(false);
+            setVentasSeleccionadas([]);
+            setActiveTab(3); // Saltar a la vista de bienes
+        } catch (e) {
+            toast.error('Error al importar detalles de las ventas');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -105,6 +202,15 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
                 {/* TAB 1: GENERAL */}
                 {activeTab === 1 && (
                     <div className="space-y-4">
+                        <div className="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100 mb-2">
+                            <div>
+                                <h3 className="text-sm font-bold text-blue-800">Importación Rápida</h3>
+                                <p className="text-xs text-blue-600">Puede seleccionar múltiples facturas/boletas para consolidarlas en esta guía de remisión.</p>
+                            </div>
+                            <button type="button" onClick={abrirImportador} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded shadow text-sm font-medium flex items-center gap-2">
+                                📥 Importar Comprobantes
+                            </button>
+                        </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Serie y Correlativo</label>
@@ -129,6 +235,10 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Fecha de Traslado</label>
                                 <input type="date" name="fecha_traslado" value={form.fecha_traslado} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-gray-700">Observaciones / Doc. Relacionados</label>
+                                <input type="text" name="observaciones" value={form.observaciones} onChange={handleChange} placeholder="Ej: Doc. Asociados: F001-00123" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
                             </div>
                         </div>
 
@@ -287,6 +397,54 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
                     </button>
                 )}
             </div>
+
+            {/* Modal de Importación Multiples Ventas */}
+            <Modal isOpen={showImportModal} onClose={() => setShowImportModal(false)} title="Importar Comprobantes de Venta">
+                <div className="p-4 w-[600px] max-w-full">
+                    <p className="text-sm text-gray-600 mb-4">Seleccione una o más ventas para consolidar sus productos en esta guía de remisión.</p>
+                    
+                    <div className="h-64 overflow-y-auto border rounded-lg bg-gray-50 p-2 space-y-2">
+                        {loadingVentas ? (
+                            <div className="text-center py-4 text-gray-500">Cargando comprobantes...</div>
+                        ) : ventasDisponibles.length === 0 ? (
+                            <div className="text-center py-4 text-gray-500">No hay comprobantes recientes pendientes.</div>
+                        ) : (
+                            ventasDisponibles.map(v => {
+                                const isSelected = ventasSeleccionadas.find(sel => sel.id === v.id);
+                                return (
+                                    <label key={v.id} className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-100 border-gray-200'}`}>
+                                        <input 
+                                            type="checkbox" 
+                                            className="w-5 h-5 text-blue-600 rounded border-gray-300"
+                                            checked={!!isSelected}
+                                            onChange={() => toggleSeleccionVenta(v)}
+                                        />
+                                        <div className="ml-3 flex-1">
+                                            <div className="font-bold text-gray-800">{v.numero_completo} <span className="text-xs font-normal text-gray-500 bg-gray-200 px-1.5 rounded">{v.fecha_emision}</span></div>
+                                            <div className="text-sm text-gray-600 truncate">{v.cliente_nombre}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="font-bold text-blue-800">S/ {parseFloat(v.importe_total).toFixed(2)}</span>
+                                        </div>
+                                    </label>
+                                );
+                            })
+                        )}
+                    </div>
+
+                    <div className="mt-4 flex justify-between items-center pt-3 border-t">
+                        <span className="text-sm font-medium text-gray-600">
+                            Seleccionados: <span className="font-bold text-blue-600">{ventasSeleccionadas.length}</span> comprobantes
+                        </span>
+                        <div className="flex gap-2">
+                            <button type="button" onClick={() => setShowImportModal(false)} className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">Cancelar</button>
+                            <button type="button" onClick={confirmarImportacion} disabled={loading || ventasSeleccionadas.length === 0} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+                                {loading ? 'Importando...' : 'Confirmar Importación'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Modal>
         </form>
     );
 };

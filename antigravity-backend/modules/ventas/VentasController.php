@@ -46,6 +46,15 @@ class VentasController
             elseif ($method === 'GET' && !empty($paramId) && $action === 'pdf') {
                 require_once __DIR__ . '/VentaPdfController.php';
                 (new VentaPdfController())->generar($paramId);
+            }
+            elseif ($method === 'GET' && !empty($paramId) && $action === 'ticket') {
+                require_once __DIR__ . '/VentaPdfController.php';
+                $_GET['formato'] = 'ticket'; // forzar formato ticket
+                (new VentaPdfController())->generar($paramId);
+            }
+            elseif ($method === 'GET' && !empty($paramId) && $action === 'guia_envio') {
+                require_once __DIR__ . '/VentaPdfController.php';
+                (new VentaPdfController())->generarGuiaEnvio($paramId);
             } else
                 $this->sendResponse(false, "Ruta no permitida.", null, 405);
         } catch (Exception $e) {
@@ -85,15 +94,19 @@ class VentasController
                 ? round($importe_total * ($detraccion_porcentaje / 100), 2)
                 : 0;
 
-            $stmtVenta = $this->pdo->prepare("INSERT INTO ventas (id, cliente_id, usuario_id, vendedor_id, tipo_comprobante, serie, correlativo, numero_completo, fecha_emision, moneda, op_gravada, op_exonerada, op_inafecta, op_gratuita, igv, importe_total, metodo_pago, estado_sunat, detraccion_codigo, detraccion_porcentaje, detraccion_monto, detraccion_cuenta, detraccion_medio_pago) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', ?, ?, ?, ?, ?)");
+            $fecha_actual = date('Y-m-d');
+
+            $stmtVenta = $this->pdo->prepare("INSERT INTO ventas (id, cliente_id, usuario_id, vendedor_id, canal_venta, tipo_comprobante, serie, correlativo, numero_completo, fecha_emision, moneda, op_gravada, op_exonerada, op_inafecta, op_gratuita, igv, importe_total, metodo_pago, estado_sunat, observacion, detraccion_codigo, detraccion_porcentaje, detraccion_monto, detraccion_cuenta, detraccion_medio_pago) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', ?, ?, ?, ?, ?, ?)");
             $stmtVenta->execute([
                 $body['cliente_id'],
                 $usuario['user_id'],
                 $body['vendedor_id'] ?? null,
+                $body['canal_venta'] ?? 'tienda',
                 $body['tipo_comprobante'],
                 $serie,
                 $correlativo,
                 $num_completo,
+                $fecha_actual,
                 $body['moneda'] ?? 'PEN',
                 $op_gravada,
                 $op_exonerada,
@@ -102,6 +115,7 @@ class VentasController
                 $igv_total,
                 $importe_total,
                 $body['metodo_pago'] ?? 'EFECTIVO',
+                $body['observacion'] ?? null,
                 $body['detraccion_codigo'] ?? null,
                 $detraccion_porcentaje,
                 $detraccion_monto,
@@ -190,6 +204,7 @@ class VentasController
                         v.moneda,
                         v.condicion_pago,
                         v.metodo_pago,
+                        v.canal_venta,
                         c.razon_social as cliente_nombre,
                         c.numero_documento as cliente_documento,
                         c.telefono as cliente_telefono

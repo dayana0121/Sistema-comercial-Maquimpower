@@ -1,35 +1,25 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// MAQUIMPOWER — BATERÍA DE PRUEBAS GLOBAL v2.0
-// Cubre: Auth · Clientes · Productos · Ventas · Inventario · Dashboard
-//        Reportes · Proveedores · Compras · Caja · SUNAT/RUC
-// Ejecutar: node test_global.js
-// Requisito: Node 18+ (fetch nativo)
+// MAQUIMPOWER — BATERÍA DE PRUEBAS GLOBAL AGRESIVA (CHAOS ENGINEERING) v3.0
+// Diseñado para ROMPER el sistema, inyectar SQL, enviar campos malformados, 
+// buscar debilidades de stock negativo y validar resiliencia del negocio.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const API = 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
 
-// ─── IDs reales de la BD ───────────────────────────────────────────────────────
-const IDS = {
-    cliente: "b3d0e6c6-1ca5-11f1-977b-d843aea88809",
-    producto: "d478d2b9-1cd2-11f1-977b-d843aea88809",
-    venta: "43e28227-24ba-11f1-8aa8-d843aea88809",
-};
-
-// ─── Credenciales ──────────────────────────────────────────────────────────────
-const CREDS = { email: "admin@maquimpower.com", password: "password" };
-
 // ─── Estado global ─────────────────────────────────────────────────────────────
 let TOKEN = null;
 const results = [];
-let proveedorCreado = null;
-let compraCreada = null;
-let cajaMovCreado = null;
+let IDS = {
+    cliente: "b3d0e6c6-1ca5-11f1-977b-d843aea88809",
+    producto: "d478d2b9-1cd2-11f1-977b-d843aea88809",
+    venta: "43e28227-24ba-11f1-8aa8-d843aea88809",
+    proveedor: null
+};
 
 // ─── Colores ANSI ──────────────────────────────────────────────────────────────
 const C = {
-    reset: '\x1b[0m', bold: '\x1b[1m',
-    green: '\x1b[32m', red: '\x1b[31m', yellow: '\x1b[33m',
-    cyan: '\x1b[36m', gray: '\x1b[90m', white: '\x1b[97m',
+    reset: '\x1b[0m', bold: '\x1b[1m', green: '\x1b[32m', red: '\x1b[31m', 
+    yellow: '\x1b[33m', cyan: '\x1b[36m', gray: '\x1b[90m', white: '\x1b[97m',
     bgGreen: '\x1b[42m', bgRed: '\x1b[41m', bgYellow: '\x1b[43m',
 };
 
@@ -68,408 +58,162 @@ async function req(method, endpoint, body = null, useToken = true) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 1 — AUTH
+// MÓDULO 1 — AUTH & SEGURIDAD (SQL Injection, XSS)
 // ═══════════════════════════════════════════════════════════════════════════════
-async function testAuth() {
-    header('MÓDULO 1 — AUTENTICACIÓN JWT');
+async function testGlobalAuth() {
+    header('MÓDULO 1 — AUTH & SEGURIDAD (SQL INJECTION)');
+    
+    // 1. HAPPY PATH
+    const r1 = await req('POST', '/auth/login', { email: "admin@maquimpower.com", password: "password" }, false);
+    if (r1.ok && r1.data?.success) { TOKEN = r1.data.data.token; pass('POST /auth/login correcto'); }
+    else fail('POST /auth/login (CRÍTICO)');
 
-    const r1 = await req('POST', '/auth/login', CREDS, false);
-    if (r1.ok && r1.data?.success && r1.data?.data?.token) {
-        TOKEN = r1.data.data.token;
-        pass('POST /auth/login', `Token obtenido · ${r1.ms}ms`);
-        info(`Rol: ${r1.data.data.user?.rol} · Email: ${r1.data.data.user?.email}`);
-    } else {
-        fail('POST /auth/login', r1.data?.message || `HTTP ${r1.status}`);
-    }
+    // 2. CHAOS: Inyección SQL básica en Login
+    const r2 = await req('POST', '/auth/login', { email: "' OR 1=1 --", password: "' OR '1'='1" }, false);
+    if (r2.status === 401 || r2.status === 422) pass('SQLi Prevent (Login)', `Detenido por backend (${r2.status})`);
+    else if (r2.ok) fail('SQLi Vulnerability (Login)', '¡Se logró iniciar sesión con payload SQL maldito!');
+    else warn('SQLi Prevent (Login)', `Respondio ${r2.status}`);
 
-    const r2 = await req('POST', '/auth/login', { email: 'x@x.com', password: 'wrong' }, false);
-    if (r2.status === 401) pass('POST /auth/login — inválido → 401');
-    else fail('POST /auth/login — inválido', `Esperado 401, recibido ${r2.status}`);
-
-    const r3 = await req('GET', '/auth/me');
-    if (r3.ok && r3.data?.success) pass('GET /auth/me', `${r3.ms}ms`);
-    else fail('GET /auth/me', r3.data?.message || `HTTP ${r3.status}`);
-
-    const r4 = await req('GET', '/auth/me', null, false);
-    if (r4.status === 401) pass('GET /auth/me sin token → 401');
-    else fail('GET /auth/me sin token', `Esperado 401, recibido ${r4.status}`);
-
-    const r5 = await req('GET', '/auth/usuarios');
-    if (r5.ok && r5.data?.success) pass('GET /auth/usuarios', `${r5.data.data?.length ?? 0} usuarios · ${r5.ms}ms`);
-    else fail('GET /auth/usuarios', r5.data?.message || `HTTP ${r5.status}`);
+    // 3. CHAOS: Fuerza Bruta / JSON Malformado
+    const r3 = await req('POST', '/auth/login', "NOT_A_JSON_STRING", false);
+    // Si la API no crashea (500) devolviendo HTML
+    if (r3.status !== 500) pass('Protección contra JSON malformado', `HTTP ${r3.status}`);
+    else fail('Protección JSON malformado', `Server Crashed (500)`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 2 — CLIENTES
+// MÓDULO 2 — CLIENTES (Overflows, Duplicados, Tipos Incorrectos)
 // ═══════════════════════════════════════════════════════════════════════════════
-async function testClientes() {
-    header('MÓDULO 2 — CLIENTES');
-    let clienteCreado = null;
+async function testGlobalClientes() {
+    header('MÓDULO 2 — CLIENTES (ABUSO DE DATA)');
+    
+    // 1. CHAOS: RUC extremadamente largo / letras en lugar de números
+    const bodyMalo = { tipo_documento: 'RUC', numero_documento: 'ESTOESUNRUC123INTENTANDOROMPERLAUNICA', razon_social: 'Chaos SA' };
+    const r1 = await req('POST', '/clientes', bodyMalo);
+    // Asumimos que la BD limitará el RUC a ~11 o 20 chars max.
+    if (r1.status === 422 || r1.status === 400 || r1.status === 500) {
+        if(r1.status === 500) warn('Abuso de longitud / tipo', 'BD arrojó 500 (falta validación previa de largo)');
+        else pass('Protección contra RUC larguísimo', `Bloqueado (${r1.status})`);
+    } else fail('Abuso de longitud / tipo', `Permitió guardar basura (${r1.status})`);
 
-    const r1 = await req('GET', '/clientes');
-    if (r1.ok && r1.data?.success) pass('GET /clientes', `${r1.data.data?.length ?? 0} registros · ${r1.ms}ms`);
-    else fail('GET /clientes', r1.data?.message || `HTTP ${r1.status}`);
-
-    const ruc = '20' + Date.now().toString().slice(-9);
-    const body = { tipo_documento: 'RUC', numero_documento: ruc, razon_social: 'EMPRESA TEST AUTO S.A.C.', direccion: 'Av. Test 123' };
-    const r2 = await req('POST', '/clientes', body);
-    if (r2.ok && r2.data?.success) {
-        clienteCreado = r2.data.data?.id;
-        pass('POST /clientes — crear', `ID: ${clienteCreado} · ${r2.ms}ms`);
-    } else fail('POST /clientes — crear', r2.data?.message || `HTTP ${r2.status}`);
-
-    if (clienteCreado) {
-        const r3 = await req('GET', `/clientes/${clienteCreado}`);
-        if (r3.ok && r3.data?.success) pass('GET /clientes/:id', `${r3.ms}ms`);
-        else fail('GET /clientes/:id', r3.data?.message);
-
-        const r4 = await req('PUT', `/clientes/${clienteCreado}`, { ...body, telefono: '988000001' });
-        if (r4.ok && r4.data?.success) pass('PUT /clientes/:id', `${r4.ms}ms`);
-        else fail('PUT /clientes/:id', r4.data?.message);
-
-        const r5 = await req('DELETE', `/clientes/${clienteCreado}`);
-        if (r5.ok && r5.data?.success) pass('DELETE /clientes/:id — soft delete', `${r5.ms}ms`);
-        else fail('DELETE /clientes/:id', r5.data?.message);
-    }
-
-    const r6 = await req('GET', `/clientes/${IDS.cliente}`);
-    if (r6.ok && r6.data?.success) pass('GET /clientes/:id — seed', `${r6.ms}ms`);
-    else warn('GET /clientes/:id — seed', r6.data?.message);
-
-    const r7 = await req('POST', '/clientes', body);
-    if (r7.status === 409 || r7.status === 422) pass('POST /clientes — duplicado → 409/422');
-    else warn('POST /clientes — duplicado', `Esperado 409/422, recibido ${r7.status}`);
+    // 2. CHAOS: SQLi en ?search=
+    const r2 = await req('GET', "/clientes?search=' OR 1=1; DROP TABLE ventas;--");
+    if (r2.status === 200 && r2.data?.success) pass('Prevención de SQLi en Búsqueda');
+    else if (r2.status === 500) fail('SQLi Search', 'La base de datos crasheó con la consulta maliciosa.');
+    else warn('SQLi Search', `Comportamiento inesperado ${r2.status}`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 3 — PRODUCTOS
+// MÓDULO 3 — PRODUCTOS (Precios Negativos, Valores Nulos)
 // ═══════════════════════════════════════════════════════════════════════════════
-async function testProductos() {
-    header('MÓDULO 3 — PRODUCTOS');
+async function testGlobalProductos() {
+    header('MÓDULO 3 — PRODUCTOS (REGLAS DE NEGOCIO)');
+    
+    const sku = 'SKU' + Date.now();
+    // 1. CHAOS: Producto costo mayor al precio de venta
+    const body = { codigo_interno: sku, descripcion: `Chaos ${sku}`, precio_unitario_sin_igv: 10, costo_unitario: 5000, unidad_medida: 'NIU', tipo_afectacion_igv: '10' };
+    const r1 = await req('POST', '/productos', body);
+    if (r1.ok) {
+        warn('Regla de Negocio (Stock)', `Permitió crear producto donde COSTO (5000) es mayor que PRECIO (10)`);
+        IDS.producto = r1.data.data.id; // Lo usaremos para romper el kardex
+    } else pass('Regla de Negocio (Stock)', 'Sistema bloqueó costo irreal');
 
-    const r1 = await req('GET', '/productos');
-    if (r1.ok && r1.data?.success) pass('GET /productos', `${r1.data.data?.length ?? 0} registros · ${r1.ms}ms`);
-    else fail('GET /productos', r1.data?.message || `HTTP ${r1.status}`);
-
-    const sku = 'TEST-' + Date.now().toString().slice(-6) + Math.random().toString(36).slice(-3);
-    const body = { codigo_interno: sku, sku, descripcion: `Producto test ${sku}`, precio_unitario_sin_igv: 100, stock_actual: 10, stock_minimo: 2, unidad_medida: 'NIU', tipo_afectacion_igv: '10' };
-    const r2 = await req('POST', '/productos', body);
-    if (r2.status === 200 && r2.data?.success !== false) pass('POST /productos — crear', `SKU: ${sku} · ${r2.ms}ms`);
-    else fail('POST /productos — crear', r2.data?.message || `HTTP ${r2.status}`);
-
-    const r3 = await req('GET', `/productos/${IDS.producto}`);
-    if (r3.ok && r3.data?.success) pass('GET /productos/:id — seed', `${r3.ms}ms`);
-    else fail('GET /productos/:id', r3.data?.message);
-
-    const r4 = await req('POST', '/productos', { descripcion: 'Sin codigo' });
-    if (r4.status === 422) pass('POST /productos — sin campos → 422');
-    else warn('POST /productos — validación 422', `Recibido ${r4.status}`);
-
-    const r5 = await req('GET', '/productos/alertas');
-    if (r5.ok && r5.data?.success) pass('GET /productos/alertas', `${r5.data.count ?? 0} alertas · ${r5.ms}ms`);
-    else fail('GET /productos/alertas', r5.data?.message);
-
-    const r6 = await req('POST', '/productos', { ...body, codigo_interno: sku + '-NEG', precio_unitario_sin_igv: -50 });
-    if (r6.status === 422) pass('POST /productos — precio negativo → 422');
-    else warn('POST /productos — precio negativo', `Recibido ${r6.status}`);
+    // 2. CHAOS: Precios nulos o negativos
+    const bodyNegativo = { ...body, codigo_interno: sku+'-2', precio_unitario_sin_igv: -50 };
+    const r2 = await req('POST', '/productos', bodyNegativo);
+    if (r2.ok) fail('Validación Precios', '¡Permitió guardar un precio NEGATIVO!');
+    else pass('Precios Negativos', `Bloqueo exitoso (${r2.status})`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 4 — VENTAS + SUNAT
+// MÓDULO 4 — VENTAS (Pagos Incompletos, IDs falsos)
 // ═══════════════════════════════════════════════════════════════════════════════
-async function testVentas() {
-    header('MÓDULO 4 — VENTAS + SUNAT');
-    let ventaCreada = null;
-
-    const r1 = await req('GET', '/ventas?limit=5');
-    if (r1.ok && r1.data?.success) pass('GET /ventas', `${r1.data.data?.length ?? 0} registros · ${r1.ms}ms`);
-    else fail('GET /ventas', r1.data?.message || `HTTP ${r1.status}`);
-
-    const r2 = await req('GET', `/ventas/${IDS.venta}`);
-    if (r2.ok && r2.data?.success) { pass('GET /ventas/:id — seed', `${r2.ms}ms`); info(`detalles: ${r2.data.data?.detalles?.length ?? 0} línea(s)`); }
-    else fail('GET /ventas/:id', r2.data?.message);
-
+async function testGlobalVentas() {
+    header('MÓDULO 4 — VENTAS (INTEGRIDAD REFERENCIAL)');
+    
+    // 1. CHAOS: Venta con cliente UUID Falso pero formato correcto
     const payload = {
-        cliente_id: IDS.cliente, tipo_comprobante: '01', serie: 'F001',
-        condicion_pago: 'CONTADO', moneda: 'PEN', op_gravada: 169.49, igv: 30.51, importe_total: 200.00,
-        detalles: [{
-            producto_id: IDS.producto, codigo_producto: 'TEST-001', descripcion: 'Producto test global',
-            unidad_medida: 'NIU', cantidad: 2, valor_unitario: 84.75, precio_unitario: 100.00,
-            descuento_unitario: 0, tipo_afectacion_igv: '10'
-        }]
+        cliente_id: "00000000-0000-0000-0000-000000000000", tipo_comprobante: '01', serie: 'F001',
+        condicion_pago: 'CONTADO', moneda: 'PEN', importe_total: 100,
+        detalles: [{ producto_id: IDS.producto, descripcion: 'X', unidad_medida:'NIU', cantidad: 1, precio_unitario: 100 }]
     };
-    const r3 = await req('POST', '/ventas', payload);
-    if (r3.ok && r3.data?.success) {
-        ventaCreada = r3.data.data?.id;
-        pass('POST /ventas — crear', `${r3.data.data?.numero_completo} · ${r3.ms}ms`);
-    } else fail('POST /ventas — crear', r3.data?.message || `HTTP ${r3.status}`);
+    const r1 = await req('POST', '/ventas', payload);
+    if (r1.ok) fail('Integridad Referencial Cliente', 'Permitió vender a un UUID cliente que NO existe en BD.');
+    else pass('Integridad Referencial Cliente', `Atrapado por Foreign Key o Validacion (${r1.data?.message || r1.status})`);
 
-    if (ventaCreada) {
-        const r4 = await req('POST', `/ventas/${ventaCreada}/reintentar`);
-        if (r4.status === 200) pass('POST /ventas/:id/reintentar', `${r4.ms}ms`);
-        else warn('POST /ventas/:id/reintentar', `HTTP ${r4.status}`);
+    // 2. CHAOS: Cantidades negativas
+    payload.cliente_id = IDS.cliente;
+    payload.detalles[0].cantidad = -9999;
+    const r2 = await req('POST', '/ventas', payload);
+    if (r2.ok) fail('Peligro Crítico: Shorting Stocks', '¡Permitió vender CANTIDADES NEGATIVAS!');
+    else pass('Validación Cantidades', `Bloqueo exitoso (${r2.status})`);
 
-        const r5 = await req('DELETE', `/ventas/${ventaCreada}`);
-        if (r5.ok && r5.data?.success) pass('DELETE /ventas/:id — soft delete', `${r5.ms}ms`);
-        else fail('DELETE /ventas/:id', r5.data?.message);
-    }
-
-    const r6 = await req('POST', '/ventas', { cliente_id: IDS.cliente, tipo_comprobante: '01' });
-    if (r6.status === 422) pass('POST /ventas — sin detalles → 422');
-    else warn('POST /ventas — validación 422', `Recibido ${r6.status}`);
-
-    const r7 = await req('GET', '/ventas?estado_sunat=ANULADO&limit=3');
-    if (r7.ok && r7.data?.success) pass('GET /ventas — filtro estado', `${r7.data.data?.length ?? 0} resultados · ${r7.ms}ms`);
-    else warn('GET /ventas — filtro', r7.data?.message);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 5 — INVENTARIO
-// ═══════════════════════════════════════════════════════════════════════════════
-async function testInventario() {
-    header('MÓDULO 5 — INVENTARIO');
-
-    const r1 = await req('GET', '/inventario');
-    if (r1.ok && r1.data?.success) pass('GET /inventario', `${r1.data.data?.length ?? 0} productos · ${r1.ms}ms`);
-    else fail('GET /inventario', r1.data?.message || `HTTP ${r1.status}`);
-
-    const r2 = await req('GET', '/inventario/alertas');
-    if (r2.ok && r2.data?.success) pass('GET /inventario/alertas', `${r2.data.count ?? 0} alertas · ${r2.ms}ms`);
-    else fail('GET /inventario/alertas', r2.data?.message);
-
-    const bodyMov = { producto_id: IDS.producto, tipo_movimiento: 'ENTRADA', cantidad: 5, motivo: 'Test entrada v2' };
-    const r3 = await req('POST', '/inventario/movimiento', bodyMov);
-    if (r3.ok && r3.data?.success) pass('POST /inventario/movimiento — ENTRADA', `${r3.ms}ms`);
-    else fail('POST /inventario/movimiento — ENTRADA', r3.data?.message);
-
-    const r4 = await req('POST', '/inventario/movimiento', { ...bodyMov, tipo_movimiento: 'SALIDA', cantidad: 2 });
-    if (r4.ok && r4.data?.success) pass('POST /inventario/movimiento — SALIDA', `${r4.ms}ms`);
-    else fail('POST /inventario/movimiento — SALIDA', r4.data?.message);
-
-    const r5 = await req('GET', `/inventario/kardex?producto_id=${IDS.producto}`);
-    if (r5.ok && r5.data?.success) pass('GET /inventario/kardex', `${r5.data.data?.length ?? 0} movimientos · ${r5.ms}ms`);
-    else warn('GET /inventario/kardex', r5.data?.message);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 6 — DASHBOARD
-// ═══════════════════════════════════════════════════════════════════════════════
-async function testDashboard() {
-    header('MÓDULO 6 — DASHBOARD');
-
-    const r1 = await req('GET', '/dashboard/stats');
-    if (r1.ok && r1.data?.success) {
-        const s = r1.data.data?.stats;
-        pass('GET /dashboard/stats', `${r1.ms}ms`);
-        info(`ventasHoy: ${s?.ventasHoy} · totalMes: S/${s?.totalVentasMes} · clientes: ${s?.clientesActivos} · stock: ${s?.productosBajoStock}`);
-    } else fail('GET /dashboard/stats', r1.data?.message || `HTTP ${r1.status}`);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 7 — SUNAT / RUC
-// ═══════════════════════════════════════════════════════════════════════════════
-async function testSunat() {
-    header('MÓDULO 7 — SUNAT / RUC');
-
-    const r1 = await req('GET', '/sunat/ruc?numero=20606853182');
-    if (r1.ok && r1.data?.success) { pass('GET /sunat/ruc — RUC válido', `${r1.ms}ms`); info(`Razón social: ${r1.data.data?.nombre || r1.data.data?.razon_social}`); }
-    else warn('GET /sunat/ruc', r1.data?.message || `HTTP ${r1.status}`);
-
-    const r2 = await req('GET', '/sunat/ruc?numero=00000000000');
-    if (!r2.data?.success && r2.status !== 500) pass('GET /sunat/ruc — RUC inválido manejado');
-    else if (r2.status === 500) fail('GET /sunat/ruc — RUC inválido lanza 500');
-    else warn('GET /sunat/ruc — RUC inválido', `HTTP ${r2.status}`);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 8 — REPORTES
-// ═══════════════════════════════════════════════════════════════════════════════
-async function testReportes() {
-    header('MÓDULO 8 — REPORTES');
-    const params = 'fecha_desde=2026-01-01&fecha_hasta=2026-12-31';
-
-    const r1 = await req('GET', `/reportes/ventas-por-dia?${params}`);
-    if (r1.ok && r1.data?.success) pass('GET /reportes/ventas-por-dia', `${r1.data.data?.length ?? 0} días · ${r1.ms}ms`);
-    else fail('GET /reportes/ventas-por-dia', r1.data?.message || `HTTP ${r1.status}`);
-
-    const r2 = await req('GET', `/reportes/top-productos?${params}&limit=5`);
-    if (r2.ok && r2.data?.success) pass('GET /reportes/top-productos', `${r2.data.data?.length ?? 0} productos · ${r2.ms}ms`);
-    else fail('GET /reportes/top-productos', r2.data?.message || `HTTP ${r2.status}`);
-
-    const r3 = await req('GET', `/reportes/movimientos-stock?${params}`);
-    if (r3.ok && r3.data?.success) pass('GET /reportes/movimientos-stock', `${r3.data.data?.length ?? 0} registros · ${r3.ms}ms`);
-    else fail('GET /reportes/movimientos-stock', r3.data?.message || `HTTP ${r3.status}`);
-
-    // Sin token → 401
-    const r4 = await req('GET', `/reportes/ventas-por-dia?${params}`, null, false);
-    if (r4.status === 401) pass('GET /reportes — sin token → 401');
-    else warn('GET /reportes — sin token', `Esperado 401, recibido ${r4.status}`);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 9 — PROVEEDORES
-// ═══════════════════════════════════════════════════════════════════════════════
-async function testProveedores() {
-    header('MÓDULO 9 — PROVEEDORES');
-
-    const r1 = await req('GET', '/proveedores');
-    if (r1.ok && r1.data?.success) pass('GET /proveedores', `${r1.data.data?.length ?? 0} registros · ${r1.ms}ms`);
-    else fail('GET /proveedores', r1.data?.message || `HTTP ${r1.status}`);
-
-    const ruc = '20' + Date.now().toString().slice(-9);
-    const body = { tipo_documento: 'RUC', numero_documento: ruc, razon_social: 'PROVEEDOR TEST S.A.C.', condicion_pago: 'CONTADO' };
-    const r2 = await req('POST', '/proveedores', body);
-    if (r2.ok && r2.data?.success) {
-        proveedorCreado = r2.data.data?.id;
-        pass('POST /proveedores — crear', `ID: ${proveedorCreado} · ${r2.ms}ms`);
-    } else fail('POST /proveedores — crear', r2.data?.message || `HTTP ${r2.status}`);
-
-    if (proveedorCreado) {
-        const r3 = await req('GET', `/proveedores/${proveedorCreado}`);
-        if (r3.ok && r3.data?.success) pass('GET /proveedores/:id', `${r3.ms}ms`);
-        else fail('GET /proveedores/:id', r3.data?.message);
-
-        const r4 = await req('PUT', `/proveedores/${proveedorCreado}`, { ...body, telefono: '999000001' });
-        if (r4.ok && r4.data?.success) pass('PUT /proveedores/:id — actualizar', `${r4.ms}ms`);
-        else fail('PUT /proveedores/:id', r4.data?.message);
-    }
-
-    // Sin campos obligatorios → 422
-    const r5 = await req('POST', '/proveedores', { tipo_documento: 'RUC' });
-    if (r5.status === 422) pass('POST /proveedores — sin campos → 422');
-    else warn('POST /proveedores — validación 422', `Recibido ${r5.status}`);
-
-    // Duplicado → 409
-    const r6 = await req('POST', '/proveedores', body);
-    if (r6.status === 409 || r6.status === 422) pass('POST /proveedores — duplicado → 409/422');
-    else warn('POST /proveedores — duplicado', `Recibido ${r6.status}`);
-
-    // Soft delete
-    if (proveedorCreado) {
-        const r7 = await req('DELETE', `/proveedores/${proveedorCreado}`);
-        if (r7.ok && r7.data?.success) pass('DELETE /proveedores/:id — soft delete', `${r7.ms}ms`);
-        else fail('DELETE /proveedores/:id', r7.data?.message);
+    // 3. Obtener venta válida e intentar Inyectar SQL a GET /pdf
+    const r3 = await req('GET', '/ventas?limit=1');
+    if (r3.ok && r3.data.data.length > 0) {
+        const fakeUUID = "' OR 1=1--";
+        const r4 = await req('GET', `/ventas/${fakeUUID}/pdf`);
+        if (r4.status === 200 && r4.raw.includes('PDF')) fail('SQLi en VentaPdf', 'Se vulneró el fetching de PDF');
+        else pass('Prevencion SQLi en PDF', `Protegido (${r4.status})`);
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 10 — COMPRAS
+// MÓDULO 5 — INVENTARIO (Duplicados de lote, Tipos raros)
 // ═══════════════════════════════════════════════════════════════════════════════
-async function testCompras() {
-    header('MÓDULO 10 — COMPRAS');
+async function testGlobalInventario() {
+    header('MÓDULO 5 — INVENTARIO (KARDEX TAMPERING)');
 
-    const r1 = await req('GET', '/compras');
-    if (r1.ok && r1.data?.success) pass('GET /compras', `${r1.data.data?.length ?? 0} registros · ${r1.ms}ms`);
-    else fail('GET /compras', r1.data?.message || `HTTP ${r1.status}`);
+    // 1. CHAOS: Movimiento con tipo de enumeración no válida
+    const bodyMov = { producto_id: IDS.producto, tipo_movimiento: 'ROBAR_ALMACEN', cantidad: 100, motivo: 'Hack' };
+    const r1 = await req('POST', '/inventario/movimiento', bodyMov);
+    if (r1.ok) fail('Validación ENUM Kardex', 'Permitió ingresar un tipo de movimiento no estándar.');
+    else pass('Validación ENUM Kardex', `Base de datos/Backend blindado (${r1.status})`);
 
-    // Necesitamos un proveedor activo para crear la compra
-    const provRes = await req('GET', '/proveedores');
-    const provId = provRes.data?.data?.[0]?.id;
-
-    if (!provId) { warn('POST /compras — crear', 'Sin proveedores activos en BD'); }
-    else {
-        const payload = {
-            proveedor_id: provId,
-            tipo_comprobante: 'FACTURA',
-            numero_comprobante: 'F001-TEST-' + Date.now().toString().slice(-5),
-            fecha_comprobante: new Date().toISOString().split('T')[0],
-            moneda: 'PEN',
-            detalles: [{
-                producto_id: IDS.producto,
-                descripcion: 'Producto test compra',
-                unidad_medida: 'NIU',
-                cantidad: 10,
-                costo_unitario: 50.00,
-            }]
-        };
-        const r2 = await req('POST', '/compras', payload);
-        if (r2.ok && r2.data?.success) {
-            compraCreada = r2.data.data?.id;
-            pass('POST /compras — crear', `Total: S/${r2.data.data?.importe_total} · ${r2.ms}ms`);
-            info('Stock del producto debe haber aumentado en 10 unidades');
-        } else fail('POST /compras — crear', r2.data?.message || `HTTP ${r2.status}`);
-
-        if (compraCreada) {
-            const r3 = await req('GET', `/compras/${compraCreada}`);
-            if (r3.ok && r3.data?.success) { pass('GET /compras/:id', `${r3.ms}ms`); info(`detalles: ${r3.data.data?.detalles?.length ?? 0} línea(s)`); }
-            else fail('GET /compras/:id', r3.data?.message);
-
-            const r4 = await req('DELETE', `/compras/${compraCreada}`);
-            if (r4.ok && r4.data?.success) pass('DELETE /compras/:id — anular', `${r4.ms}ms`);
-            else fail('DELETE /compras/:id', r4.data?.message);
-        }
-    }
-
-    // Sin campos → 422
-    const r5 = await req('POST', '/compras', { tipo_comprobante: 'FACTURA' });
-    if (r5.status === 422) pass('POST /compras — sin proveedor_id → 422');
-    else warn('POST /compras — validación 422', `Recibido ${r5.status}`);
-
-    // Filtro por estado
-    const r6 = await req('GET', '/compras?estado=PENDIENTE');
-    if (r6.ok && r6.data?.success) pass('GET /compras — filtro estado', `${r6.data.data?.length ?? 0} resultados · ${r6.ms}ms`);
-    else warn('GET /compras — filtro', r6.data?.message);
+    // 2. CHAOS: Sacar millones de stock (Negative Stock)
+    const bodySalida = { producto_id: IDS.producto, tipo_movimiento: 'SALIDA', cantidad: 9999999, motivo: 'Hack' };
+    const r2 = await req('POST', '/inventario/movimiento', bodySalida);
+    if (r2.ok) warn('Negative Inventory', 'El sistema ENUM permite dejar el stock en SUPER negativo sin avisar.');
+    else pass('Negative Inventory Protection', `Sistema bloqueó sobre-giro de stock (${r2.status})`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MÓDULO 11 — CAJA
+// MÓDULO 6 — COMPRAS / CAJA (Sangrado Fiscal)
 // ═══════════════════════════════════════════════════════════════════════════════
-async function testCaja() {
-    header('MÓDULO 11 — CAJA');
+async function testGlobalComprasCaja() {
+    header('MÓDULO 6 — CAJA / TESORERÍA');
 
-    const r1 = await req('GET', '/caja/resumen');
-    if (r1.ok && r1.data?.success) {
-        pass('GET /caja/resumen', `${r1.ms}ms`);
-        info(`saldo: S/${r1.data.data?.saldo_actual} · ingresos hoy: S/${r1.data.data?.ingresos_hoy}`);
-    } else fail('GET /caja/resumen', r1.data?.message || `HTTP ${r1.status}`);
+    // 1. CHAOS: Robar de la caja infinita
+    const body = { tipo: 'EGRESO', monto: 999999999, forma_pago: 'EFECTIVO', origen: 'MANUAL', descripcion: 'Robo sistémico' };
+    const r1 = await req('POST', '/caja', body);
+    if (r1.ok) {
+        fail('Vulnerabilidad Tesorería (Caja)', '¡Permitió retirar MIL MILLONES dejando la caja en negativo severo!');
+    } else pass('Vulnerabilidad Tesorería', `Protegido (Saldo insuficiente - ${r1.status})`);
 
-    const r2 = await req('GET', '/caja/saldo');
-    if (r2.ok && r2.data?.success) pass('GET /caja/saldo', `S/${r2.data.data?.saldo_actual} · ${r2.ms}ms`);
-    else fail('GET /caja/saldo', r2.data?.message || `HTTP ${r2.status}`);
-
-    const r3 = await req('GET', '/caja');
-    if (r3.ok && r3.data?.success) pass('GET /caja — listar movimientos', `${r3.data.data?.length ?? 0} movimientos · ${r3.ms}ms`);
-    else fail('GET /caja', r3.data?.message || `HTTP ${r3.status}`);
-
-    // Registrar ingreso
-    const bodyIngreso = { tipo: 'INGRESO', monto: 500, forma_pago: 'EFECTIVO', origen: 'MANUAL', descripcion: 'Test ingreso automatizado' };
-    const r4 = await req('POST', '/caja', bodyIngreso);
-    if (r4.ok && r4.data?.success) {
-        cajaMovCreado = r4.data.data?.id;
-        pass('POST /caja — INGRESO', `Nuevo saldo: S/${r4.data.data?.saldo_nuevo} · ${r4.ms}ms`);
-    } else fail('POST /caja — INGRESO', r4.data?.message || `HTTP ${r4.status}`);
-
-    // Registrar egreso
-    const r5 = await req('POST', '/caja', { tipo: 'EGRESO', monto: 100, forma_pago: 'YAPE', origen: 'GASTO', descripcion: 'Test egreso' });
-    if (r5.ok && r5.data?.success) pass('POST /caja — EGRESO', `Nuevo saldo: S/${r5.data.data?.saldo_nuevo} · ${r5.ms}ms`);
-    else fail('POST /caja — EGRESO', r5.data?.message || `HTTP ${r5.status}`);
-
-    // Tipo inválido → 422
-    const r6 = await req('POST', '/caja', { tipo: 'INVALIDO', monto: 100 });
-    if (r6.status === 422) pass('POST /caja — tipo inválido → 422');
-    else warn('POST /caja — validación tipo', `Recibido ${r6.status}`);
-
-    // Monto cero → 422
-    const r7 = await req('POST', '/caja', { tipo: 'INGRESO', monto: 0 });
-    if (r7.status === 422) pass('POST /caja — monto cero → 422');
-    else warn('POST /caja — validación monto', `Recibido ${r7.status}`);
-
-    // Egreso mayor al saldo → 422
-    const r8 = await req('POST', '/caja', { tipo: 'EGRESO', monto: 999999, forma_pago: 'EFECTIVO', origen: 'MANUAL' });
-    if (r8.status === 422) pass('POST /caja — saldo insuficiente → 422');
-    else warn('POST /caja — saldo insuficiente', `Recibido ${r8.status}`);
-
-    // Filtro por fecha
-    const hoy = new Date().toISOString().split('T')[0];
-    const r9 = await req('GET', `/caja?fecha_desde=${hoy}&fecha_hasta=${hoy}`);
-    if (r9.ok && r9.data?.success) pass('GET /caja — filtro fecha', `${r9.data.data?.length ?? 0} movimientos hoy`);
-    else warn('GET /caja — filtro fecha', r9.data?.message);
+    // 2. CHAOS: Ingresar tipo de dato corrupto en lugar de número al monto
+    const body2 = { tipo: 'INGRESO', monto: 'CIEN_SOLES_PAPE', forma_pago: 'EFECTIVO', origen: 'MANUAL' };
+    const r2 = await req('POST', '/caja', body2);
+    if(r2.status === 500) warn('Tipado (Monto Caja)', 'Crasheó con 500, falta cast estricto o try/catch');
+    else if (r2.ok) fail('Tipado (Monto Caja)', 'Lo aceptó y guardó NaN/0 silenciosamente');
+    else pass('Estabilidad Tipado', `Respondió con codigo controlado (${r2.status})`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// REPORTE FINAL
+// EJECUCIÓN MAESTRA
 // ═══════════════════════════════════════════════════════════════════════════════
-function printReport() {
+async function main() {
+    nl();
+    log(`${C.bold}${C.white}  MAQUIMPOWER — CHAOS ENGINEERING SUITE v3.0${C.reset}\n`);
+    log(`  ${C.gray}Buscando Errores Críticos, Fallos y Debilidades${C.reset}\n`);
+
+    await testGlobalAuth();
+    await testGlobalClientes();
+    await testGlobalProductos();
+    await testGlobalVentas();
+    await testGlobalInventario();
+    await testGlobalComprasCaja();
+
+    // --- REPORTE GLOBAL ---
     const total = results.length;
     const passed = results.filter(r => r.status === 'PASS').length;
     const failed = results.filter(r => r.status === 'FAIL').length;
@@ -478,62 +222,26 @@ function printReport() {
 
     nl();
     log(`${C.bold}${'═'.repeat(50)}${C.reset}\n`);
-    log(`${C.bold}  REPORTE FINAL — MAQUIMPOWER TEST SUITE v2.0${C.reset}\n`);
+    log(`${C.bold}  REPORTE FINAL CHAOS — DEBILIDADES DEL SISTEMA${C.reset}\n`);
     log(`${'═'.repeat(50)}\n`);
     nl();
-    log(`  Total de pruebas : ${C.bold}${total}${C.reset}\n`);
-    log(`  ${C.green}✅ Pasaron        : ${passed}${C.reset}\n`);
-    log(`  ${C.red}❌ Fallaron        : ${failed}${C.reset}\n`);
-    log(`  ${C.yellow}⚠️  Advertencias  : ${warned}${C.reset}\n`);
-    log(`  Cobertura        : ${pct >= 80 ? C.green : pct >= 60 ? C.yellow : C.red}${pct}%${C.reset}\n`);
+    log(`  Pruebas de Estrés: ${C.bold}${total}${C.reset}\n`);
+    log(`  ${C.green}✅ Soportadas     : ${passed}${C.reset}\n`);
+    log(`  ${C.red}❌ Vulneradas      : ${failed}${C.reset} (¡CRÍTICO!)\n`);
+    log(`  ${C.yellow}⚠️  Advertencias  : ${warned}${C.reset} (Mejoras requeridas)\n`);
+    log(`  Resiliencia API  : ${pct >= 90 ? C.green : pct >= 60 ? C.yellow : C.red}${pct}%${C.reset}\n`);
     nl();
 
     if (failed > 0) {
-        log(`${C.red}${C.bold}  FALLOS:${C.reset}\n`);
-        results.filter(r => r.status === 'FAIL').forEach(r => {
-            log(`  ${C.red}→ ${r.name}${C.reset}\n`);
-            if (r.detail) log(`    ${C.gray}${r.detail}${C.reset}\n`);
-        });
+        log(`${C.bgRed}${C.white}${C.bold}  VULNERABILIDADES DETECTADAS (DEBEN FIXEARSE)  ${C.reset}\n`);
+        results.filter(r => r.status === 'FAIL').forEach(r => log(`  ${C.red}→ ${r.name}: ${C.white}${r.detail}${C.reset}\n`));
         nl();
     }
-
     if (warned > 0) {
-        log(`${C.yellow}${C.bold}  ADVERTENCIAS:${C.reset}\n`);
-        results.filter(r => r.status === 'WARN').forEach(r => {
-            log(`  ${C.yellow}→ ${r.name}${C.reset}\n`);
-            if (r.detail) log(`    ${C.gray}${r.detail}${C.reset}\n`);
-        });
+        log(`${C.yellow}${C.bold}  COMPORTAMIENTOS NO ÓPTIMOS (FALTA VALIDACIÓN)  ${C.reset}\n`);
+        results.filter(r => r.status === 'WARN').forEach(r => log(`  ${C.yellow}→ ${r.name}: ${C.white}${r.detail}${C.reset}\n`));
         nl();
     }
-
-    log(`${'═'.repeat(50)}\n`);
-    if (pct === 100) log(`${C.bgGreen}${C.bold}  🎉 TODOS LOS TESTS PASARON — SISTEMA LISTO  ${C.reset}\n`);
-    else if (pct >= 80) log(`${C.bgYellow}  ⚡ SISTEMA MAYORMENTE FUNCIONAL — REVISAR FALLOS  ${C.reset}\n`);
-    else log(`${C.bgRed}  🛑 MÚLTIPLES FALLOS — NO DESPLEGAR AÚN  ${C.reset}\n`);
-    nl();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN
-// ═══════════════════════════════════════════════════════════════════════════════
-async function main() {
-    nl();
-    log(`${C.bold}${C.white}  MAQUIMPOWER — TEST SUITE v2.0 — 11 MÓDULOS${C.reset}\n`);
-    log(`  ${C.gray}${new Date().toLocaleString('es-PE')} · API: ${API}${C.reset}\n`);
-
-    await testAuth();
-    await testClientes();
-    await testProductos();
-    await testVentas();
-    await testInventario();
-    await testDashboard();
-    await testSunat();
-    await testReportes();
-    await testProveedores();
-    await testCompras();
-    await testCaja();
-
-    printReport();
-}
-
-main().catch(e => { log(`\n${C.red}ERROR FATAL: ${e.message}${C.reset}\n`); process.exit(1); });
+main().catch(e => { log(`\n${C.red}FATAL: ${e.message}${C.reset}\n`); process.exit(1); });

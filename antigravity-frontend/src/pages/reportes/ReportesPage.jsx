@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line,
+  AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer
 } from 'recharts';
 import { reportesApi } from '../../api/reportes';
+import { vendedoresApi } from '../../api/vendedores';
 import { useToast } from '../../hooks/useToast';
-import { TrendingUp, Package, ArrowUpDown, Calendar, RefreshCw } from 'lucide-react';
+import { TrendingUp, Package, ArrowUpDown, Calendar, RefreshCw, DollarSign, PieChart, Users } from 'lucide-react';
 
 // ─── KPI Card ────────────────────────────────────────────────────────────────
 const KpiCard = ({ label, value, sub, color = 'orange' }) => {
@@ -68,16 +69,37 @@ export default function ReportesPage() {
 
   const [desde, setDesde] = useState(inicioMes);
   const [hasta, setHasta] = useState(hoy);
-  const [loading, setLoading] = useState({ ventas: true, top: true, stock: true });
+  const [vendedorId, setVendedorId] = useState('');
+  const [categoria, setCategoria] = useState('');
+  
+  const [loading, setLoading] = useState({ ventas: true, top: true, stock: true, rentabilidad: true });
 
+  const [vendedores, setVendedores] = useState([]);
   const [ventasData, setVentasData] = useState([]);
   const [ventasResumen, setVentasResumen] = useState({});
   const [topData, setTopData] = useState([]);
   const [stockData, setStockData] = useState([]);
+  
+  // Rentabilidad
+  const [rentGlobal, setRentGlobal] = useState({});
+  const [rentSerie, setRentSerie] = useState([]);
+  const [rentTop, setRentTop] = useState([]);
+
+  useEffect(() => {
+    // Cargar vendedores para el filtro
+    vendedoresApi.listar().then(res => {
+      if (res?.success && res.data) {
+        setVendedores(res.data.vendedores || []);
+      }
+    }).catch(console.error);
+  }, []);
 
   const cargar = useCallback(async () => {
     const params = { fecha_desde: desde, fecha_hasta: hasta };
-    setLoading({ ventas: true, top: true, stock: true });
+    if (vendedorId) params.vendedor_id = vendedorId;
+    if (categoria) params.categoria = categoria;
+
+    setLoading({ ventas: true, top: true, stock: true, rentabilidad: true });
 
     // Ventas por día
     reportesApi.ventasPorDia(params).then(res => {
@@ -93,13 +115,24 @@ export default function ReportesPage() {
       setLoading(l => ({ ...l, top: false }));
     });
 
-    // Movimientos stock
-    reportesApi.movimientosStock(params).then(res => {
+    // Movimientos stock (solo fechas)
+    reportesApi.movimientosStock({ fecha_desde: desde, fecha_hasta: hasta }).then(res => {
       if (res?.success) setStockData(res.data);
       else toast.error('Error al cargar inventario');
       setLoading(l => ({ ...l, stock: false }));
     });
-  }, [desde, hasta]);
+
+    // Rentabilidad
+    reportesApi.rentabilidad(params).then(res => {
+      if (res?.success && res.data) {
+        setRentGlobal(res.data.global);
+        setRentSerie(res.data.serie_tiempo);
+        setRentTop(res.data.top_rentables);
+      }
+      setLoading(l => ({ ...l, rentabilidad: false }));
+    }).catch(() => setLoading(l => ({ ...l, rentabilidad: false })));
+
+  }, [desde, hasta, vendedorId, categoria]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -114,6 +147,13 @@ export default function ReportesPage() {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
+            <Users size={14} className="text-slate-400" />
+            <select value={vendedorId} onChange={e => setVendedorId(e.target.value)} className="text-sm border-none outline-none bg-transparent text-slate-700 w-[120px]">
+              <option value="">Todos los Vend.</option>
+              {vendedores.map(v => <option key={v.id} value={v.id}>{v.nombre} {v.apellido}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2">
             <Calendar size={14} className="text-slate-400" />
             <input type="date" value={desde} onChange={e => setDesde(e.target.value)}
               className="text-sm border-none outline-none bg-transparent text-slate-700" />
@@ -122,39 +162,83 @@ export default function ReportesPage() {
               className="text-sm border-none outline-none bg-transparent text-slate-700" />
           </div>
           <button onClick={cargar}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors">
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-lg transition-colors">
             <RefreshCw size={14} />
-            Actualizar
+            Aplicar Filtros
           </button>
         </div>
       </div>
 
-      {/* KPIs */}
+      {/* KPIs FINANCIEROS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Total Ventas"
-          value={ventasResumen.total_ventas ?? '—'}
+          label="Ingresos Netos"
+          value={rentGlobal?.ingresos ? `S/ ${parseFloat(rentGlobal.ingresos).toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '—'}
           sub={`${desde} → ${hasta}`}
-          color="orange"
-        />
-        <KpiCard
-          label="Ingresos Totales"
-          value={ventasResumen.total_ingresos ? `S/ ${parseFloat(ventasResumen.total_ingresos).toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '—'}
-          sub="Sin anulados"
-          color="green"
-        />
-        <KpiCard
-          label="Top Producto"
-          value={topData[0]?.producto?.slice(0, 20) || '—'}
-          sub={topData[0] ? `S/ ${parseFloat(topData[0].total).toFixed(2)}` : ''}
           color="blue"
         />
         <KpiCard
-          label="Días con ventas"
-          value={ventasData.filter(d => d.ventas > 0).length || '—'}
-          sub="En el periodo"
+          label="Costo de Ventas (COGS)"
+          value={rentGlobal?.cogs ? `S/ ${parseFloat(rentGlobal.cogs).toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '—'}
+          sub="Costo ponderado estimado"
           color="orange"
         />
+        <KpiCard
+          label="Utilidad Bruta"
+          value={rentGlobal?.utilidad ? `S/ ${parseFloat(rentGlobal.utilidad).toLocaleString('es-PE', { minimumFractionDigits: 2 })}` : '—'}
+          sub="Ingresos - Costos"
+          color="green"
+        />
+        <div className={`bg-white rounded-xl border-t-4 border-emerald-500 shadow-sm p-5`}>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Margen %</p>
+            <p className="text-3xl font-extrabold text-emerald-600">{rentGlobal?.margen_porcentaje ?? 0}%</p>
+            <p className="text-xs text-slate-400 mt-1">Margen sobre ventas netas</p>
+        </div>
+      </div>
+
+      {/* RENTABILIDAD AVANZADA (Gráfico + Top) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+            <Card title="Evolución de Rentabilidad (Costos vs Ingresos)" icon={TrendingUp} loading={loading.rentabilidad}>
+                {rentSerie.length === 0
+                ? <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Sin datos financieros para analizar</div>
+                : <ResponsiveContainer width="100%" height={320}>
+                    <ComposedChart data={rentSerie} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                        <XAxis dataKey="fecha" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => v.slice(5)} />
+                        <YAxis yAxisId="left" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => `S/${v/1000}k`} />
+                        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} formatter={(value) => `S/ ${value}`} />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        <Bar yAxisId="left" dataKey="ingresos" name="Ingresos (S/)" fill="#e2e8f0" radius={[4, 4, 0, 0]} barSize={35} />
+                        <Bar yAxisId="left" dataKey="cogs" name="COGS (Costo S/)" fill="#fb923c" opacity={0.8} radius={[4, 4, 0, 0]} barSize={35} />
+                        <Line yAxisId="left" type="monotone" dataKey="utilidad" name="Utilidad Bruta (S/)" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} />
+                    </ComposedChart>
+                    </ResponsiveContainer>
+                }
+            </Card>
+        </div>
+
+        <div>
+             <Card title="Top Márgenes por Producto" icon={PieChart} loading={loading.rentabilidad}>
+                 {rentTop.length === 0
+                 ? <div className="flex items-center justify-center h-48 text-slate-400 text-sm">Sin datos para rankear</div>
+                 : <div className="overflow-y-auto pr-2" style={{ maxHeight: '320px' }}>
+                     {rentTop.slice(0, 10).map((prod, idx) => (
+                         <div key={idx} className="flex justify-between items-center py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 rounded px-2 transition-colors">
+                             <div className="flex-1 w-[60%]">
+                                 <p className="text-xs font-bold text-slate-800 truncate" title={prod.producto}>{prod.producto}</p>
+                                 <p className="text-[10px] text-slate-400 uppercase tracking-wider">{prod.codigo}</p>
+                             </div>
+                             <div className="flex flex-col items-end w-[40%]">
+                                 <span className="text-xs font-black text-emerald-600">S/ {parseFloat(prod.utilidad).toFixed(2)}</span>
+                                 <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded ml-2">{prod.margen}%</span>
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+                 }
+             </Card>
+        </div>
       </div>
 
       {/* Gráfico 1 — Ventas por día */}
