@@ -180,7 +180,8 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
                     cantidad: d.cantidad,
                     precio_unitario: d.precio_unitario,
                     descuento_unitario: d.descuento_unitario || 0,
-                    tipo_afectacion_igv: d.tipo_afectacion_igv || '10'
+                    tipo_afectacion_igv: d.tipo_afectacion_igv || '10',
+                    indicacion: d.indicacion || '' // preserve indicacion in frontend state
                 })));
                 setShowCotizacionesModal(false);
                 toast.success('Cotización importada');
@@ -417,7 +418,15 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
                                     detalles.map((det, idx) => (
                                         <div key={idx} className="border-t p-2 text-xs space-y-1">
                                             <div className="font-semibold text-gray-800 flex justify-between">
-                                                <span>{det.descripcion}</span>
+                                                <span className="flex items-center gap-2">
+                                                    {det.descripcion}
+                                                    {det.indicacion && (
+                                                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{
+                                                            backgroundColor: det.indicacion === 'indispensable' ? '#16a34a' : det.indicacion === 'remplazable' ? '#f59e0b' : '#9ca3af',
+                                                            color: '#fff'
+                                                        }}>{det.indicacion === 'indispensable' ? 'Indispensable' : det.indicacion === 'remplazable' ? 'Remplazable' : 'Prescindible'}</span>
+                                                    )}
+                                                </span>
                                                 <button
                                                     onClick={() => setDetalles(detalles.filter((_, i) => i !== idx))}
                                                     className="text-red-500 hover:text-red-700 font-bold"

@@ -127,7 +127,8 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                 cantidad: 1,
                 precio_unitario: precioVenta,
                 descuento_unitario: 0,
-                tipo_afectacion_igv: '10'
+                tipo_afectacion_igv: '10',
+                indicacion: '' // '', 'indispensable', 'remplazable', 'prescindible'
             }]);
             toast.success(`${producto.descripcion} agregado`);
         }
@@ -135,7 +136,7 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
 
     const actualizarLinea = (id, campo, valor) => {
         setDetalles(detalles.map(det =>
-            det.producto_id === id ? { ...det, [campo]: Number(valor) || 0 } : det
+            det.producto_id === id ? { ...det, [campo]: campo === 'indicacion' ? valor : Number(valor) || 0 } : det
         ));
     };
 
@@ -174,6 +175,7 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                 precio_unitario: parseFloat(det.precio_unitario),
                 descuento_unitario: parseFloat(det.descuento_unitario || 0),
                 tipo_afectacion_igv: det.tipo_afectacion_igv || '10',
+                indicacion: det.indicacion || ''
             }))
         };
 
@@ -362,6 +364,38 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                                             />
                                             <div className="text-right font-bold">
                                                 S/ {((det.cantidad * det.precio_unitario) - det.descuento_unitario).toFixed(2)}
+                                            </div>
+                                        </div>
+                                        {/* Indicaciones: prioridad/importance */}
+                                        <div className="flex items-center gap-2 pt-2">
+                                            <label className="text-xs font-semibold">Indicacion:</label>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    aria-label={`set-indispensable-${det.producto_id}`}
+                                                    onClick={() => actualizarLinea(det.producto_id, 'indicacion', 'indispensable')}
+                                                    className={`w-6 h-6 rounded-full border ${det.indicacion === 'indispensable' ? 'ring-2 ring-green-400' : ''}`}
+                                                    style={{ backgroundColor: det.indicacion === 'indispensable' ? '#16a34a' : '#e6f4ea' }}
+                                                />
+                                                <button
+                                                    aria-label={`set-remplazable-${det.producto_id}`}
+                                                    onClick={() => actualizarLinea(det.producto_id, 'indicacion', 'remplazable')}
+                                                    className={`w-6 h-6 rounded-full border ${det.indicacion === 'remplazable' ? 'ring-2 ring-yellow-300' : ''}`}
+                                                    style={{ backgroundColor: det.indicacion === 'remplazable' ? '#f59e0b' : '#fff7ed' }}
+                                                />
+                                                <button
+                                                    aria-label={`set-prescindible-${det.producto_id}`}
+                                                    onClick={() => actualizarLinea(det.producto_id, 'indicacion', 'prescindible')}
+                                                    className={`w-6 h-6 rounded-full border ${det.indicacion === 'prescindible' ? 'ring-2 ring-gray-400' : ''}`}
+                                                    style={{ backgroundColor: det.indicacion === 'prescindible' ? '#9ca3af' : '#f3f4f6' }}
+                                                />
+                                                <button
+                                                    aria-label={`clear-indicacion-${det.producto_id}`}
+                                                    onClick={() => actualizarLinea(det.producto_id, 'indicacion', '')}
+                                                    className="text-xs px-2 py-1 border rounded text-gray-600"
+                                                >
+                                                    Clear
+                                                </button>
+                                                <div className="text-xs text-gray-600 ml-2">{det.indicacion || 'Sin marca'}</div>
                                             </div>
                                         </div>
                                     </div>

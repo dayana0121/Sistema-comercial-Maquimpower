@@ -19,7 +19,10 @@ function getDB(): PDO
     try {
         return new PDO($dsn, $user, $pass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            // Asegurar collation consistente en la conexión para evitar "Illegal mix of collations"
+            // Esto fuerza la conexión a usar utf8mb4_general_ci que coincide con la mayoría de las tablas
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_general_ci"
         ]);
     } catch (PDOException $e) {
         header('Content-Type: application/json');

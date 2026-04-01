@@ -113,13 +113,13 @@ const CotizacionesPage = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {loading ? (
-                                <tr>
-                                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">Cargando cotizaciones...</td>
-                                </tr>
+                                    <tr>
+                                        <td colSpan="7" className="px-6 py-8 text-center text-gray-500">Cargando cotizaciones...</td>
+                                    </tr>
                             ) : cotizaciones.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No hay cotizaciones</td>
-                                </tr>
+                                    <tr>
+                                        <td colSpan="7" className="px-6 py-8 text-center text-gray-500">No hay cotizaciones</td>
+                                    </tr>
                             ) : (
                                 cotizaciones.map((cot) => (
                                     <tr key={cot.id} className="hover:bg-gray-50">
@@ -130,6 +130,13 @@ const CotizacionesPage = () => {
                                         <td className="px-6 py-4 text-sm text-gray-500">
                                             {cot.fecha_emisión ? new Date(cot.fecha_emisión).toLocaleDateString() : '-'}
                                         </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">
+                                                {cot.detalles && cot.detalles.some(d => d.indicacion === 'indispensable') ? (
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Contiene indispensables</span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">-</span>
+                                                )}
+                                            </td>
                                         <td className="px-6 py-4 text-right font-semibold text-gray-900">
                                             S/ {parseFloat(cot.total).toFixed(2)}
                                         </td>
