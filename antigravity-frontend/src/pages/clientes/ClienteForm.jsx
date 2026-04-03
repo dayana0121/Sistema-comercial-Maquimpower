@@ -104,23 +104,23 @@ const ClienteForm = ({ clienteToEdit = null, isReadOnly = false, onSuccess, onCa
                         />
                     </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1">
-                        <label className="text-xs font-bold text-slate-500">Tipo Documento</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="form-group-custom">
+                        <label className="form-label-custom">Tipo Documento</label>
                         <select
                             name="tipo_documento" value={formData.tipo_documento} onChange={handleChange} disabled={isReadOnly}
-                            className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-orange-100 focus:border-orange-500"
+                            className="form-input-custom"
                         >
                             <option value="6">RUC</option>
                             <option value="1">DNI</option>
                         </select>
                     </div>
                     <div className="flex flex-col gap-1">
-                        <Input label="Nro Documento" name="numero_documento" value={formData.numero_documento} onChange={handleChange} disabled={isReadOnly} placeholder="Ingresa nro..." />
+                        <Input label="Nro Documento" name="numero_documento" value={formData.numero_documento} onChange={handleChange} disabled={isReadOnly} placeholder="Ingresa nro..." icon={Building2} iconColor="text-orange" />
                     </div>
                 </div>
                 <div className="grid grid-cols-1 gap-4 mt-4">
-                    <Input label="Razón Social" name="razon_social" value={formData.razon_social} onChange={handleChange} disabled={isReadOnly} />
+                    <Input label="Razón Social *" name="razon_social" value={formData.razon_social} onChange={handleChange} disabled={isReadOnly} icon={Building2} iconColor="text-blue" />
                 </div>
             </div>
 
@@ -128,7 +128,7 @@ const ClienteForm = ({ clienteToEdit = null, isReadOnly = false, onSuccess, onCa
             <div>
                 <SectionTitle icon={MapPin} title="Dirección y Ubicación" />
                 <Input label="Dirección Fiscal" name="direccion_fiscal" value={formData.direccion_fiscal} onChange={handleChange} disabled={isReadOnly} />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
                     <Input label="Departamento" name="departamento" value={formData.departamento} onChange={handleChange} disabled={isReadOnly} />
                     <Input label="Provincia" name="provincia" value={formData.provincia} onChange={handleChange} disabled={isReadOnly} />
                     <Input label="Distrito" name="distrito" value={formData.distrito} onChange={handleChange} disabled={isReadOnly} />
@@ -138,19 +138,19 @@ const ClienteForm = ({ clienteToEdit = null, isReadOnly = false, onSuccess, onCa
             {/* SECCIÓN 3: CONTACTO */}
             <div>
                 <SectionTitle icon={Contact2} title="Información de Contacto" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                     <Input type="email" label="Email" name="email" value={formData.email} onChange={handleChange} disabled={isReadOnly} placeholder="ejemplo@correo.com" />
-                    <Input label="Teléfono" name="telefono" value={formData.telefono} onChange={handleChange} disabled={isReadOnly} placeholder="999..." />
+                    <Input label="Teléfono" name="telefono" value={formData.telefono} onChange={handleChange} disabled={isReadOnly} placeholder="999..." icon={Contact2} iconColor="text-orange" />
                 </div>
             </div>
 
             {/* BOTONES */}
-            <div className="flex justify-end gap-3 mt-2 pt-4 border-t border-slate-100">
-                <Button variant="secondary" onClick={onCancel} type="button">Cerrar</Button>
+            <div className="form-actions-custom border-t border-slate-100">
+                <button type="button" onClick={onCancel} className="btn-cancel-custom">Cancelar</button>
                 {!isReadOnly && (
-                    <Button type="submit" variant="primary" loading={loading}>
+                    <button type="submit" className="btn-submit-custom disabled:opacity-50" disabled={loading}>
                         {clienteToEdit ? 'Actualizar Datos' : 'Registrar Cliente'}
-                    </Button>
+                    </button>
                 )}
             </div>
         </form>

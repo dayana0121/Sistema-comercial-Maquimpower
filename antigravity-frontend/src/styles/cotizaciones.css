@@ -1,0 +1,184 @@
+.p-6{
+    padding: 24px;
+}
+
+i:hover{
+    color: var(--primary);
+}
+.text-sm.text-gray-500.mt-1{
+    padding-top: 15px;
+    padding-bottom: 15px;
+    color: var(--dark);
+}
+
+.bg-blue-600.text-white{
+    background-color: var(--primary);
+}
+
+.bg-blue-600.text-white:hover{
+    background-color: var(--primary-dark);
+}
+
+.flex.shrink-0.border-b-0{
+    padding-top: 10px;
+    padding-left: 20px;
+}
+
+.text-white.px-4.py-2.rounded-lg.text-sm.font-bold.flex.items-center.gap-2.shadow-sm.transition-colors{
+    transition: all 0.3s ease;
+}
+
+.flex.flex-col.gap-1, .text-sm.font-bold.text-slate-800{
+    padding: 4px;
+}
+
+.bg-white.border.border-slate-200.rounded-lg.text-sm.shadow-sm.outline-none{
+    margin-top: 4px;
+    margin-bottom: 16px;
+}
+
+.border.rounded-lg.p-3.bg-gray-50.max-h-64.overflow-y-auto{
+    margin-bottom: 16px;
+    padding: 2px;
+}
+
+.text-left.p-2.border.border-gray-200.rounded.hover\:bg-blue-50.transition-all.text-xs{
+    padding: 3px;
+}
+
+.text-left.p-2.border.border-gray-200.rounded.hover\:bg-blue-50.transition-all.text-xs{
+    background-color: #f7ae94;
+    border-color: #d63f08;
+}
+
+.text-left.p-2.border.border-gray-200.rounded.hover\:bg-blue-50.transition-all.text-xs:hover{
+    background-color: #ff5c20;
+    color: var(--dark);
+}
+
+.border-b.border-slate-200.p-2\.5.text-xs.font-bold.text-slate-800.grid.grid-cols-4.gap-1{
+    background-color: #f8f9fa;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1px;
+    align-items: center;
+    justify-items: center;
+}
+
+.max-h-96.overflow-y-auto.bg-white, .font-semibold.text-gray-800.flex.justify-between{
+    padding: 3px;
+}
+
+.text-red-500.font-bold{
+    color: wheat;
+}
+
+.text-right.font-bold{
+    align-items: center;
+    justify-items: center;
+    justify-content: center;
+    display: flex;
+}
+
+/*CAUDRO DEBAJO DEL CUADRO DE PRODUCTOS*/
+.flex.items-center.gap-2.pt-4{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    text-align: center;
+    align-items: center;
+    justify-items: center;
+    justify-content: center;
+    display: flex;
+}
+
+.text-xs.px-2.py-1.border.rounded.text-gray-600{
+    padding: 3px;
+    border-radius: 5px;
+    border-color: var(--dark);
+    color: white;
+}
+
+.text-xs.px-2.py-1.border.rounded.text-gray-600:hover{
+    background-color: var(--dark);
+}
+
+/*Cuadro de resumen*/
+.bg-\[\#1b2532\].text-white.p-5.rounded-lg.space-y-4.shadow-xl{
+    background-color: var(--dark);
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0px 5px 18px var(--dark);
+}
+
+
+.flex.justify-between.text-\[15px\].border-b.border-slate-600.pb-3, .pt-2.flex.justify-between.font-bold.text-\[22px\]{
+    padding: 14px;
+}
+
+.bg-\[\#2c3338\].text-white.hover\:bg-\[\#1a1f23\].rounded-lg.font-bold.transition-colors.mt-2{
+    padding: 14px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+/*Boton GUARDAR*/
+.bg-\[\#5ca335\].hover\:bg-\[\#4d8b2d\].text-white.rounded-lg.font-bold.transition-colors{
+    background-color: var(--primary);
+    transition: all 0.3s ease;
+}
+
+.bg-\[\#5ca335\].hover\:bg-\[\#4d8b2d\].text-white.rounded-lg.font-bold.transition-colors:hover{
+    box-shadow: 0px 5px 18px var(--primary) !important;
+}
+
+/*Boton CANCELAR*/
+.bg-\[\#2c3338\].text-white.hover\:bg-\[\#1a1f23\].rounded-lg.font-bold.transition-colors.mt-2:hover{
+    background-color: var(--dark);
+    border-color: var(--dark);
+}
+
+/*Boton X del formulario*/
+.w-8.h-8.flex.items-center.justify-center.rounded-md.bg-\[\#1f2937\].text-white.hover\:bg-slate-700.transition-colors.shadow-sm{
+    background-color: var(--dark);
+    border-color: var(--dark);
+    margin-right: 10px;
+    transition: all 0.3s ease;
+}
+
+.w-8.h-8.flex.items-center.justify-center.rounded-md.bg-\[\#1f2937\].text-white.hover\:bg-slate-700.transition-colors.shadow-sm:hover{
+    background-color: var(--dark);
+    box-shadow: 0px 3px 11px var(--dark);
+}
+
+/*Cabecera de formulario*/
+.flex.shrink-0.border-b-0{
+    padding-bottom: 10px;
+}
+
+/*Cuadro del resultado de la busqueda realizada*/
+.p-2.hover\:bg-blue-50.cursor-pointer.border-b.last\:border-0.text-xs{
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #EDEAE6;
+    border-color: 2px solid var(--primary);
+    color: var(--dark);
+}
+
+.p-2.hover\:bg-blue-50.cursor-pointer.border-b.last\:border-0.text-xs:hover{
+    background-color: #000000;
+    color: white;
+    font-weight: bold;
+}
+
+.text-gray-500{
+    color: rgb(105, 105, 105);
+    font-weight: bold;
+}
+
+.text-gray-500:hover{
+    color: var(--dark);
+}

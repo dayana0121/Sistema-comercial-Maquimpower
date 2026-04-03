@@ -8,25 +8,30 @@ const Input = forwardRef(({
     placeholder,
     value,
     onChange,
-    name,
-    className = ''
+    icon: Icon,
+    iconColor = 'text-slate-400',
+    className = '',
+    disabled = false,
+    ...rest
 }, ref) => {
     return (
-        <div className={`flex flex-col gap-1 ${className}`}>
-            {label && <label className="text-sm font-semibold text-gray-700">{label}</label>}
-            <input
-                ref={ref}
-                type={type}
-                name={name}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                className={`px-3 py-2 border rounded-lg outline-none transition-shadow text-sm text-gray-800 ${error
-                        ? 'border-red-500 focus:ring-2 focus:ring-red-100'
-                        : 'border-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-500'
-                    }`}
-            />
-            {error && <span className="text-xs text-red-500 font-medium">{error}</span>}
+        <div className={`form-group-custom ${className}`}>
+            {label && <label className="form-label-custom">{label}</label>}
+            <div className="form-input-container">
+                {Icon && <div className={`form-input-icon ${iconColor}`}><Icon size={16} strokeWidth={2.5}/></div>}
+                <input
+                    ref={ref}
+                    type={type}
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    disabled={disabled}
+                    placeholder={placeholder}
+                    className={`form-input-custom ${Icon ? 'with-icon' : ''} ${error ? 'border-red-500' : ''}`}
+                    {...rest}
+                />
+            </div>
+            {error && <span className="text-[10px] text-red-500 font-bold uppercase">{error}</span>}
         </div>
     );
 });

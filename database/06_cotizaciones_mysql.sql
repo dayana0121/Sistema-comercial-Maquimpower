@@ -51,6 +51,7 @@ CREATE TABLE IF NOT EXISTS cotizaciones_detalle (
     precio_unitario DECIMAL(12,4),
     descuento_unitario DECIMAL(12,2) DEFAULT 0.00,
     tipo_afectacion_igv VARCHAR(2) DEFAULT '10',
+    indicacion VARCHAR(32) DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_cotizaciones_detalle_cot FOREIGN KEY (cotizacion_id) REFERENCES cotizaciones(id) ON DELETE CASCADE,

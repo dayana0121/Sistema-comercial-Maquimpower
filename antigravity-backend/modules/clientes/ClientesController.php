@@ -1,6 +1,7 @@
 <?php
 // modules/clientes/ClientesController.php
 
+require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../middleware/AuthMiddleware.php';
 
 class ClientesController
@@ -65,12 +66,42 @@ class ClientesController
     private function listar()
     {
         try {
-            $query = "SELECT * FROM clientes WHERE activo = 1 ORDER BY created_at DESC";
+            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+            $offset = ($page - 1) * $limit;
+
+            $search = $_GET['search'] ?? '';
+            $where = " WHERE activo = 1 ";
+            $params = [];
+
+            if (!empty($search)) {
+                $where .= " AND (razon_social LIKE ? OR numero_documento LIKE ?) ";
+                $params[] = "%$search%";
+                $params[] = "%$search%";
+            }
+
+            // Contar total
+            $stmtCount = $this->conn->prepare("SELECT COUNT(*) FROM clientes $where");
+            $stmtCount->execute($params);
+            $total = (int)$stmtCount->fetchColumn();
+            $pages = ceil($total / $limit);
+
+            // Obtener datos
+            $query = "SELECT * FROM clientes $where ORDER BY created_at DESC LIMIT $limit OFFSET $offset";
             $stmt = $this->conn->prepare($query);
-            $stmt->execute();
+            $stmt->execute($params);
             $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            echo json_encode(["success" => true, "data" => $clientes]);
+            echo json_encode([
+                "success" => true, 
+                "data" => $clientes,
+                "pagination" => [
+                    "total" => $total,
+                    "pages" => $pages,
+                    "current" => $page,
+                    "limit" => $limit
+                ]
+            ]);
         } catch (PDOException $e) {
             $this->manejarError($e);
         }

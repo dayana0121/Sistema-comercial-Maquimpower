@@ -159,60 +159,60 @@ export default function CajaPage() {
       {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}
         title={form.tipo === 'INGRESO' ? 'Registrar Ingreso' : 'Registrar Egreso'} size="md">
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-500 uppercase">Tipo</label>
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="form-group-custom">
+              <label className="form-label-custom">Tipo</label>
               <div className="flex gap-2">
                 {['INGRESO','EGRESO'].map(t => (
                   <button key={t} type="button"
                     onClick={() => setForm(f => ({...f, tipo: t}))}
-                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${form.tipo === t
-                      ? t === 'INGRESO' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                    className={`flex-1 py-1.5 rounded-lg text-sm font-bold transition-colors ${form.tipo === t
+                      ? t === 'INGRESO' ? 'bg-green-500 text-white shadow-sm' : 'bg-red-500 text-white shadow-sm'
                       : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
                     {t}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-500 uppercase">Monto (S/) *</label>
+            <div className="form-group-custom">
+              <label className="form-label-custom">Monto (S/) *</label>
               <input type="number" step="0.01" name="monto" value={form.monto} onChange={handleChange}
-                placeholder="0.00" className="px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-100 text-lg font-bold" />
+                placeholder="0.00" className="form-input-custom text-lg font-bold text-slate-800 focus:text-slate-900" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-500 uppercase">Forma de Pago</label>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="form-group-custom">
+              <label className="form-label-custom">Forma de Pago</label>
               <select name="forma_pago" value={form.forma_pago} onChange={handleChange}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white outline-none">
+                className="form-input-custom">
                 {FORMAS_PAGO.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-500 uppercase">Origen</label>
+            <div className="form-group-custom">
+              <label className="form-label-custom">Origen</label>
               <select name="origen" value={form.origen} onChange={handleChange}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white outline-none">
+                className="form-input-custom">
                 {ORIGENES.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-slate-500 uppercase">Fecha</label>
+          <div className="form-group-custom">
+            <label className="form-label-custom">Fecha</label>
             <input type="date" name="fecha" value={form.fecha} onChange={handleChange}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none" />
+              className="form-input-custom" />
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-slate-500 uppercase">Descripción</label>
+          <div className="form-group-custom">
+            <label className="form-label-custom">Descripción</label>
             <textarea name="descripcion" value={form.descripcion} onChange={handleChange} rows={2}
               placeholder="Descripción del movimiento..."
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none resize-none" />
+              className="form-input-custom resize-none" />
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <div className="form-actions-custom border-t border-slate-100">
             <button onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+              className="btn-cancel-custom">Cancelar</button>
             <button onClick={handleGuardar} disabled={guardando}
-              className={`px-4 py-2 text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors ${form.tipo === 'INGRESO' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>
+              className={`px-4 py-2 text-white text-sm font-semibold rounded-md disabled:opacity-50 transition-colors ${form.tipo === 'INGRESO' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>
               {guardando ? 'Registrando...' : `Registrar ${form.tipo}`}
             </button>
           </div>

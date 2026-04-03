@@ -8,6 +8,7 @@ import { useToast } from '../../hooks/useToast';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import BuscadorDocumento from '../../components/ui/BuscadorDocumento';
+import '../../styles/ventas.css';
 
 const CAT54 = [
     { code: '022', name: 'Otros servicios empresariales', percent: 10 },
@@ -213,9 +214,9 @@ const VentasCreatePage = () => {
     };
 
     return (
-        <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col overflow-hidden">
+        <div className="h-screen from-slate-50 to-slate-100 flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+            <div className="py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate('/ventas')}
@@ -232,7 +233,7 @@ const VentasCreatePage = () => {
             </div>
 
             {/* Main Content - 3 Columnas */}
-            <div className="flex-1 grid grid-cols-3 gap-4 p-6 overflow-hidden">
+            <div className="flex-1 grid grid-cols-3 gap-4 overflow-hidden">
                 
                 {/* ================== COLUMNA IZQUIERDA: CLIENTE ================== */}
                 <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">

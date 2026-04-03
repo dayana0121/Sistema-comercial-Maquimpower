@@ -9,6 +9,7 @@ import DataTable from "../../components/ui/DataTable";
 import Modal from "../../components/ui/Modal";
 import { useToast } from '../../hooks/useToast';
 import ClienteForm from "./ClienteForm";
+import "../../styles/clientes.css"
 
 export default function ClientesPage() {
     const toast = useToast();

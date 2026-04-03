@@ -20,32 +20,32 @@ export default function DataTable({ columns, data, loading = false, onRowClick }
     }
 
     return (
-        <div className="w-full bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <div className="w-full bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left">
-                    <thead className="bg-[#F4F6F9] border-b border-slate-200">
+                    <thead className="bg-[#F8F9FA] border-b border-slate-100">
                         <tr>
                             {columns.map((col, index) => (
                                 <th
                                     key={index}
-                                    className={`px-6 py-4 text-[0.85rem] font-semibold text-slate-500 uppercase tracking-wide ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
+                                    className={`px-8 py-5 text-[11.5px] font-bold text-slate-500 uppercase tracking-wider ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
                                 >
                                     {col.header}
                                 </th>
                             ))}
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="">
                         {data.map((row, rowIndex) => (
                             <tr
                                 key={row.id || rowIndex}
                                 onClick={() => onRowClick && onRowClick(row)}
-                                className={`transition-colors hover:bg-[#F4F6F9] ${onRowClick ? 'cursor-pointer' : ''}`}
+                                className={`transition-colors hover:bg-[#FDEFE6] ${onRowClick ? 'cursor-pointer' : ''} ${rowIndex % 2 !== 0 ? 'bg-[#FFF9F0]' : 'bg-white'}`}
                             >
                                 {columns.map((col, colIndex) => (
                                     <td
                                         key={colIndex}
-                                        className={`px-6 py-4 text-[0.95rem] text-slate-800 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
+                                        className={`px-8 py-5 text-[14.5px] text-slate-700 font-medium ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
                                     >
                                         {/* Renderizamos el valor directo o ejecutamos la función render personalizada si existe */}
                                         {col.render ? col.render(row) : row[col.accessor]}

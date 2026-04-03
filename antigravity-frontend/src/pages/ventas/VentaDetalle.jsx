@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { abrirPdfVenta } from '../../utils/pdf';
+import Modal from '../../components/ui/Modal';
+import GuiaForm from '../guias/GuiaForm';
 import '../../styles/business.css';
 
 const VentaDetalle = ({ id: propId }) => {
@@ -11,14 +13,15 @@ const VentaDetalle = ({ id: propId }) => {
     const [venta, setVenta] = useState(null);
     const [loading, setLoading] = useState(true);
     const [generandoPdf, setGenerandoPdf] = useState(false);
+    const [isGuiaModalOpen, setIsGuiaModalOpen] = useState(false);
 
-    const verPDF = async () => {
+    const verPDF = async (formato = 'ticket') => {
         setGenerandoPdf(true);
         try {
-            await abrirPdfVenta(id, import.meta.env.VITE_API_URL);
+            await abrirPdfVenta(id, import.meta.env.VITE_API_URL, formato);
         } catch (e) {
-            console.error('Error al generar PDF:', e);
-            alert('Error al generar el PDF');
+            console.error(`Error al generar PDF ${formato}:`, e);
+            alert(`Error al generar el PDF en formato ${formato}`);
         } finally {
             setGenerandoPdf(false);
         }
@@ -47,12 +50,27 @@ const VentaDetalle = ({ id: propId }) => {
                 <h1>Detalle de Comprobante</h1>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button
-                        onClick={verPDF}
+                        onClick={() => verPDF('ticket')}
+                        disabled={generandoPdf}
+                        className="btn-primary"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: generandoPdf ? 'wait' : 'pointer', opacity: generandoPdf ? 0.6 : 1, backgroundColor: '#475569' }}
+                    >
+                        📄 {generandoPdf ? '...' : 'Imprimir Ticket'}
+                    </button>
+                    <button
+                        onClick={() => verPDF('a4')}
                         disabled={generandoPdf}
                         className="btn-primary"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: generandoPdf ? 'wait' : 'pointer', opacity: generandoPdf ? 0.6 : 1 }}
                     >
-                        📄 {generandoPdf ? 'Generando...' : 'Ver PDF'}
+                        📄 {generandoPdf ? '...' : 'Imprimir A4'}
+                    </button>
+                    <button
+                        onClick={() => setIsGuiaModalOpen(true)}
+                        className="btn-secondary"
+                        style={{ backgroundColor: '#1e293b', color: 'white', border: 'none' }}
+                    >
+                        🚚 Generar Guía
                     </button>
                     <button onClick={() => navigate('/ventas')} className="btn-secondary">Volver</button>
                 </div>
@@ -120,6 +138,33 @@ const VentaDetalle = ({ id: propId }) => {
                     <h2 style={{ color: 'var(--color-cta-primario)' }}>TOTAL: S/ {parseFloat(venta.importe_total || 0).toFixed(2)}</h2>
                 </div>
             </div>
+            
+            {/* Modal para Generar Guía */}
+            <Modal 
+                isOpen={isGuiaModalOpen} 
+                onClose={() => setIsGuiaModalOpen(false)} 
+                title="Generar Guía de Remisión desde Venta"
+            >
+                <GuiaForm 
+                    preData={{
+                        destinatario_ruc: venta.cliente_documento,
+                        destinatario_nombre: venta.cliente_nombre,
+                        llegada_direccion: venta.direccion,
+                        items: venta.detalles?.map(d => ({
+                            id: d.producto_id,
+                            codigo: d.codigo_producto,
+                            descripcion: d.descripcion,
+                            cantidad: d.cantidad,
+                            unidad_medida: d.unidad_medida || 'NIU'
+                        }))
+                    }}
+                    onSuccess={() => {
+                        setIsGuiaModalOpen(false);
+                        navigate('/guias');
+                    }} 
+                    onCancel={() => setIsGuiaModalOpen(false)}
+                />
+            </Modal>
         </div >
     );
 };

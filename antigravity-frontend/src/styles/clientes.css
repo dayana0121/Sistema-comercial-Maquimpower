@@ -1,0 +1,7 @@
+.px-2.rounded-full{
+    padding: 16px;
+}
+
+i:hover{
+    color: var(--primary);
+}

@@ -180,7 +180,8 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
                     cantidad: d.cantidad,
                     precio_unitario: d.precio_unitario,
                     descuento_unitario: d.descuento_unitario || 0,
-                    tipo_afectacion_igv: d.tipo_afectacion_igv || '10'
+                    tipo_afectacion_igv: d.tipo_afectacion_igv || '10',
+                    indicacion: d.indicacion || '' // preserve indicacion in frontend state
                 })));
                 setShowCotizacionesModal(false);
                 toast.success('Cotización importada');
@@ -242,28 +243,37 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
 
     return (
         <>
-            <Modal isOpen={isOpen} onClose={onClose} title="Nueva Venta Electrónica" size="6xl">
-                <div className="grid grid-cols-3 gap-6 p-6">
+            <Modal isOpen={isOpen} onClose={onClose} title="Nueva Venta Electrónica" size="6xl" bgClass="bg-[#FFF9F2]">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* COLUMNA 1: CLIENTE Y DATOS */}
-                    <div className="space-y-4 border-r pr-6">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Datos Principales</h3>
+                    <div className="space-y-5 lg:border-r border-slate-200 lg:pr-8">
+                        <h3 className="text-xl font-bold text-slate-800">Datos Principales</h3>
 
-                        {/* SUNAT/RENIEC Búsqueda */}
-                        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
-                            <BuscadorDocumento
-                                label="Buscar en SUNAT/RENIEC"
-                                onFound={(data) => {
-                                    toast.success(`Encontrado: ${data.razon_social}`);
-                                    setSearchCliente(data.ruc || data.dni || '');
-                                }}
-                            />
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-bold text-slate-800">Buscar en SUNAT/RENIEC</label>
+                            <div className="flex gap-2">
+                                <input 
+                                    className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm shadow-sm outline-none w-full" 
+                                    placeholder="8 u 11 dígitos" 
+                                    value={searchCliente}
+                                    onChange={e => setSearchCliente(e.target.value)}
+                                />
+                                <button 
+                                    type="button" 
+                                    className="bg-[#ee8425] hover:bg-[#d5731d] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition-colors"
+                                >
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+                                    Buscar
+                                </button>
+                            </div>
                         </div>
 
                         {/* Búsqueda de Cliente */}
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm font-bold text-gray-700">Buscar Cliente</label>
-                            <Input
-                                placeholder="RUC o Nombre..."
+                            <label className="text-sm font-bold text-slate-800">Buscar Cliente</label>
+                            <input
+                                className="px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm shadow-sm outline-none"
+                                placeholder="RUC o Nombres..."
                                 value={searchCliente}
                                 onChange={e => setSearchCliente(e.target.value)}
                             />
@@ -298,9 +308,9 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
 
                         {/* Vendedor */}
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm font-bold text-gray-700">Vendedor</label>
+                            <label className="text-sm font-bold text-slate-800">Vendedor</label>
                             <select
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                className="bg-white px-3 py-2.5 border border-slate-200 rounded-lg text-sm shadow-sm outline-none"
                                 value={form.vendedor_id}
                                 onChange={e => setForm({ ...form, vendedor_id: e.target.value })}
                             >
@@ -314,9 +324,9 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
                         {/* Comprobante */}
                         <div className="grid grid-cols-2 gap-2">
                             <div className="flex flex-col gap-1">
-                                <label className="text-sm font-bold text-gray-700">Comprobante</label>
+                                <label className="text-sm font-bold text-slate-800">Comprobante</label>
                                 <select
-                                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="bg-white px-3 py-2.5 border border-slate-200 rounded-lg text-sm shadow-sm outline-none"
                                     value={form.tipo_comprobante}
                                     onChange={e => setForm({
                                         ...form,
@@ -329,23 +339,23 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1">
-                                <label className="text-sm font-bold text-gray-700">Serie</label>
-                                <Input value={form.serie} readOnly className="bg-gray-100" />
+                                <label className="text-sm font-bold text-slate-800">Serie y Correlativo</label>
+                                <input value={form.serie} readOnly className="px-3 py-2.5 bg-gray-100 border border-slate-200 rounded-lg text-sm text-slate-500 outline-none" />
                             </div>
                         </div>
 
                         {/* Método de Pago */}
                         <div className="flex flex-col gap-2">
-                            <label className="text-sm font-bold text-gray-700">Método de Pago</label>
+                            <label className="text-sm font-bold text-slate-800">Método de Pago</label>
                             <div className="grid grid-cols-2 gap-2">
                                 {METODOS_PAGO.map(mp => (
                                     <button
                                         key={mp.code}
                                         onClick={() => setForm({ ...form, metodo_pago: mp.code })}
-                                        className={`p-2 rounded-lg border-2 text-center text-xs font-semibold transition-all ${
+                                        className={`p-2 rounded-lg border-2 text-center text-[11px] font-bold transition-all bg-white ${
                                             form.metodo_pago === mp.code
-                                                ? 'border-blue-600 bg-blue-50 text-blue-700'
-                                                : 'border-gray-200 hover:border-gray-300'
+                                                ? 'border-[#ee8425] bg-orange-50 text-[#ee8425]'
+                                                : 'border-slate-200 hover:border-slate-300 text-slate-600'
                                         }`}
                                     >
                                         {mp.icon} {mp.name}
@@ -356,9 +366,9 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
 
                         {/* Observaciones */}
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm font-bold text-gray-700">Observaciones</label>
+                            <label className="text-sm font-bold text-slate-800">Observaciones</label>
                             <textarea
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm h-20 resize-none"
+                                className="bg-white px-3 py-2.5 border border-slate-200 rounded-lg text-sm shadow-sm h-20 outline-none resize-none"
                                 value={form.observacion}
                                 onChange={e => setForm({ ...form, observacion: e.target.value })}
                                 placeholder="Notas adicionales..."
@@ -366,21 +376,22 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
                         </div>
 
                         {/* Botón Importar Cotización */}
-                        <Button
-                            variant="secondary"
-                            className="w-full text-sm"
+                        <button
+                            type="button"
+                            className="w-full py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-sm font-bold transition-colors"
                             onClick={cargarCotizaciones}
                         >
                             📋 Importar Cotización
-                        </Button>
+                        </button>
                     </div>
 
                     {/* COLUMNA 2: PRODUCTOS Y CARRITO */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-bold text-gray-800">Productos</h3>
+                    <div className="space-y-5 lg:border-r border-slate-200 lg:pr-8">
+                        <h3 className="text-xl font-bold text-slate-800">Productos</h3>
 
                         {/* Búsqueda de productos */}
-                        <Input
+                        <input
+                            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm shadow-sm outline-none"
                             placeholder="Buscar producto..."
                             value={searchProducto}
                             onChange={e => setSearchProducto(e.target.value)}
@@ -403,21 +414,29 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
                         </div>
 
                         {/* Tabla de carrito */}
-                        <div className="border rounded-lg overflow-hidden">
-                            <div className="bg-gray-100 p-2 text-xs font-bold text-gray-700 grid grid-cols-4 gap-1">
+                        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden min-h-[160px]">
+                            <div className="bg-[#f8f9fa] border-b border-slate-200 p-2.5 text-xs font-bold text-slate-800 grid grid-cols-4 gap-1">
                                 <div>Producto</div>
                                 <div className="text-center">Cant.</div>
                                 <div className="text-right">Precio</div>
                                 <div className="text-right">Total</div>
                             </div>
-                            <div className="max-h-96 overflow-y-auto">
+                            <div className="max-h-96 overflow-y-auto bg-white">
                                 {detalles.length === 0 ? (
-                                    <div className="p-4 text-center text-gray-500 text-sm">Carrito vacío</div>
+                                    <div className="p-10 flex items-center justify-center text-slate-400 text-[15px]">Sin productos</div>
                                 ) : (
                                     detalles.map((det, idx) => (
                                         <div key={idx} className="border-t p-2 text-xs space-y-1">
                                             <div className="font-semibold text-gray-800 flex justify-between">
-                                                <span>{det.descripcion}</span>
+                                                 <span className="flex items-center gap-2">
+                                                    {det.descripcion}
+                                                    {det.indicacion && (
+                                                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{
+                                                            backgroundColor: det.indicacion === 'indispensable' ? '#16a34a' : det.indicacion === 'remplazable' ? '#f59e0b' : '#9ca3af',
+                                                            color: '#fff'
+                                                        }}>{det.indicacion === 'indispensable' ? 'Indispensable' : det.indicacion === 'remplazable' ? 'Remplazable' : 'Prescindible'}</span>
+                                                    )}
+                                                </span>
                                                 <button
                                                     onClick={() => setDetalles(detalles.filter((_, i) => i !== idx))}
                                                     className="text-red-500 hover:text-red-700 font-bold"
@@ -471,22 +490,22 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
                     </div>
 
                     {/* COLUMNA 3: TOTALES Y FINALIZAR */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-bold text-gray-800">Resumen</h3>
+                    <div className="space-y-3 flex flex-col items-stretch">
+                        <h3 className="text-xl font-bold text-slate-800">Resumen</h3>
 
                         {/* Card de totales */}
-                        <div className="bg-slate-800 text-white p-4 rounded-lg space-y-2">
-                            <div className="flex justify-between text-sm text-slate-300">
-                                <span>Subtotal:</span>
-                                <span>S/ {totales.subtotal.toFixed(2)}</span>
+                        <div className="bg-[#1b2532] text-white p-5 rounded-lg space-y-4 shadow-xl">
+                            <div className="flex justify-between text-[15px] border-b border-slate-600 pb-3">
+                                <span className="text-slate-300">Subtotal:</span>
+                                <span className="text-slate-200">S/ {totales.subtotal.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between text-sm text-slate-300">
-                                <span>IGV (18%):</span>
-                                <span>S/ {totales.igv.toFixed(2)}</span>
+                            <div className="flex justify-between text-[15px] border-b border-slate-600 pb-3">
+                                <span className="text-slate-300">IGV (18%):</span>
+                                <span className="text-slate-200">S/ {totales.igv.toFixed(2)}</span>
                             </div>
-                            <div className="border-t border-slate-600 pt-2 flex justify-between font-bold text-lg">
-                                <span>TOTAL:</span>
-                                <span className="text-orange-400">S/ {totales.total.toFixed(2)}</span>
+                            <div className="pt-2 flex justify-between font-bold text-[22px]">
+                                <span className="text-white">TOTAL:</span>
+                                <span className="text-[#ee8425]">S/ {totales.total.toFixed(2)}</span>
                             </div>
                         </div>
 
@@ -526,22 +545,23 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
                         )}
 
                         {/* Botones de acción */}
-                        <div className="space-y-2 pt-4 border-t">
-                            <Button
-                                variant="primary"
-                                className="w-full py-3 text-base"
-                                isLoading={loading}
-                                onClick={handleGuardar}
-                            >
-                                ✓ EMITIR COMPROBANTE
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                className="w-full"
+                        <div className="pt-2">
+                            <button
+                                type="button"
+                                className="w-full py-3.5 bg-[#2c3338] text-white hover:bg-[#1a1f23] rounded-lg font-bold transition-colors mb-2"
                                 onClick={onClose}
                             >
                                 Cancelar
-                            </Button>
+                            </button>
+                            
+                            <button
+                                type="button"
+                                className={`w-full py-3.5 bg-[#5ca335] hover:bg-[#4d8b2d] text-white rounded-lg font-bold transition-colors ${loading ? 'opacity-50' : ''}`}
+                                onClick={handleGuardar}
+                                disabled={loading}
+                            >
+                                ✓ EMITIR COMPROBANTE
+                            </button>
                         </div>
                     </div>
                 </div>

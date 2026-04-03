@@ -22,6 +22,7 @@ class ReportesController {
         if (str_contains($route, '/ventas-por-dia'))      { $this->ventasPorDia();    return; }
         if (str_contains($route, '/top-productos'))        { $this->topProductos();    return; }
         if (str_contains($route, '/movimientos-stock'))    { $this->movimientosStock(); return; }
+        if (str_contains($route, '/rentabilidad'))         { $this->rentabilidad();    return; }
 
         http_response_code(404);
         echo json_encode(["success" => false, "message" => "Reporte no encontrado"]);
@@ -153,6 +154,125 @@ class ReportesController {
             }
 
             echo json_encode(["success" => true, "data" => array_values($porFecha), "raw" => $rows]);
+        } catch (PDOException $e) { $this->error($e); }
+    }
+
+    private function rentabilidad() {
+        try {
+            [$desde, $hasta] = $this->getFechas();
+            $vendedor_id = $_GET['vendedor_id'] ?? null;
+            $categoria = $_GET['categoria'] ?? null;
+
+            $whereVentas = "WHERE DATE(v.fecha_emision) BETWEEN :desde AND :hasta AND v.estado_sunat != 'ANULADO'";
+            if ($vendedor_id) {
+                $whereVentas .= " AND v.vendedor_id = :vendedor_id";
+            }
+
+            // JOIN principal cruzando ventas_detalle con productos (para costo)
+            $queryBase = "
+                FROM ventas_detalle vd
+                INNER JOIN ventas v ON vd.venta_id = v.id
+                LEFT JOIN productos p ON vd.producto_id = p.id OR vd.codigo_producto = p.codigo_interno
+                $whereVentas
+            ";
+            
+            if ($categoria) {
+                $queryBase .= " AND p.categoria = :categoria";
+            }
+
+            // 1. KPI GLOBAL
+            $stmtGlobal = $this->conn->prepare("
+                SELECT 
+                    SUM(vd.precio_total) AS ingresos_totales,
+                    SUM(vd.cantidad * IFNULL(p.costo_promedio, 0)) AS costo_bienes_vendidos,
+                    SUM(vd.precio_total - (vd.cantidad * IFNULL(p.costo_promedio, 0))) AS utilidad_bruta
+                $queryBase
+            ");
+            $stmtGlobal->bindValue(':desde', $desde);
+            $stmtGlobal->bindValue(':hasta', $hasta);
+            if ($vendedor_id) $stmtGlobal->bindValue(':vendedor_id', $vendedor_id);
+            if ($categoria) $stmtGlobal->bindValue(':categoria', $categoria);
+            $stmtGlobal->execute();
+            $kpiGlobal = $stmtGlobal->fetch(PDO::FETCH_ASSOC);
+
+            // Evitar nulos
+            $ingresosTotales = (float)($kpiGlobal['ingresos_totales'] ?? 0);
+            $cogs = (float)($kpiGlobal['costo_bienes_vendidos'] ?? 0);
+            $utilidadBruta = (float)($kpiGlobal['utilidad_bruta'] ?? 0);
+            $margenPorcentaje = $ingresosTotales > 0 ? ($utilidadBruta / $ingresosTotales) * 100 : 0;
+
+            // 2. SERIE DE TIEMPO (Evolución Diaria)
+            $stmtDias = $this->conn->prepare("
+                SELECT
+                    DATE(v.fecha_emision) AS fecha,
+                    SUM(vd.precio_total) AS ingresos,
+                    SUM(vd.cantidad * IFNULL(p.costo_promedio, 0)) AS cogs,
+                    SUM(vd.precio_total - (vd.cantidad * IFNULL(p.costo_promedio, 0))) AS utilidad
+                $queryBase
+                GROUP BY DATE(v.fecha_emision)
+                ORDER BY fecha ASC
+            ");
+            $stmtDias->bindValue(':desde', $desde);
+            $stmtDias->bindValue(':hasta', $hasta);
+            if ($vendedor_id) $stmtDias->bindValue(':vendedor_id', $vendedor_id);
+            if ($categoria) $stmtDias->bindValue(':categoria', $categoria);
+            $stmtDias->execute();
+            $dias = $stmtDias->fetchAll(PDO::FETCH_ASSOC);
+
+            $serieTiempo = array_map(function($r) {
+                return [
+                    'fecha' => $r['fecha'],
+                    'ingresos' => round((float)$r['ingresos'], 2),
+                    'cogs' => round((float)$r['cogs'], 2),
+                    'utilidad' => round((float)$r['utilidad'], 2),
+                    'margen' => (float)$r['ingresos'] > 0 ? round(((float)$r['utilidad'] / (float)$r['ingresos']) * 100, 2) : 0
+                ];
+            }, $dias);
+
+            // 3. TOP PRODUCTOS MÁS RENTABLES
+            $stmtTop = $this->conn->prepare("
+                SELECT
+                    vd.descripcion AS producto,
+                    vd.codigo_producto AS codigo,
+                    SUM(vd.cantidad) AS cantidad_vendida,
+                    SUM(vd.precio_total) AS ingresos,
+                    SUM(vd.precio_total - (vd.cantidad * IFNULL(p.costo_promedio, 0))) AS utilidad
+                $queryBase
+                GROUP BY vd.codigo_producto, vd.descripcion
+                ORDER BY utilidad DESC
+                LIMIT 15
+            ");
+            $stmtTop->bindValue(':desde', $desde);
+            $stmtTop->bindValue(':hasta', $hasta);
+            if ($vendedor_id) $stmtTop->bindValue(':vendedor_id', $vendedor_id);
+            if ($categoria) $stmtTop->bindValue(':categoria', $categoria);
+            $stmtTop->execute();
+            $topProductos = $stmtTop->fetchAll(PDO::FETCH_ASSOC);
+
+            $topRes = array_map(function($r) {
+                return [
+                    'producto' => $r['producto'],
+                    'codigo' => $r['codigo'],
+                    'unidades' => (float)$r['cantidad_vendida'],
+                    'ingresos' => round((float)$r['ingresos'], 2),
+                    'utilidad' => round((float)$r['utilidad'], 2),
+                    'margen' => (float)$r['ingresos'] > 0 ? round(((float)$r['utilidad'] / (float)$r['ingresos']) * 100, 2) : 0
+                ];
+            }, $topProductos);
+
+            echo json_encode([
+                "success" => true,
+                "data" => [
+                    "global" => [
+                        "ingresos" => round($ingresosTotales, 2),
+                        "cogs" => round($cogs, 2),
+                        "utilidad" => round($utilidadBruta, 2),
+                        "margen_porcentaje" => round($margenPorcentaje, 2)
+                    ],
+                    "serie_tiempo" => $serieTiempo,
+                    "top_rentables" => $topRes
+                ]
+            ]);
         } catch (PDOException $e) { $this->error($e); }
     }
 

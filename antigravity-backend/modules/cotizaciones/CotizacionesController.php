@@ -4,6 +4,7 @@
  * Gestión de cotizaciones (pre-ventas)
  */
 
+require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../middleware/AuthMiddleware.php';
 require_once __DIR__ . '/CotizacionesService.php';
 
@@ -54,9 +55,13 @@ class CotizacionesController
 
     private function listar()
     {
+        // ✅ Verificar autenticación
+        $user = AuthMiddleware::verificar();
+        
         try {
             $estado = $_GET['estado'] ?? null;
             $cliente_id = $_GET['cliente_id'] ?? null;
+            $indicacion = $_GET['indicacion'] ?? null;
 
             $sql = "SELECT c.*, 
                            cl.razon_social as cliente_nombre,
@@ -68,12 +73,19 @@ class CotizacionesController
 
             $params = [];
             if ($estado) {
-                $sql .= " AND c.estado = :estado";
+                // Forzar collation consistente al comparar texto para evitar errores de mix de collations
+                $sql .= " AND c.estado COLLATE utf8mb4_general_ci = :estado";
                 $params[':estado'] = $estado;
             }
             if ($cliente_id) {
                 $sql .= " AND c.cliente_id = :cliente_id";
                 $params[':cliente_id'] = $cliente_id;
+            }
+            if ($indicacion) {
+                // Filtrar cotizaciones que tengan al menos un detalle con la indicación solicitada
+                // Forzar collation en la comparación de indicacion
+                $sql .= " AND EXISTS (SELECT 1 FROM cotizaciones_detalle cd WHERE cd.cotizacion_id = c.id AND cd.indicacion COLLATE utf8mb4_general_ci = :indicacion)";
+                $params[':indicacion'] = $indicacion;
             }
 
             $sql .= " ORDER BY c.created_at DESC";
@@ -85,9 +97,10 @@ class CotizacionesController
             // Obtener detalles para cada cotización
             $cotizacionesConDetalles = [];
             foreach ($cotizaciones as $cot) {
+                // Forzar collation consistente en el JOIN con `productos` (productos usa utf8mb4_unicode_ci)
                 $sql_detalles = "SELECT cd.*, p.descripcion, p.codigo_interno 
                                 FROM cotizaciones_detalle cd
-                                LEFT JOIN productos p ON cd.producto_id = p.id
+                                LEFT JOIN productos p ON cd.producto_id COLLATE utf8mb4_general_ci = p.id COLLATE utf8mb4_general_ci
                                 WHERE cd.cotizacion_id = :id
                                 ORDER BY cd.item";
                 $stmt_det = $this->pdo->prepare($sql_detalles);
@@ -170,9 +183,10 @@ class CotizacionesController
             }
 
             // Obtener detalles
+            // Forzar collation consistente en el JOIN con `productos`
             $sql_detalles = "SELECT cd.*, p.descripcion, p.codigo_interno 
                             FROM cotizaciones_detalle cd
-                            LEFT JOIN productos p ON cd.producto_id = p.id
+                            LEFT JOIN productos p ON cd.producto_id COLLATE utf8mb4_general_ci = p.id COLLATE utf8mb4_general_ci
                             WHERE cd.cotizacion_id = :id
                             ORDER BY cd.item";
             $stmt = $this->pdo->prepare($sql_detalles);
@@ -189,9 +203,74 @@ class CotizacionesController
     private function generarPdf($id)
     {
         try {
-            // TODO: Implementar generación de PDF similar a VentasPdfController
-            // Usar FPDF library
-            $this->sendResponse(false, "Función no implementada aún", null, 501);
+            // Obtener cotización y detalles (reutiliza lógica de obtener)
+            $sql = "SELECT c.*, cl.razon_social as cliente_nombre, cl.email as cliente_email, v.nombre as vendedor_nombre
+                    FROM cotizaciones c
+                    LEFT JOIN clientes cl ON c.cliente_id = cl.id
+                    LEFT JOIN vendedores v ON c.vendedor_id = v.id
+                    WHERE c.id = :id";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':id' => $id]);
+            $cotizacion = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$cotizacion) {
+                $this->sendResponse(false, "Cotización no encontrada", null, 404);
+            }
+
+            $sql_detalles = "SELECT cd.*, p.descripcion, p.codigo_interno 
+                            FROM cotizaciones_detalle cd
+                            LEFT JOIN productos p ON cd.producto_id = p.id
+                            WHERE cd.cotizacion_id = :id
+                            ORDER BY cd.item";
+            $stmt = $this->pdo->prepare($sql_detalles);
+            $stmt->execute([':id' => $id]);
+            $detalles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Generar PDF con FPDF
+            require_once __DIR__ . '/../../libraries/fpdf/fpdf.php';
+            $pdf = new FPDF('P','mm','A4');
+            $pdf->AddPage();
+            $pdf->SetFont('Helvetica','B',14);
+            $pdf->Cell(0,8,'Cotizacion: ' . ($cotizacion['numero_correlativo'] ?? $cotizacion['id']),0,1);
+            $pdf->SetFont('Helvetica','',10);
+            $pdf->Cell(0,6,'Cliente: ' . ($cotizacion['cliente_nombre'] ?? '---'),0,1);
+            $pdf->Cell(0,6,'Vendedor: ' . ($cotizacion['vendedor_nombre'] ?? '---'),0,1);
+            $pdf->Cell(0,6,'Fecha: ' . ($cotizacion['fecha_emision'] ?? ''),0,1);
+            $pdf->Ln(4);
+
+            // Tabla de detalles (simple)
+            $pdf->SetFont('Helvetica','B',10);
+            $pdf->Cell(10,7,'#',1,0,'C');
+            $pdf->Cell(90,7,'Descripcion',1,0);
+            $pdf->Cell(20,7,'Cant.',1,0,'C');
+            $pdf->Cell(30,7,'P. Unit',1,0,'R');
+            $pdf->Cell(30,7,'Total',1,1,'R');
+            $pdf->SetFont('Helvetica','',10);
+            foreach ($detalles as $d) {
+                $totalLinea = number_format(($d['cantidad'] * ($d['valor_unitario'] ?? 0)),2);
+                $pdf->Cell(10,6,$d['item'],1,0,'C');
+                $desc = mb_substr($d['descripcion'] ?? '',0,60);
+                $pdf->Cell(90,6,$desc,1,0);
+                $pdf->Cell(20,6,number_format($d['cantidad'],3),1,0,'C');
+                $pdf->Cell(30,6,number_format($d['valor_unitario'] ?? 0,2),1,0,'R');
+                $pdf->Cell(30,6,$totalLinea,1,1,'R');
+            }
+
+            $pdf->Ln(6);
+            $pdf->SetFont('Helvetica','B',11);
+            $pdf->Cell(0,6,'Totales',0,1);
+            $pdf->SetFont('Helvetica','',10);
+            $pdf->Cell(0,6,'Op. Gravada: ' . number_format($cotizacion['op_gravada'] ?? 0,2),0,1,'R');
+            $pdf->Cell(0,6,'IGV: ' . number_format($cotizacion['igv'] ?? 0,2),0,1,'R');
+            $pdf->Cell(0,6,'Total: ' . number_format($cotizacion['total'] ?? 0,2),0,1,'R');
+
+            // Enviar PDF al cliente
+            $pdfContent = $pdf->Output('', 'S');
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="cotizacion_' . $id . '.pdf"');
+            echo $pdfContent;
+            exit;
+
         } catch (Exception $e) {
             $this->sendResponse(false, "Error: " . $e->getMessage(), null, 500);
         }

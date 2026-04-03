@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export default function Modal({ isOpen, onClose, title, children, size = 'md' }) {
+export default function Modal({ isOpen, onClose, title, children, size = 'md', bgClass = 'bg-white' }) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -29,18 +29,18 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' })
       <div className={`bg-white rounded-xl shadow-2xl w-full ${sizes[size]} max-h-[90vh] flex flex-col`}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 shrink-0">
-          <h2 className="text-lg font-bold text-slate-800">{title}</h2>
+        <div className="flex items-center justify-between px-8 py-5 rounded-t-xl bg-[#FFF9F2] shrink-0 border-b-0">
+          <h2 className="text-[20px] font-bold text-slate-800 tracking-tight">{title}</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-md bg-[#1f2937] text-white hover:bg-slate-700 transition-colors shadow-sm"
           >
             ✕
           </button>
         </div>
 
         {/* Body — scrollable */}
-        <div className="overflow-y-auto overflow-x-auto flex-1 px-6 py-5">
+        <div className={`overflow-y-auto overflow-x-auto flex-1 rounded-b-xl ${bgClass}`} style={{ padding: '1.5rem 2rem' }}>
           {children}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, RefreshCw, X, FileText, MessageCircle } from 'lucide-react';
+import { Eye, RefreshCw, X, FileText, MessageCircle, Truck, Printer } from 'lucide-react';
 import Button from "../../components/ui/Button";
 import DataTable from "../../components/ui/DataTable";
 import SearchInput from "../../components/ui/SearchInput";
@@ -10,8 +10,9 @@ import { notasCreditoApi } from "../../api/notas-credito";
 import { useToast } from "../../hooks/useToast";
 import VentaDetalle from "./VentaDetalle"; // Componente simple de visualización
 import { exportToExcel } from "../../utils/exportar";
-import { abrirPdfVenta } from "../../utils/pdf";
+import { abrirPdfVenta, abrirTicketVenta, abrirGuiaEnvio } from "../../utils/pdf";
 import { FileSpreadsheet } from "lucide-react";
+import '../../styles/ventas.css';
 
 const VentasPage = () => {
     const navigate = useNavigate();
@@ -60,18 +61,18 @@ const VentasPage = () => {
     // Helpers de UI
     const badgeSunat = (estado) => {
         const map = {
-            'ACEPTADO': 'bg-emerald-100 text-emerald-700',
-            'PENDIENTE': 'bg-amber-100 text-amber-700',
-            'RECHAZADO': 'bg-red-100 text-red-700',
-            'ANULADO': 'bg-slate-100 text-slate-500',
+            'ACEPTADO': 'bg-emerald-500 text-white',
+            'PENDIENTE': 'bg-amber-500 text-white',
+            'RECHAZADO': 'bg-red-600 text-white',
+            'ANULADO': 'bg-[#E74C3C] text-white shadow-sm',
         };
-        return <span className={`px-2 py-1 rounded-full text-[10px] gap-1 flex items-center w-fit font-bold uppercase ${map[estado] || 'bg-slate-100'}`}>{estado}</span>;
+        return <span className={`px-6 py-6 rounded-[6px] text-[11px] gap-1 flex items-center w-fit font-bold uppercase tracking-wide ${map[estado] || 'bg-slate-500 text-white'}`}>{estado}</span>;
     };
 
     const badgePago = (estado) => {
         const isPagado = estado === 'PAGADO';
         return (
-            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${isPagado ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+            <span className={`px-3 py-1 rounded-[6px] text-[11px] font-bold uppercase shadow-sm ${isPagado ? 'bg-emerald-50 text-emerald-600' : 'bg-[#FFF8E7] text-[#D97706]'}`}>
                 {estado || 'PENDIENTE'}
             </span>
         );
@@ -104,13 +105,14 @@ const VentasPage = () => {
 
     const handleWhatsApp = (venta) => {
         if (!venta.cliente_telefono) {
-            toast.error('Cliente no tiene teléfono registrado');
-            return;
+            toast.error('El cliente de esta venta no tiene un teléfono celular registrado en su ficha.');            return;
         }
         
         const numero = venta.cliente_telefono.replace(/\D/g, '');
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
+        const linkPdf = `${baseUrl}/api/ventas/${venta.id}/pdf`;
         const mensaje = encodeURIComponent(
-            `Estimado/a ${venta.cliente_nombre},\n\nAdjunto su ${venta.tipo_comprobante === '01' ? 'factura' : 'boleta'} ${venta.numero_completo} por un monto de S/ ${venta.importe_total}.\n\n¡Gracias por su compra!`
+            `Estimado/a ${venta.cliente_nombre},\n\nAdjuntamos su ${venta.tipo_comprobante === '01' ? 'factura' : 'boleta'} ${venta.numero_completo} por el monto de S/ ${parseFloat(venta.importe_total).toFixed(2)}.\n\nPuede ver y descargar su comprobante aquí:\n${linkPdf}\n\n¡Gracias por su preferencia!`
         );
         const url = `https://wa.me/51${numero}?text=${mensaje}`;
         window.open(url, '_blank');
@@ -127,8 +129,8 @@ const VentasPage = () => {
             header: "Comprobante",
             render: (row) => (
                 <div className="flex flex-col">
-                    <span className="font-bold text-slate-800 text-sm">{row.numero_completo}</span>
-                    <span className="text-xs text-slate-400 capitalize">
+                    <span className="font-bold text-slate-700 text-[15px]">{row.numero_completo}</span>
+                    <span className="text-[13px] text-slate-400">
                         {row.tipo_comprobante === '01' ? 'Factura' : 'Boleta'}
                     </span>
                 </div>
@@ -139,56 +141,53 @@ const VentasPage = () => {
             header: "Fecha",
             render: (row) => {
                 const date = new Date(row.fecha_emision);
-                return date.toLocaleDateString('es-PE');
+                return <span className="text-[15px] text-slate-700 font-medium">{date.toLocaleDateString('es-PE')}</span>;
             }
         },
         {
             header: "Total",
-            render: (row) => <span className="font-bold text-orange-600">S/ {row.importe_total}</span>
+            render: (row) => <span className="font-bold text-[#f2542d] text-[15px]">S/ {parseFloat(row.importe_total).toFixed(2)}</span>
         },
         { header: "SUNAT", render: (row) => badgeSunat(row.estado_sunat) },
-        { header: "Pago", render: (row) => badgePago(row.estado_pago) },
+        { header: "Canal", render: (row) => <span className="text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded capitalize">{row.canal_venta?.replace('_', ' ') || 'Tienda'}</span> },
         {
             header: "Acciones",
             render: (row) => (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => {
-                            console.log('Venta seleccionada:', row);
                             setVentaToView(row);
                         }}
-                        className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                        className="w-10 h-8 flex justify-center items-center rounded-md bg-[#232733] text-white hover:bg-[#343a49] transition-colors"
                         title="Ver detalle"
                     >
-                        <Eye size={16} />
+                        <Eye size={18} className="opacity-80"/>
                     </button>
 
                     <button
-                        onClick={() => abrirPdfVenta(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar PDF'))}
-                        className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                        title="Ver PDF"
+                         onClick={() => abrirTicketVenta(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar Ticket'))}
+                        className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
+                        title="Imprimir Ticket Térmico"
                     >
-                        <FileText size={16} />
+                        <Printer size={16} />
                     </button>
 
-                    {(row.estado_sunat === 'PENDIENTE' || row.estado_sunat === 'RECHAZADO') && (
-                        <button
-                            onClick={() => handleReintentar(row.id)}
-                            className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors"
-                            title="Reintentar SUNAT"
-                        >
-                            <RefreshCw size={16} />
-                        </button>
-                    )}
+                    <button
+                        onClick={() => abrirPdfVenta(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar PDF A4'))}
+                        className="w-10 h-8 flex justify-center items-center rounded-md bg-[#232733] text-blue-300 hover:bg-[#343a49] hover:text-blue-200 transition-colors"
+                        title="Ver PDF A4"
+                    >
+                        <FileText size={18} />
+                    </button>
 
                     <button
                         onClick={() => handleWhatsApp(row)}
-                        className="p-1.5 rounded-lg text-green-500 hover:bg-green-50 transition-colors"
+                        className="w-10 h-8 flex justify-center items-center rounded-md bg-[#232733] text-green-400 hover:bg-[#343a49] hover:text-green-300 transition-colors"
                         title="Enviar por WhatsApp"
                     >
-                        <MessageCircle size={16} />
+                        <MessageCircle size={18} />
                     </button>
-
+                    
                     {row.estado_sunat === 'ACEPTADO' && (
                         <button
                             onClick={() => handleNotaCredito(row)}
@@ -199,10 +198,18 @@ const VentasPage = () => {
                         </button>
                     )}
 
+                    <button
+                    onClick={() => abrirGuiaEnvio(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar Guía de Envío'))}
+                        className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                        title="Generar Guía de Envío (Shalom/Agencia)"
+                         >
+                        <Truck size={16} />
+                    </button>
+
                     {row.estado_sunat !== 'ANULADO' && (
                         <button
                             onClick={() => handleAnular(row.id)}
-                            className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors hidden"
                             title="Anular"
                         >
                             <X size={16} />
@@ -214,22 +221,25 @@ const VentasPage = () => {
     ];
 
     return (
-        <div className="p-6">
+        <div className="p-8 max-w-[1400px] mx-auto min-h-screen">
             {/* Header */}
-            <div className="flex justify-between items-start mb-6">
+            <div className="flex justify-between items-end mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800">Comprobantes de Venta</h1>
-                    <p className="text-slate-500 text-sm">Facturación electrónica · SUNAT UBL 2.1</p>
+                    <h1 className="text-[28px] font-extrabold text-[#1f2937] tracking-tight pb-1">Comprobantes de Venta</h1>
+                    <p className="text-slate-400 text-[14px]">Facturación electrónica · SUNAT UBL 2.1</p>
                 </div>
-                <Button variant="primary" onClick={() => navigate('/ventas/nueva')}>
+                <button 
+                    onClick={() => navigate('/ventas/nueva')}
+                    className="bg-[#f2542d] hover:bg-[#d84824] text-white px-5 py-2.5 rounded-lg font-semibold shadow-sm transition-colors flex items-center gap-2 text-sm"
+                >
                     + Nueva Venta
-                </Button>
+                </button>
             </div>
 
             {/* Barra de Filtros */}
-            <div className="grid grid-cols-1 md:flex items-center gap-3 mb-6 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+            <div className="flex flex-wrap items-center gap-3 mb-4 bg-transparent">
                 <select
-                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border border-slate-200 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-slate-300 bg-white min-w-[160px] shadow-sm font-medium text-slate-600"
                     value={filtroEstado}
                     onChange={(e) => setFiltroEstado(e.target.value)}
                 >
@@ -242,24 +252,27 @@ const VentasPage = () => {
 
                 <input
                     type="date"
-                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm"
+                    className="border border-slate-200 rounded-md px-3 py-2.5 text-sm bg-white shadow-sm font-medium text-slate-600"
                     value={fechaDesde}
                     onChange={(e) => setFechaDesde(e.target.value)}
-                />
-                <input
-                    type="date"
-                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm"
-                    value={fechaHasta}
-                    onChange={(e) => setFechaHasta(e.target.value)}
+                    title="Fecha Desde"
                 />
 
-                <Button onClick={cargarVentas} className="px-6">Buscar</Button>
+                <button 
+                    onClick={cargarVentas} 
+                    className="bg-[#1f2937] hover:bg-slate-800 text-white px-6 py-2.5 rounded-md font-semibold text-sm shadow-sm transition-colors"
+                >
+                    Buscar
+                </button>
 
-                <Button variant="secondary" onClick={() => exportToExcel(filteredData, 'ventas_maquimpower', 'Ventas')} className="flex items-center gap-2">
+                <button 
+                    onClick={() => exportToExcel(filteredData, 'ventas_maquimpower', 'Ventas')} 
+                    className="bg-[#fefaf0] border border-slate-200 hover:bg-orange-50 text-slate-700 px-4 py-2.5 rounded-md font-medium text-sm shadow-sm transition-colors flex items-center gap-2"
+                >
                     <FileSpreadsheet size={16} /> Exportar Excel
-                </Button>
+                </button>
 
-                <div className="ml-auto min-w-[250px]">
+                <div className="ml-auto w-full md:w-auto md:min-w-[280px]">
                     <SearchInput onSearch={setSearch} placeholder="Cliente o número..." />
                 </div>
             </div>

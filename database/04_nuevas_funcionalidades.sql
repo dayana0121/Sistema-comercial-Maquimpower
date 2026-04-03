@@ -103,6 +103,9 @@ ALTER TABLE compras ADD COLUMN IF NOT EXISTS estado_pago VARCHAR(20) DEFAULT 'PE
 -- Agregar fecha_vencimiento a compras (si no existe)
 ALTER TABLE compras ADD COLUMN IF NOT EXISTS fecha_vencimiento DATE;
 
+-- Agregar indicacion a cotizaciones_detalle (si no existe)
+ALTER TABLE cotizaciones_detalle ADD COLUMN IF NOT EXISTS indicacion VARCHAR(32) DEFAULT '';
+
 -- ==========================================================
 -- ÍNDICES PARA PERFORMANCE
 -- ==========================================================

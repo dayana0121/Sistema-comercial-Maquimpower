@@ -4,6 +4,7 @@
  * Gestión de notas de crédito (tipo 07 SUNAT)
  */
 
+require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../middleware/AuthMiddleware.php';
 
 class NotasCreditoController

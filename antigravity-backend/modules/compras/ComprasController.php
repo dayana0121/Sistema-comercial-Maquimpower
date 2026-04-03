@@ -58,7 +58,7 @@ class ComprasController {
             if ($hasta)  { $where .= " AND c.fecha_comprobante <= :hasta"; $params[':hasta'] = $hasta; }
 
             $stmt = $this->conn->prepare("
-                SELECT c.*, p.razon_social AS proveedor_nombre, p.numero_documento AS proveedor_ruc
+                SELECT c.*, CONCAT(IFNULL(c.serie,''), '-', IFNULL(c.correlativo,'')) AS numero_comprobante, p.razon_social AS proveedor_nombre, p.numero_documento AS proveedor_ruc
                 FROM compras c
                 LEFT JOIN proveedores p ON c.proveedor_id = p.id
                 $where
@@ -74,7 +74,7 @@ class ComprasController {
     private function obtener($id) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT c.*, p.razon_social AS proveedor_nombre, p.numero_documento AS proveedor_ruc,
+                SELECT c.*, CONCAT(IFNULL(c.serie,''), '-', IFNULL(c.correlativo,'')) AS numero_comprobante, p.razon_social AS proveedor_nombre, p.numero_documento AS proveedor_ruc,
                        p.email AS proveedor_email, p.telefono AS proveedor_telefono
                 FROM compras c
                 LEFT JOIN proveedores p ON c.proveedor_id = p.id
@@ -107,25 +107,45 @@ class ComprasController {
             $id = $this->conn->query("SELECT UUID()")->fetchColumn();
 
             // Calcular totales desde detalles
-            $opGravada = 0; $igvTotal = 0;
+            $opGravada = 0; $opExonerada = 0; $opInafecta = 0; $igvTotal = 0;
             foreach ($data->detalles as $d) {
                 $subtotal = (float)$d->cantidad * (float)$d->costo_unitario;
-                $igvItem  = $subtotal * 0.18;
-                $opGravada += $subtotal;
-                $igvTotal  += $igvItem;
+                $tipoAfect = $d->tipo_afectacion_igv ?? '10';
+                
+                if ($tipoAfect === '10') {
+                    $igvItem  = $subtotal * 0.18;
+                    $opGravada += $subtotal;
+                    $igvTotal  += $igvItem;
+                } elseif ($tipoAfect === '20') {
+                    $opExonerada += $subtotal;
+                } else {
+                    $opInafecta += $subtotal;
+                }
             }
-            $importeTotal = $opGravada + $igvTotal;
+            $importeTotal = $opGravada + $opExonerada + $opInafecta + $igvTotal;
 
             $stmt = $this->conn->prepare("INSERT INTO compras
-                (id, proveedor_id, tipo_comprobante, numero_comprobante, fecha_comprobante,
-                 fecha_vencimiento, op_gravada, igv, importe_total, moneda, estado, observacion, usuario_id)
-                VALUES (:id,:prov,:tipo,:ncomp,:fecha,:fvenc,:grav,:igv,:total,:mon,:est,:obs,:user)");
+                (id, proveedor_id, tipo_comprobante, serie, correlativo, fecha_comprobante,
+                 fecha_vencimiento, metodo_pago, termino_pago_dias, op_gravada, igv, importe_total, moneda, estado, observacion, usuario_id)
+                VALUES (:id,:prov,:tipo,:serie,:correl,:fecha,:fvenc,:mpago,:tpago,:grav,:igv,:total,:mon,:est,:obs,:user)");
             $stmt->bindValue(':id', $id);
             $stmt->bindValue(':prov', $data->proveedor_id);
             $stmt->bindValue(':tipo', $data->tipo_comprobante ?? 'FACTURA');
-            $stmt->bindValue(':ncomp', $data->numero_comprobante ?? null);
+            $stmt->bindValue(':serie', $data->serie ?? null);
+            $stmt->bindValue(':correl', $data->correlativo ?? null);
             $stmt->bindValue(':fecha', $data->fecha_comprobante ?? date('Y-m-d'));
-            $stmt->bindValue(':fvenc', $data->fecha_vencimiento ?? null);
+            
+            // Fechas y créditos
+            $dias = (int)($data->termino_pago_dias ?? 0);
+            $metodo = $data->metodo_pago ?? 'CONTADO';
+            $fvenc = $data->fecha_vencimiento ?? date('Y-m-d', strtotime(($data->fecha_comprobante ?? date('Y-m-d')) . " + $dias days"));
+            if ($metodo === 'CONTADO' || $dias === 0) {
+                $fvenc = $data->fecha_comprobante ?? date('Y-m-d');
+            }
+            
+            $stmt->bindValue(':fvenc', $fvenc);
+            $stmt->bindValue(':mpago', $metodo);
+            $stmt->bindValue(':tpago', $dias);
             $stmt->bindValue(':grav', round($opGravada, 2));
             $stmt->bindValue(':igv', round($igvTotal, 2));
             $stmt->bindValue(':total', round($importeTotal, 2));
@@ -138,12 +158,14 @@ class ComprasController {
             // Insertar detalles y actualizar stock
             foreach ($data->detalles as $i => $d) {
                 $detId   = $this->conn->query("SELECT UUID()")->fetchColumn();
-                $subtotal = round((float)$d->cantidad * (float)$d->costo_unitario, 2);
-                $igvItem  = round($subtotal * 0.18, 2);
+                $subtotal = round((float)$d->cantidad * (float)$d->costo_unitario, 4);
+                
+                $tipoAfect = $d->tipo_afectacion_igv ?? '10';
+                $igvItem = ($tipoAfect === '10') ? round($subtotal * 0.18, 4) : 0;
 
                 $stmtDet = $this->conn->prepare("INSERT INTO compras_detalle
-                    (id, compra_id, item, producto_id, descripcion, unidad_medida, cantidad, costo_unitario, igv_item, subtotal)
-                    VALUES (:id,:cid,:item,:prod,:desc,:um,:cant,:costo,:igv,:sub)");
+                    (id, compra_id, item, producto_id, descripcion, unidad_medida, cantidad, costo_unitario, igv_item, subtotal, tipo_afectacion_igv, almacen_destino_id)
+                    VALUES (:id,:cid,:item,:prod,:desc,:um,:cant,:costo,:igv,:sub,:tafect,:almacen)");
                 $stmtDet->bindValue(':id', $detId);
                 $stmtDet->bindValue(':cid', $id);
                 $stmtDet->bindValue(':item', $i + 1);
@@ -153,28 +175,55 @@ class ComprasController {
                 $stmtDet->bindValue(':cant', $d->cantidad);
                 $stmtDet->bindValue(':costo', $d->costo_unitario);
                 $stmtDet->bindValue(':igv', $igvItem);
-                $stmtDet->bindValue(':sub', $subtotal);
+                $stmtDet->bindValue(':sub', $subtotal + $igvItem); // Registramos el subtotal con el IGV
+                $stmtDet->bindValue(':tafect', $tipoAfect);
+                $stmtDet->bindValue(':almacen', $d->almacen_destino_id ?? null);
                 $stmtDet->execute();
 
                 // Actualizar stock si tiene producto_id
                 if (!empty($d->producto_id)) {
-                    // Obtener stock actual antes de insertar el movimiento (FIX sugerido por usuario)
+                    $alm_dest = $d->almacen_destino_id ?? null;
+                    if (!$alm_dest) {
+                        $alm_dest = $this->conn->query("SELECT id FROM almacenes WHERE es_principal = 1 LIMIT 1")->fetchColumn();
+                    }
+
+                    // Obtener stock actual antes de insertar el movimiento
                     $stmtCheck = $this->conn->prepare("SELECT stock_actual FROM productos WHERE id = :id");
                     $stmtCheck->bindValue(':id', $d->producto_id);
                     $stmtCheck->execute();
                     $stockAnterior = (float)($stmtCheck->fetchColumn() ?? 0);
                     $stockNuevo = $stockAnterior + (float)$d->cantidad;
 
+                    // UPDATE GLOBAL
                     $stmtStock = $this->conn->prepare("UPDATE productos SET stock_actual = stock_actual + :cant WHERE id = :id");
                     $stmtStock->bindValue(':cant', (float)$d->cantidad);
                     $stmtStock->bindValue(':id', $d->producto_id);
                     $stmtStock->execute();
 
-                    // Registrar en kardex incluyendo stock_anterior y stock_nuevo
+                    // UPDATE POR ALMACÉN
+                    $stmtVerDest = $this->conn->prepare("SELECT 1 FROM inventario_stock WHERE producto_id = :id AND almacen_id = :almacen");
+                    $stmtVerDest->bindValue(':id', $d->producto_id);
+                    $stmtVerDest->bindValue(':almacen', $alm_dest);
+                    $stmtVerDest->execute();
+                    if ($stmtVerDest->fetchColumn()) {
+                        $stmtUpdDest = $this->conn->prepare("UPDATE inventario_stock SET stock_actual = stock_actual + :cant WHERE producto_id = :id AND almacen_id = :almacen");
+                        $stmtUpdDest->bindValue(':cant', (float)$d->cantidad);
+                        $stmtUpdDest->bindValue(':id', $d->producto_id);
+                        $stmtUpdDest->bindValue(':almacen', $alm_dest);
+                        $stmtUpdDest->execute();
+                    } else {
+                        $stmtInsDest = $this->conn->prepare("INSERT INTO inventario_stock (producto_id, almacen_id, stock_actual) VALUES (:id, :almacen, :cant)");
+                        $stmtInsDest->bindValue(':id', $d->producto_id);
+                        $stmtInsDest->bindValue(':almacen', $alm_dest);
+                        $stmtInsDest->bindValue(':cant', (float)$d->cantidad);
+                        $stmtInsDest->execute();
+                    }
+
+                    // Registrar en kardex incluyendo stock_anterior, stock_nuevo y almacén
                     $movId = $this->conn->query("SELECT UUID()")->fetchColumn();
                     $stmtMov = $this->conn->prepare("INSERT INTO inventario_movimientos
-                        (id, producto_id, tipo_movimiento, cantidad, stock_anterior, stock_nuevo, motivo, referencia)
-                        VALUES (:id,:prod,'ENTRADA',:cant,:stock_ant,:stock_nvo,:motivo,:ref)");
+                        (id, producto_id, tipo_movimiento, cantidad, stock_anterior, stock_nuevo, motivo, referencia, almacen_destino_id)
+                        VALUES (:id,:prod,'ENTRADA',:cant,:stock_ant,:stock_nvo,:motivo,:ref,:alm)");
                     $stmtMov->bindValue(':id', $movId);
                     $stmtMov->bindValue(':prod', $d->producto_id);
                     $stmtMov->bindValue(':cant', (float)$d->cantidad);
@@ -182,6 +231,7 @@ class ComprasController {
                     $stmtMov->bindValue(':stock_nvo', $stockNuevo);
                     $stmtMov->bindValue(':motivo', 'Compra: ' . ($data->numero_comprobante ?? $id));
                     $stmtMov->bindValue(':ref', $id);
+                    $stmtMov->bindValue(':alm', $alm_dest);
                     $stmtMov->execute();
                 }
             }

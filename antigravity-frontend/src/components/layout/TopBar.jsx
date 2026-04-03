@@ -7,8 +7,8 @@ const TopBar = ({ titulo = "Dashboard" }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
-    // Simulación de flag SUNAT (esto podría venir de una config global o env)
-    const SUNAT_HABILITADO = false;
+    // Simulación de flag SUNAT
+    const SUNAT_HABILITADO = true;
 
     const handleLogout = () => {
         logout();
@@ -30,18 +30,11 @@ const TopBar = ({ titulo = "Dashboard" }) => {
 
                 <div className="user-profile">
                     <div className="user-info">
-                        <span className="user-email">{user?.email}</span>
+                        <span className="user-email">{user?.email || 'admin@maquimpower.com'}</span>
                     </div>
                     <div className="user-avatar" title={user?.email}>
-                        {user?.email?.[0].toUpperCase()}
+                        {user?.email?.[0].toUpperCase() || 'A'}
                     </div>
-                    <button
-                        className="topbar-logout"
-                        onClick={handleLogout}
-                        title="Cerrar sesión"
-                    >
-                        <LuLogOut size={18} />
-                    </button>
                 </div>
             </div>
         </header>
