@@ -8,7 +8,9 @@ import { notasCreditoApi } from '../../api/notas_credito';
 import { useToast } from '../../hooks/useToast';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Modal from '../../components/ui/Modal';
 import BuscadorDocumento from '../../components/ui/BuscadorDocumento';
+import { cotizacionesApi } from '../../api/cotizaciones';
 
 const CAT54 = [
     { code: '022', name: 'Otros servicios empresariales', percent: 10 },
@@ -60,6 +62,19 @@ const VentasCreatePage = () => {
     const [searchProducto, setSearchProducto] = useState('');
     const [productosOptions, setProductosOptions] = useState([]);
     const [detalles, setDetalles] = useState([]);
+
+    // Importar Cotizaciones
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [cotizacionesDisponibles, setCotizacionesDisponibles] = useState([]);
+    const [filtroCotizacion, setFiltroCotizacion] = useState('');
+
+    const filteredCotizaciones = useMemo(() => {
+        if (!filtroCotizacion) return cotizacionesDisponibles;
+        return cotizacionesDisponibles.filter(cot => 
+            (cot.numero_correlativo?.toString() || '').toLowerCase().includes(filtroCotizacion.toLowerCase()) ||
+            (cot.cliente?.razon_social || '').toLowerCase().includes(filtroCotizacion.toLowerCase())
+        );
+    }, [filtroCotizacion, cotizacionesDisponibles]);
 
     // ==========================================
     // Cargar vendedores
@@ -208,6 +223,68 @@ const VentasCreatePage = () => {
                 toast.success('Detalles de comprobante cargados.');
             }
         } catch(e) {}
+    };
+
+    // ==========================================
+    // Importar Cotización
+    // ==========================================
+    const handleAbrirImportar = async () => {
+        try {
+            setLoading(true);
+            const res = await cotizacionesApi.listar({ estado: 'PENDIENTE' });
+            if (res.success) {
+                setCotizacionesDisponibles(res.data || []);
+                setShowImportModal(true);
+            }
+            setLoading(false);
+        } catch (err) {
+            setLoading(false);
+            toast.error('Error al cargar cotizaciones');
+        }
+    };
+
+    const handleImportarSeleccion = async (id) => {
+        try {
+            setLoading(true);
+            const res = await cotizacionesApi.obtener(id);
+            if (res.success) {
+                const cot = res.data;
+                
+                // 1. Cliente
+                if (cot.cliente) {
+                    setSelectedCliente(cot.cliente);
+                    setForm(prev => ({ ...prev, cliente_id: cot.cliente_id }));
+                }
+
+                // 2. Detalles
+                if (cot.detalles) {
+                    const mapDetalles = cot.detalles.map(d => {
+                        const cant = parseFloat(d.cantidad);
+                        const prec = parseFloat(d.precio_unitario);
+                        const desc = parseFloat(d.descuento_unitario);
+                        
+                        return {
+                            producto_id: d.producto_id,
+                            codigo_producto: d.codigo_producto || 'S/C',
+                            descripcion: d.descripcion,
+                            cantidad: isNaN(cant) ? 1 : cant,
+                            precio_unitario: isNaN(prec) ? 0 : prec,
+                            descuento_unitario: isNaN(desc) ? 0 : desc,
+                            tipo_afectacion_igv: d.tipo_afectacion_igv || '10',
+                            unidad_medida: d.unidad_medida || 'NIU'
+                        };
+                    });
+                    setDetalles(mapDetalles);
+                }
+
+                setShowImportModal(false);
+                toast.success('Cotización importada correctamente');
+            }
+            setLoading(false);
+        } catch (err) {
+            setLoading(false);
+            toast.error('Error al importar detalles de la cotización');
+        }
     };
 
     // ==========================================
@@ -738,7 +815,7 @@ const VentasCreatePage = () => {
                         {/* Importar Cotización */}
                         <div className="flex justify-end mb-2">
                             <button 
-                                onClick={() => toast.info('Seleccione la cotización a importar (Módulo en construcción)')}
+                                onClick={handleAbrirImportar}
                                 className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold transition-colors"
                             >
                                 📥 Importar Cotización
@@ -808,7 +885,7 @@ const VentasCreatePage = () => {
                                                 <div className="font-semibold text-sm text-slate-800">
                                                     <input 
                                                         type="text" 
-                                                        value={det.descripcion} 
+                                                        value={det.descripcion || ''} 
                                                         onChange={e => actualizarLinea(det.producto_id, 'descripcion', e.target.value)}
                                                         className="w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white outline-none px-1 py-0.5 rounded transition-all"
                                                     />
@@ -839,7 +916,7 @@ const VentasCreatePage = () => {
                                                 <input
                                                     type="number"
                                                     min="1"
-                                                    value={det.cantidad}
+                                                    value={det.cantidad ?? 0}
                                                     onChange={e => actualizarLinea(det.producto_id, 'cantidad', e.target.value)}
                                                     className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-center outline-none focus:ring-2 focus:ring-orange-500"
                                                 />
@@ -849,7 +926,7 @@ const VentasCreatePage = () => {
                                                 <input
                                                     type="number"
                                                     step="0.01"
-                                                    value={det.precio_unitario}
+                                                    value={det.precio_unitario ?? 0}
                                                     onChange={e => actualizarLinea(det.producto_id, 'precio_unitario', e.target.value)}
                                                     className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-center outline-none focus:ring-2 focus:ring-orange-500"
                                                 />
@@ -859,7 +936,7 @@ const VentasCreatePage = () => {
                                                 <input
                                                     type="number"
                                                     step="0.01"
-                                                    value={det.descuento_unitario}
+                                                    value={det.descuento_unitario ?? 0}
                                                     onChange={e => actualizarLinea(det.producto_id, 'descuento_unitario', e.target.value)}
                                                     className="w-full px-2 py-1 border border-slate-300 rounded text-sm text-center outline-none focus:ring-2 focus:ring-orange-500 text-red-600"
                                                 />
@@ -979,6 +1056,62 @@ const VentasCreatePage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Importar Cotización */}
+            <Modal
+                isOpen={showImportModal}
+                onClose={() => setShowImportModal(false)}
+                title="Sincronizar Cotización"
+                size="2xl"
+            >
+                <div className="p-6 space-y-4">
+                    <div className="relative">
+                        <Input
+                            placeholder="Buscar por número o cliente..."
+                            value={filtroCotizacion}
+                            onChange={e => setFiltroCotizacion(e.target.value)}
+                            className="pl-10"
+                        />
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                            <Send size={18} className="rotate-90" />
+                        </div>
+                    </div>
+
+                    <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1">
+                        {filteredCotizaciones.length === 0 ? (
+                            <div className="text-center py-8 text-slate-500">
+                                {filtroCotizacion ? 'No se encontraron coincidencias.' : 'No hay cotizaciones pendientes para importar.'}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-2">
+                                {filteredCotizaciones.map(cot => (
+                                <button
+                                    key={cot.id}
+                                    onClick={() => handleImportarSeleccion(cot.id)}
+                                    className="w-full text-left p-4 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl transition-all group"
+                                >
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                            <div className="font-bold text-slate-800 group-hover:text-indigo-700 transition-colors">
+                                                {cot.cliente?.razon_social || 'Cliente sin nombre'}
+                                            </div>
+                                            <div className="text-xs text-slate-500 mt-1 flex gap-3">
+                                                <span className="font-semibold text-slate-700">#{cot.numero_correlativo}</span>
+                                                <span>{cot.fecha_emision}</span>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-sm font-black text-indigo-600">S/ {parseFloat(cot.total).toFixed(2)}</div>
+                                            <div className="text-[10px] text-slate-400 font-bold uppercase mt-1">{cot.moneda}</div>
+                                        </div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </Modal>
         </div>
     );
 };

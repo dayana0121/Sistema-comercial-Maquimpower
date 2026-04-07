@@ -1,5 +1,4 @@
-// src/api/client.js
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
 
 async function getToken() {
     // ✅ Obtenemos el token que guardamos en AuthController.php

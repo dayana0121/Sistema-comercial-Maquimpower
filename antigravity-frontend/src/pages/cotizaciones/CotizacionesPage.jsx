@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { cotizacionesApi } from '../../api/cotizaciones';
 import { useToast } from '../../hooks/useToast';
+import { exportToExcel } from '../../utils/exportar';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import CotizacionForm from './CotizacionForm';
-import { LuMenu, LuDownload, LuX, LuMessageCircle } from 'react-icons/lu';
+import { LuMenu, LuDownload, LuX, LuMessageCircle, LuFileSpreadsheet } from 'react-icons/lu';
 
 const CotizacionesPage = () => {
     const [cotizaciones, setCotizaciones] = useState([]);
@@ -70,6 +71,54 @@ const CotizacionesPage = () => {
         }
     };
 
+    const handleExportarExcelListado = () => {
+        if (cotizaciones.length === 0) {
+            toast.error('No hay datos para exportar');
+            return;
+        }
+
+        const dataExcel = cotizaciones.map(cot => ({
+            'Número': `#${cot.numero_correlativo}`,
+            'Cliente': cot.cliente_nombre || cot.cliente?.razon_social || '---',
+            'Fecha': cot.fecha_emisión ? new Date(cot.fecha_emisión).toLocaleDateString() : '---',
+            'Suma de Items': cot.detalles?.length || 0,
+            'Total (S/)': parseFloat(cot.total).toFixed(2),
+            'Estado': cot.estado,
+            'Indicación': cot.detalles?.some(d => d.indicacion === 'indispensable') ? '🟢 CONTIENE INDISPENSABLES' : '⚪ NORMAL'
+        }));
+
+        exportToExcel(dataExcel, 'Listado_Cotizaciones_Maquimpower', 'Cotizaciones');
+        toast.success('Listado exportado a Excel');
+    };
+
+    const handleExportarExcelIndividual = (cot) => {
+        if (!cot.detalles || cot.detalles.length === 0) {
+            toast.error('Esta cotización no tiene detalles para exportar');
+            return;
+        }
+
+        const dataExcel = cot.detalles.map(d => {
+            let prefijo = '⚪';
+            const ind = (d.indicacion || '').toLowerCase();
+            if (ind === 'indispensable') prefijo = '🟢';
+            else if (ind === 'remplazable') prefijo = '🟠';
+            else if (ind === 'prescindible') prefijo = '⚪';
+
+            return {
+                'Item': d.item,
+                'Indicación': prefijo + ' ' + (d.indicacion || 'S/I').toUpperCase(),
+                'Descripción': d.descripcion,
+                'Código': d.codigo_interno || '---',
+                'Cantidad': parseFloat(d.cantidad).toFixed(2),
+                'P. Unitario': parseFloat(d.valor_unitario || 0).toFixed(2),
+                'Total': (parseFloat(d.cantidad) * parseFloat(d.valor_unitario || 0)).toFixed(2)
+            };
+        });
+
+        exportToExcel(dataExcel, `Cotización_${cot.numero_correlativo}_${cot.cliente_nombre || 'Cliente'}`, 'Detalle de Cotización');
+        toast.success('Excel de cotización generado');
+    };
+
     const getEstadoBadge = (estado) => {
         const estilos = {
             'PENDIENTE': 'bg-yellow-100 text-yellow-800',
@@ -87,15 +136,23 @@ const CotizacionesPage = () => {
                     <h1 className="text-2xl font-bold text-gray-800">Cotizaciones</h1>
                     <p className="text-sm text-gray-500 mt-1">Pre-ventas y proyectos de negocios</p>
                 </div>
-                <Button
-                    onClick={() => {
-                        setSelectedCotizacion(null);
-                        setIsModalOpen(true);
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                    + Nueva Cotización
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        onClick={handleExportarExcelListado}
+                        className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+                    >
+                        <LuFileSpreadsheet size={16} /> Exportar
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setSelectedCotizacion(null);
+                            setIsModalOpen(true);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                        + Nueva Cotización
+                    </Button>
+                </div>
             </div>
 
             <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -173,6 +230,15 @@ const CotizacionesPage = () => {
                                                             className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
                                                         >
                                                             <LuDownload size={14} /> Descargar PDF
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                handleExportarExcelIndividual(cot);
+                                                                setOpenMenuId(null);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
+                                                        >
+                                                            <LuFileSpreadsheet size={14} /> Exportar Excel
                                                         </button>
                                                         <button
                                                             onClick={() => {

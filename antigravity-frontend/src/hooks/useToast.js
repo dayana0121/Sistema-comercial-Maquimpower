@@ -20,5 +20,11 @@ export const useToast = () => {
             icon: '⚠️',
             style: { background: '#F59E0B', color: '#fff', fontWeight: 'bold' },
         }),
+        info: (message) => toast(message, {
+            duration: 3000,
+            position: 'top-right',
+            icon: 'ℹ️',
+            style: { background: '#3B82F6', color: '#fff', fontWeight: 'bold' },
+        }),
     };
 };

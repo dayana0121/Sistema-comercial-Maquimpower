@@ -181,7 +181,7 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
 
         try {
             const res = cotizacion
-                ? await apiClient.put(`/cotizaciones/${cotizacion.id}`, payload)
+                ? await cotizacionesApi.actualizar(cotizacion.id, payload)
                 : await cotizacionesApi.crear(payload);
 
             if (res.success) {
@@ -328,7 +328,14 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                                 <div className="p-4 text-center text-gray-500 text-sm">Sin productos</div>
                             ) : (
                                 detalles.map((det, idx) => (
-                                    <div key={idx} className="border-t p-2 text-xs space-y-1">
+                                    <div 
+                                        key={idx} 
+                                        className={`border-t p-2 text-xs space-y-1 transition-colors ${
+                                            det.indicacion === 'indispensable' ? 'bg-green-50' : 
+                                            det.indicacion === 'remplazable' ? 'bg-orange-50' : 
+                                            det.indicacion === 'prescindible' ? 'bg-gray-100' : ''
+                                        }`}
+                                    >
                                         <div className="font-semibold text-gray-800 flex justify-between">
                                             <span>{det.descripcion}</span>
                                             <button
