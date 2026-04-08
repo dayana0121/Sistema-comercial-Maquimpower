@@ -245,32 +245,13 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                 <div className="space-y-5 lg:border-r border-slate-200 lg:pr-8">
                     <h3 className="text-xl font-bold text-slate-800">Datos</h3>
 
-<<<<<<< Updated upstream
-                    <div className="flex flex-col gap-1">
-                        <label className="text-sm font-bold text-slate-800">Buscar en SUNAT/RENIEC</label>
-                        <div className="flex gap-2">
-                            <input
-                                className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm shadow-sm outline-none w-full"
-                                placeholder="8 u 11 dígitos"
-                                value={searchCliente}
-                                onChange={e => setSearchCliente(e.target.value)}
-                            />
-                            <button
-                                type="button"
-                                className="hover:bg-[#d5731d] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition-colors"
-                            >
-                                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
-                                Buscar
-                            </button>
-                        </div>
-=======
                     <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
                         <BuscadorDocumento
                             label="Buscar en SUNAT/RENIEC"
                             onFound={async (data) => {
                                 const numero = data.ruc || data.dni;
                                 const nombre = data.razon_social || data.nombres;
-                                
+
                                 // 1. Verificar si YA EXISTE en BD
                                 try {
                                     const res = await apiClient.get(`/clientes?search=${numero}`);
@@ -281,17 +262,17 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                                             setSearchCliente('');
                                             setForm(prev => ({ ...prev, cliente_id: match.id }));
                                             setSelectedCliente(match);
-                                            return; 
+                                            return;
                                         }
                                     }
-                                } catch(e) { console.error("Error checking local client:", e); }
+                                } catch (e) { console.error("Error checking local client:", e); }
 
                                 // Si no existe, lo tratamos como NEW para creación automática
                                 toast.success(`Encontrado en SUNAT/RENIEC: ${nombre}`);
                                 setSearchCliente('');
                                 setForm(prev => ({ ...prev, cliente_id: 'NEW' }));
                                 setSelectedCliente({
-                                    id: 'NEW', 
+                                    id: 'NEW',
                                     razon_social: nombre,
                                     tipo_documento: (data.ruc ? '6' : '1'),
                                     numero_documento: numero,
@@ -299,7 +280,6 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                                 });
                             }}
                         />
->>>>>>> Stashed changes
                     </div>
 
                     <div className="flex flex-col gap-1">
