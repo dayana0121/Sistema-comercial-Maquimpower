@@ -10,7 +10,7 @@ import {
 import '../../styles/sidebar.css';
 
 const Sidebar = () => {
-    const { logout, user } = useAuth();
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
     // Estados para submenús
@@ -30,8 +30,6 @@ const Sidebar = () => {
     const [comprasPendientesCount, setComprasPendientesCount] = useState(0);
 
     useEffect(() => {
-        if (!user) return;
-
         const fetchAlertas = async () => {
             try {
                 // ✅ Corregido: Quitamos el /api manual porque el proxy ya lo maneja
@@ -95,32 +93,31 @@ const Sidebar = () => {
         <aside className="sidebar">
             <div className="sidebar-logo">
                 <h1>MAQUIMPOWER</h1>
-                <span>Sistema Comercial</span>
+                <span>SISTEMA COMERCIAL</span>
             </div>
+            
+            <div className="sidebar-divider"></div>
 
             <nav className="sidebar-nav">
-                <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                    <span className="nav-icon"><LuLayoutDashboard size={16} /></span> Dashboard
-                </NavLink>
-
-                <div className="nav-group-separator"></div>
+                <div className="nav-group">
+                    <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                        <span className="nav-icon"><LuLayoutDashboard size={16} /></span> Dashboard
+                    </NavLink>
+                </div>
 
                 {/* VENTAS */}
                 <div className="nav-group">
                     <div className={`nav-item has-submenu ${openMenus.ventas ? 'open' : ''}`} onClick={() => toggleMenu('ventas')}>
                         <div className="flex items-center gap-2">
-                            <span className="nav-icon"><LuReceipt size={16} /></span> VENTAS
-                            {pendientesCount > 0 && (
-                                <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold animate-pulse">
-                                    {pendientesCount}
-                                </span>
-                            )}
+                            <span><span className="nav-icon"><LuReceipt size={16} /></span> VENTAS {pendientesCount > 0 && (
+                                <span className="badge-count-red">{pendientesCount}</span>
+                            )}</span>
                         </div>
                         <span className="submenu-arrow">{openMenus.ventas ? '▾' : '▸'}</span>
                     </div>
                     {openMenus.ventas && (
                         <div className="submenu">
-                            {/* ✅ AGREGADO: Cotizaciones */}
+                             {/* ✅ AGREGADO: Cotizaciones */}
                             <NavLink to="/cotizaciones" className="submenu-item">→ Cotizaciones</NavLink>
 
                             <NavLink to="/ventas/nueva" className="submenu-item">→ Facturas y Boletas</NavLink>
@@ -133,116 +130,102 @@ const Sidebar = () => {
                                 </span>
                             </NavLink>
 
-                            <div className="submenu-item disabled">→ Punto de Venta <span className="badge-soon">Pronto</span></div>
+                            <div className="submenu-item disabled">&mdash; Punto de Venta <span className="badge-soon">Pronto</span></div>
                         </div>
                     )}
                 </div>
-
-                <div className="nav-group-separator"></div>
 
                 {/* CLIENTES */}
                 <div className="nav-group">
                     <div className={`nav-item has-submenu ${openMenus.clientes ? 'open' : ''}`} onClick={() => toggleMenu('clientes')}>
-                        <span className="nav-icon"><LuUsers size={16} /></span> CLIENTES
+                        <span><span className="nav-icon"><LuUsers size={16} /></span> CLIENTES</span>
                         <span className="submenu-arrow">{openMenus.clientes ? '▾' : '▸'}</span>
                     </div>
                     {openMenus.clientes && (
                         <div className="submenu">
-                            <NavLink to="/clientes" className="submenu-item" end>→ Lista de clientes</NavLink>
-                            <NavLink to="/clientes/nuevo" className="submenu-item">→ Nuevo cliente</NavLink>
+                            <NavLink to="/clientes" className="submenu-item" end>&mdash; Lista de clientes</NavLink>
                         </div>
                     )}
                 </div>
-
-                <div className="nav-group-separator"></div>
 
                 {/* PRODUCTOS */}
                 <div className="nav-group">
                     <div className={`nav-item has-submenu ${openMenus.productos ? 'open' : ''}`} onClick={() => toggleMenu('productos')}>
-                        <span className="nav-icon"><LuPackage size={16} /></span> PRODUCTOS
+                        <span><span className="nav-icon"><LuPackage size={16} /></span> PRODUCTOS</span>
                         <span className="submenu-arrow">{openMenus.productos ? '▾' : '▸'}</span>
                     </div>
                     {openMenus.productos && (
                         <div className="submenu">
-                            <NavLink to="/productos" className="submenu-item" end>→ Productos Base</NavLink>
-                            <NavLink to="/inventario" className="submenu-item" end>→ Inventario / Kardex</NavLink>
+                            <NavLink to="/productos" className="submenu-item" end>&mdash; Productos Base</NavLink>
+                            <NavLink to="/inventario" className="submenu-item" end>&mdash; Inventario / Kardex</NavLink>
                             <NavLink to="/inventario" className="submenu-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span>→ Alertas de Stock</span>
-                                {alertasCount > 0 && <span style={{ backgroundColor: 'var(--color-error)', color: 'white', padding: '2px 6px', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 'bold' }}>{alertasCount}</span>}
+                                <span>&mdash; Alertas de Stock</span>
+                                {alertasCount > 0 && <span className="badge-count-red">{alertasCount}</span>}
                             </NavLink>
-                            <div className="submenu-item disabled">→ Categorías <span className="badge-soon">Pronto</span></div>
+                            <div className="submenu-item disabled">&mdash; Categorías <span className="badge-soon">Pronto</span></div>
                         </div>
                     )}
                 </div>
-
-                <div className="nav-group-separator"></div>
 
                 {/* COMPRAS */}
                 <div className="nav-group">
                     <div className={`nav-item has-submenu ${openMenus.compras ? 'open' : ''}`} onClick={() => toggleMenu('compras')}>
                         <div className="flex items-center gap-2">
-                            <span className="nav-icon"><LuShoppingCart size={16} /></span> COMPRAS
-                            {comprasPendientesCount > 0 && (
-                                <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold animate-pulse">
+                            <span><span className="nav-icon"><LuShoppingCart size={16} /></span> COMPRAS {comprasPendientesCount > 0 && (
+                                <span className="badge-count-red">
                                     {comprasPendientesCount}
                                 </span>
-                            )}
+                            )}</span>
                         </div>
                         <span className="submenu-arrow">{openMenus.compras ? '▾' : '▸'}</span>
                     </div>
                     {openMenus.compras && (
                         <div className="submenu">
-                            <NavLink to="/compras" className="submenu-item" end>→ Órdenes de Compra</NavLink>
-                            <NavLink to="/proveedores" className="submenu-item" end>→ Proveedores</NavLink>
+                            <NavLink to="/compras" className="submenu-item" end>&mdash; Órdenes de Compra</NavLink>
+                            <NavLink to="/proveedores" className="submenu-item" end>&mdash; Proveedores</NavLink>
                         </div>
                     )}
                 </div>
-
-                <div className="nav-group-separator"></div>
 
                 {/* CAJA */}
                 <div className="nav-group">
                     <div className={`nav-item has-submenu ${openMenus.caja ? 'open' : ''}`} onClick={() => toggleMenu('caja')}>
-                        <span className="nav-icon"><LuWallet size={16} /></span> CAJA
+                        <span><span className="nav-icon"><LuWallet size={16} /></span> CAJA</span>
                         <span className="submenu-arrow">{openMenus.caja ? '▾' : '▸'}</span>
                     </div>
                     {openMenus.caja && (
                         <div className="submenu">
-                            <NavLink to="/caja" className="submenu-item" end>→ Movimientos de Caja</NavLink>
+                            <NavLink to="/caja" className="submenu-item" end>&mdash; Movimientos de Caja</NavLink>
                         </div>
                     )}
                 </div>
-
-                <div className="nav-group-separator"></div>
 
                 {/* REPORTES */}
                 <div className="nav-group">
                     <div className={`nav-item has-submenu ${openMenus.reportes ? 'open' : ''}`} onClick={() => toggleMenu('reportes')}>
-                        <span className="nav-icon"><LuChartBar size={16} /></span> REPORTES
+                        <span><span className="nav-icon"><LuChartBar size={16} /></span> REPORTES</span>
                         <span className="submenu-arrow">{openMenus.reportes ? '▾' : '▸'}</span>
                     </div>
                     {openMenus.reportes && (
                         <div className="submenu">
-                            <NavLink to="/reportes" className="submenu-item">→ Dashboard de Reportes</NavLink>
-                            <div className="submenu-item disabled">→ Reporte de ventas <span className="badge-soon">Pronto</span></div>
-                            <div className="submenu-item disabled">→ Kardex <span className="badge-soon">Pronto</span></div>
+                            <NavLink to="/reportes" className="submenu-item">&mdash; Dashboard de Reportes</NavLink>
+                            <div className="submenu-item disabled">&mdash; Reporte de ventas <span className="badge-soon">Pronto</span></div>
+                            <div className="submenu-item disabled">&mdash; Kardex <span className="badge-soon">Pronto</span></div>
                         </div>
                     )}
                 </div>
 
-                <div className="nav-group-separator"></div>
-
                 {/* CONFIGURACIÓN */}
                 <div className="nav-group">
                     <div className={`nav-item has-submenu ${openMenus.config ? 'open' : ''}`} onClick={() => toggleMenu('config')}>
-                        <span className="nav-icon"><LuSettings size={16} /></span> CONFIGURACIÓN
+                        <span><span className="nav-icon"><LuSettings size={16} /></span> CONFIGURACIÓN</span>
                         <span className="submenu-arrow">{openMenus.config ? '▾' : '▸'}</span>
                     </div>
                     {openMenus.config && (
                         <div className="submenu">
-                            <div className="submenu-item disabled">→ Empresa <span className="badge-soon">Pronto</span></div>
-                            <div className="submenu-item disabled">→ Series SUNAT <span className="badge-soon">Pronto</span></div>
-                            <div className="submenu-item disabled">→ Usuarios <span className="badge-soon">Pronto</span></div>
+                            <div className="submenu-item disabled">&mdash; Empresa <span className="badge-soon">Pronto</span></div>
+                            <div className="submenu-item disabled">&mdash; Series SUNAT <span className="badge-soon">Pronto</span></div>
+                            <div className="submenu-item disabled">&mdash; Usuarios <span className="badge-soon">Pronto</span></div>
                         </div>
                     )}
                 </div>

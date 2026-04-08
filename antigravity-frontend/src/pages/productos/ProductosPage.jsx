@@ -10,6 +10,8 @@ import Modal from "../../components/ui/Modal";
 import { useToast } from '../../hooks/useToast';
 import ProductoForm from "./ProductoForm";
 import { exportToExcel } from "../../utils/exportar";
+import "../../styles/modal-productos.css";
+import "../../styles/productos-page.css";
 
 export default function ProductosPage() {
     const toast = useToast();
@@ -18,30 +20,23 @@ export default function ProductosPage() {
     const [search, setSearch] = useState("");
     const [filtroStock, setFiltroStock] = useState(""); // Filtro por estado de stock
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    const itemsPerPage = 10;
 
     // Estados Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [productoToEdit, setProductoToEdit] = useState(null);
     const [isReadOnly, setIsReadOnly] = useState(false);
 
-    useEffect(() => { cargarProductos(); }, [currentPage, search]); // Dependencia de currentPage y search para recargar al cambiar de página o buscar
+    useEffect(() => { cargarProductos(); }, []);
 
     const cargarProductos = async () => {
         try {
-            setLoading(true);
-            // Modificar la llamada a la API para incluir paginación y búsqueda
-            const res = await apiClient.get(`/api/productos?page=${currentPage}&limit=20&search=${search}`);
+            const res = await apiClient.get("/api/productos");
             if (res.success) {
                 setData(res.data);
-                if (res.pagination) {
-                    setTotalPages(res.pagination.pages); // Actualizar el total de páginas
-                }
             }
         } catch (error) {
             toast.error("Error al cargar el inventario");
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -88,11 +83,18 @@ export default function ProductosPage() {
     };
 
     // --- FILTRADO INTELIGENTE ---
-    // Este filtrado ahora solo aplica al filtro de stock, ya que la búsqueda se hace en la API
-    const filteredData = data.filter(p => {
+    const filtrados = data.filter(p => {
+        const matchesSearch = p.descripcion?.toLowerCase().includes(search.toLowerCase()) ||
+            p.codigo_interno?.toLowerCase().includes(search.toLowerCase()) ||
+            p.sku?.toLowerCase().includes(search.toLowerCase());
+
         const matchesStock = filtroStock === "" || p.estado_stock === filtroStock;
-        return matchesStock;
+        return matchesSearch && matchesStock;
     });
+
+    // Paginación
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const currentItems = filtrados.slice(indexOfLastItem - itemsPerPage, indexOfLastItem);
 
     const columns = [
         {
@@ -157,7 +159,7 @@ export default function ProductosPage() {
     ];
 
     return (
-        <div className="p-6 max-w-[1400px] mx-auto">
+        <div className="p-6 max-w-[1400px] mx-auto productos-page">
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
                 <div>
@@ -165,11 +167,11 @@ export default function ProductosPage() {
                     <p className="text-sm text-slate-500">Gestión de inventario y precios SUNAT</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 productos-toolbar">
                     <select
                         value={filtroStock}
                         onChange={(e) => setFiltroStock(e.target.value)}
-                        className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white h-[42px] outline-none focus:ring-2 focus:ring-orange-100"
+                        className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white h-[42px] outline-none focus:ring-2 focus:ring-orange-100 productos-toolbar-select"
                     >
                         <option value="">Todos los niveles</option>
                         <option value="EN STOCK">En Stock</option>
@@ -177,31 +179,42 @@ export default function ProductosPage() {
                         <option value="AGOTADO">Agotados</option>
                     </select>
 
-                    <SearchInput onSearch={setSearch} placeholder="Buscar por código, descripción..." />
+                    <SearchInput
+                        onSearch={setSearch}
+                        placeholder="Buscar por código, descripción..."
+                        className="productos-toolbar-search"
+                    />
 
-                    <Button variant="secondary" onClick={() => exportToExcel(filteredData, 'catalogo_maquimpower', 'Productos')} icon={FileSpreadsheet}>
+                    <Button
+                        variant="secondary"
+                        onClick={() => exportToExcel(filtrados, 'catalogo_maquimpower', 'Productos')}
+                        icon={FileSpreadsheet}
+                        className="productos-toolbar-btn"
+                    >
                         Exportar Excel
                     </Button>
 
-                    <Button variant="secondary" onClick={handleGenerarPDF} icon={FileText}>
+                    <Button
+                        variant="secondary"
+                        onClick={handleGenerarPDF}
+                        icon={FileText}
+                        className="productos-toolbar-btn"
+                    >
                         Orden de Reposición
                     </Button>
 
-                    <Button variant="primary" onClick={() => { setProductoToEdit(null); setIsReadOnly(false); setIsModalOpen(true); }} icon={Plus}>
+                    <Button
+                        variant="primary"
+                        onClick={() => { setProductoToEdit(null); setIsReadOnly(false); setIsModalOpen(true); }}
+                        icon={Plus}
+                        className="productos-toolbar-btn"
+                    >
                         Nuevo Producto
                     </Button>
                 </div>
             </div>
 
-            {/* Tabla Principal */}
-            <DataTable
-                columns={columns}
-                data={filteredData}
-                loading={loading}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-            />
+            <DataTable columns={columns} data={currentItems} loading={loading} />
 
             {/* Modal de Formulario con Pestañas */}
             <Modal
@@ -210,12 +223,14 @@ export default function ProductosPage() {
                 title={isReadOnly ? "Detalles de Producto" : (productoToEdit ? "Editar Producto" : "Nuevo Producto")}
                 size="lg"
             >
-                <ProductoForm
-                    productoToEdit={productoToEdit}
-                    isReadOnly={isReadOnly}
-                    onCancel={() => setIsModalOpen(false)}
-                    onSuccess={() => { setIsModalOpen(false); cargarProductos(); }}
-                />
+                <div className="modal-productos-shell">
+                    <ProductoForm
+                        productoToEdit={productoToEdit}
+                        isReadOnly={isReadOnly}
+                        onCancel={() => setIsModalOpen(false)}
+                        onSuccess={() => { setIsModalOpen(false); cargarProductos(); }}
+                    />
+                </div>
             </Modal>
         </div>
     );

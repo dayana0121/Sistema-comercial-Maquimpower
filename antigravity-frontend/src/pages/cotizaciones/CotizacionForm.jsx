@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import BuscadorDocumento from '../../components/ui/BuscadorDocumento';
+import "../../styles/cotizaciones.css"
 
 const TIPO_AFECTACION = [
     { code: '10', name: 'Op. Gravadas' },
@@ -72,7 +73,13 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                 numero_whatsapp: cotizacion.numero_whatsapp || '',
                 observaciones: cotizacion.observaciones || '',
             });
-            setSelectedCliente(cotizacion.cliente);
+            setSelectedCliente(
+                cotizacion.cliente || (
+                    cotizacion.cliente_nombre
+                        ? { id: cotizacion.cliente_id, razon_social: cotizacion.cliente_nombre }
+                        : null
+                )
+            );
             setDetalles(cotizacion.detalles || []);
         } else {
             setForm({
@@ -180,9 +187,42 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
         };
 
         try {
+            let finalClienteId = form.cliente_id;
+            
+            // Autocrear cliente si viene de busqueda SUNAT y no existe en BD
+            if (finalClienteId === 'NEW' && selectedCliente) {
+                if (!selectedCliente.razon_social || !selectedCliente.numero_documento) {
+                    setLoading(false);
+                    return toast.error('Faltan datos obligatorios del cliente');
+                }
+                const resCli = await apiClient.post('/clientes', {
+                    tipo_documento: selectedCliente.tipo_documento,
+                    numero_documento: selectedCliente.numero_documento,
+                    razon_social: selectedCliente.razon_social,
+                    direccion_fiscal: selectedCliente.direccion_fiscal || '-',
+                    email: '',
+                    telefono: ''
+                });
+
+                if (resCli.success && resCli.data?.id) {
+                    finalClienteId = resCli.data.id;
+                    setForm(prev => ({ ...prev, cliente_id: finalClienteId })); 
+                } else {
+                    // Fallback si ya existe
+                    const matchRes = await apiClient.get(`/clientes?search=${selectedCliente.numero_documento}`);
+                    const match = matchRes.data?.find(c => c.numero_documento === selectedCliente.numero_documento);
+                    if (match) {
+                        finalClienteId = match.id;
+                    } else {
+                        setLoading(false);
+                        return toast.error('Error al registrar cliente');
+                    }
+                }
+            }
+
             const res = cotizacion
-                ? await cotizacionesApi.actualizar(cotizacion.id, payload)
-                : await cotizacionesApi.crear(payload);
+                ? await cotizacionesApi.actualizar(cotizacion.id, { ...payload, cliente_id: finalClienteId })
+                : await cotizacionesApi.crear({ ...payload, cliente_id: finalClienteId });
 
             if (res.success) {
                 toast.success(cotizacion ? 'Cotización actualizada' : 'Cotización creada');
@@ -191,32 +231,81 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                 toast.error(res.message || 'Error');
             }
         } catch (error) {
-            toast.error('Error al guardar la cotización');
+            // Yo muestro el mensaje real del backend para diagnosticar rapido cualquier fallo futuro.
+            toast.error(error?.message || 'Error al guardar la cotización');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={cotizacion ? 'Editar Cotización' : 'Nueva Cotización'} size="6xl">
-            <div className="grid grid-cols-3 gap-6 p-6">
+        <Modal isOpen={isOpen} onClose={onClose} title={cotizacion ? 'Editar Cotización' : 'Nueva Cotización'} size="6xl" bgClass="bg-[#FFF9F2]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* COLUMNA 1: CLIENTE Y DATOS */}
-                <div className="space-y-4 border-r pr-6">
-                    <h3 className="text-lg font-bold text-gray-800">Datos</h3>
+                <div className="space-y-5 lg:border-r border-slate-200 lg:pr-8">
+                    <h3 className="text-xl font-bold text-slate-800">Datos</h3>
 
+<<<<<<< Updated upstream
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm font-bold text-slate-800">Buscar en SUNAT/RENIEC</label>
+                        <div className="flex gap-2">
+                            <input
+                                className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm shadow-sm outline-none w-full"
+                                placeholder="8 u 11 dígitos"
+                                value={searchCliente}
+                                onChange={e => setSearchCliente(e.target.value)}
+                            />
+                            <button
+                                type="button"
+                                className="hover:bg-[#d5731d] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition-colors"
+                            >
+                                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
+                                Buscar
+                            </button>
+                        </div>
+=======
                     <div className="bg-blue-50 border border-blue-100 rounded-lg p-3">
                         <BuscadorDocumento
                             label="Buscar en SUNAT/RENIEC"
-                            onFound={(data) => {
-                                toast.success(`Encontrado: ${data.razon_social}`);
-                                setSearchCliente(data.ruc || data.dni || '');
+                            onFound={async (data) => {
+                                const numero = data.ruc || data.dni;
+                                const nombre = data.razon_social || data.nombres;
+                                
+                                // 1. Verificar si YA EXISTE en BD
+                                try {
+                                    const res = await apiClient.get(`/clientes?search=${numero}`);
+                                    if (res.success && res.data && res.data.length > 0) {
+                                        const match = res.data.find(c => c.numero_documento === numero);
+                                        if (match) {
+                                            toast.success(`Cargado desde Base de Datos: ${match.razon_social}`);
+                                            setSearchCliente('');
+                                            setForm(prev => ({ ...prev, cliente_id: match.id }));
+                                            setSelectedCliente(match);
+                                            return; 
+                                        }
+                                    }
+                                } catch(e) { console.error("Error checking local client:", e); }
+
+                                // Si no existe, lo tratamos como NEW para creación automática
+                                toast.success(`Encontrado en SUNAT/RENIEC: ${nombre}`);
+                                setSearchCliente('');
+                                setForm(prev => ({ ...prev, cliente_id: 'NEW' }));
+                                setSelectedCliente({
+                                    id: 'NEW', 
+                                    razon_social: nombre,
+                                    tipo_documento: (data.ruc ? '6' : '1'),
+                                    numero_documento: numero,
+                                    direccion_fiscal: data.direccion || '-'
+                                });
                             }}
                         />
+>>>>>>> Stashed changes
                     </div>
 
                     <div className="flex flex-col gap-1">
-                        <label className="text-sm font-bold text-gray-700">Buscar Cliente</label>
-                        <Input
+                        <label className="text-sm font-bold text-slate-800">Buscar Cliente</label>
+                        <input
+                            className="px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm shadow-sm outline-none"
                             placeholder="RUC o Nombre..."
                             value={searchCliente}
                             onChange={e => setSearchCliente(e.target.value)}
@@ -248,10 +337,10 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                         </div>
                     )}
 
-                    <div>
-                        <label className="text-sm font-bold text-gray-700 block mb-1">Vendedor</label>
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm font-bold text-slate-800">Vendedor</label>
                         <select
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                            className="bg-white px-3 py-2.5 border border-slate-200 rounded-lg text-sm shadow-sm outline-none"
                             value={form.vendedor_id}
                             onChange={e => setForm({ ...form, vendedor_id: e.target.value })}
                         >
@@ -262,80 +351,97 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                         </select>
                     </div>
 
-                    <div>
-                        <label className="text-sm font-bold text-gray-700 block mb-1">Fecha Vigencia</label>
-                        <Input
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm font-bold text-slate-800">Fecha Vigencia</label>
+                        <input
                             type="date"
+                            className="bg-white px-3 py-2.5 border border-slate-200 rounded-lg text-sm shadow-sm outline-none text-slate-500"
                             value={form.fecha_vigencia}
                             onChange={e => setForm({ ...form, fecha_vigencia: e.target.value })}
                         />
                     </div>
 
-                    <div>
-                        <label className="text-sm font-bold text-gray-700 block mb-1">WhatsApp Cliente</label>
-                        <Input
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm font-bold text-slate-800">WhatsApp Cliente</label>
+                        <input
+                            className="bg-white px-3 py-2.5 border border-slate-200 rounded-lg text-sm shadow-sm outline-none"
                             placeholder="+51 900000000"
                             value={form.numero_whatsapp}
                             onChange={e => setForm({ ...form, numero_whatsapp: e.target.value })}
                         />
                     </div>
 
-                    <div>
-                        <label className="text-sm font-bold text-gray-700 block mb-1">Observaciones</label>
-                        <textarea
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm h-20 resize-none"
-                            value={form.observaciones}
-                            onChange={e => setForm({ ...form, observaciones: e.target.value })}
-                            placeholder="Notas..."
-                        />
+                    <div className="flex flex-col gap-1">
+                        <label className="text-sm font-bold text-slate-800">Observaciones</label>
+                        <div className="relative">
+                            <select
+                                className="w-full bg-white px-3 py-2.5 border border-slate-200 rounded-lg text-sm shadow-sm outline-none appearance-none text-slate-500"
+                                value={form.observaciones}
+                                onChange={e => setForm({ ...form, observaciones: e.target.value })}
+                            >
+                                <option value="">Notas...</option>
+                                <option value="Aprobado">Aprobado</option>
+                                <option value="Crédito">Sujeto a crédito</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 {/* COLUMNA 2: PRODUCTOS Y CARRITO */}
-                <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800">Productos</h3>
+                <div className="space-y-5 lg:border-r border-slate-200 lg:pr-8">
+                    <h3 className="text-xl font-bold text-slate-800">Productos</h3>
 
-                    <Input
+                    <input
+                        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm shadow-sm outline-none"
                         placeholder="Buscar producto..."
                         value={searchProducto}
                         onChange={e => setSearchProducto(e.target.value)}
                     />
 
-                    <div className="border rounded-lg p-3 bg-gray-50 max-h-64 overflow-y-auto">
+                    <div className="border rounded-lg p-3 bg-gray-50 max-h-167 overflow-y-auto">
                         <div className="grid grid-cols-1 gap-2">
-                            {productosOptions.map(p => (
-                                <button
-                                    key={p.id}
-                                    onClick={() => agregarProducto(p)}
-                                    className="text-left p-2 border border-gray-200 rounded hover:bg-blue-50 transition-all text-xs"
-                                >
-                                    <p className="font-semibold text-gray-800">{p.descripcion}</p>
-                                    <p className="text-gray-500">S/ {parseFloat(p.precio_venta).toFixed(2)}</p>
-                                </button>
-                            ))}
+                            {productosOptions.map(p => {
+                                // CAMBIO AQUÍ: Verificamos si el ID del producto está en la lista de detalles
+                                const isSelected = detalles.some(det => det.producto_id === p.id);
+
+                                return (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => {
+                                            agregarProducto(p);
+                                            // Ya no necesitas el setSelectedProductoId(p.id)
+                                        }}
+                                        className={`text-left p-2 border border-gray-200 rounded transition-all text-xs flex flex-col gap-1 ${isSelected ? 'is-selected' : 'hover:bg-blue-50'}`}
+                                    >
+                                        <p className="font-semibold">{p.descripcion}</p>
+                                        <p className="">S/ {parseFloat(p.precio_venta).toFixed(2)}</p>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
+                </div>
 
-                    <div className="border rounded-lg overflow-hidden">
-                        <div className="bg-gray-100 p-2 text-xs font-bold text-gray-700 grid grid-cols-4 gap-1">
+                {/* COLUMNA 3: TOTALES Y FINALIZAR */}
+                <div className="space-y-3 flex flex-col items-stretch">
+                    <h3 className="text-xl font-bold text-slate-800">Resumen</h3>
+
+                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden min-h-[160px]">
+                        <div className="bg-[#f8f9fa] border-b border-slate-200 p-2.5 text-xs font-bold text-slate-800 grid grid-cols-4 gap-1">
                             <div>Producto</div>
                             <div className="text-center">Cant.</div>
                             <div className="text-right">Precio</div>
                             <div className="text-right">Total</div>
                         </div>
-                        <div className="max-h-96 overflow-y-auto">
+                        <div className="max-h-96 overflow-y-auto bg-white">
                             {detalles.length === 0 ? (
-                                <div className="p-4 text-center text-gray-500 text-sm">Sin productos</div>
+                                <div className="p-10 flex items-center justify-center text-slate-400 text-[15px]">Sin productos</div>
                             ) : (
                                 detalles.map((det, idx) => (
-                                    <div 
-                                        key={idx} 
-                                        className={`border-t p-2 text-xs space-y-1 transition-colors ${
-                                            det.indicacion === 'indispensable' ? 'bg-green-50' : 
-                                            det.indicacion === 'remplazable' ? 'bg-orange-50' : 
-                                            det.indicacion === 'prescindible' ? 'bg-gray-100' : ''
-                                        }`}
-                                    >
+                                    <div key={idx} className="border-t p-2 text-xs space-y-1">
                                         <div className="font-semibold text-gray-800 flex justify-between">
                                             <span>{det.descripcion}</span>
                                             <button
@@ -373,10 +479,11 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                                                 S/ {((det.cantidad * det.precio_unitario) - det.descuento_unitario).toFixed(2)}
                                             </div>
                                         </div>
+
                                         {/* Indicaciones: prioridad/importance */}
-                                        <div className="flex items-center gap-2 pt-2">
+                                        <div className="flex items-center gap-2 pt-4">
                                             <label className="text-xs font-semibold">Indicacion:</label>
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-2">
                                                 <button
                                                     aria-label={`set-indispensable-${det.producto_id}`}
                                                     onClick={() => actualizarLinea(det.producto_id, 'indicacion', 'indispensable')}
@@ -410,46 +517,43 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                             )}
                         </div>
                     </div>
-                </div>
 
-                {/* COLUMNA 3: TOTALES Y FINALIZAR */}
-                <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-gray-800">Resumen</h3>
-
-                    <div className="bg-slate-800 text-white p-4 rounded-lg space-y-2">
-                        <div className="flex justify-between text-sm text-slate-300">
-                            <span>Subtotal:</span>
-                            <span>S/ {totales.subtotal.toFixed(2)}</span>
+                    <div className="bg-[#1b2532] text-white p-5 rounded-lg space-y-4 shadow-xl">
+                        <div className="flex justify-between text-[15px] border-b border-slate-600 pb-3">
+                            <span className="text-slate-300">Subtotal:</span>
+                            <span className="text-slate-200">S/ {totales.subtotal.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-sm text-slate-300">
-                            <span>IGV (18%):</span>
-                            <span>S/ {totales.igv.toFixed(2)}</span>
+                        <div className="flex justify-between text-[15px] border-b border-slate-600 pb-3">
+                            <span className="text-slate-300">IGV (18%):</span>
+                            <span className="text-slate-200">S/ {totales.igv.toFixed(2)}</span>
                         </div>
-                        <div className="border-t border-slate-600 pt-2 flex justify-between font-bold text-lg">
-                            <span>TOTAL:</span>
-                            <span className="text-orange-400">S/ {totales.total.toFixed(2)}</span>
+                        <div className="pt-2 flex justify-between font-bold text-[22px]">
+                            <span className="text-white">TOTAL:</span>
+                            <span className="text-[#ee8425]">S/ {totales.total.toFixed(2)}</span>
                         </div>
                     </div>
 
-                    <div className="space-y-2 pt-4 border-t">
-                        <Button
-                            variant="primary"
-                            className="w-full py-3 text-base"
-                            isLoading={loading}
-                            onClick={handleGuardar}
-                        >
-                            {cotizacion ? '✓ ACTUALIZAR' : '✓ CREAR COTIZACIÓN'}
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            className="w-full"
-                            onClick={onClose}
-                        >
-                            Cancelar
-                        </Button>
-                    </div>
+                    <button
+                        type="button"
+                        className="w-full py-3.5 bg-[#2c3338] text-white hover:bg-[#1a1f23] rounded-lg font-bold transition-colors mt-2"
+                        onClick={onClose}
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="button"
+                        className={`w-full py-3.5 bg-[#5ca335] hover:bg-[#4d8b2d] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-bold transition-colors ${loading ? 'opacity-50' : ''}`}
+                        onClick={handleGuardar}
+                        disabled={loading}
+                    >
+                        {cotizacion ? '✓ ACTUALIZAR' : '✓ CREAR COTIZACIÓN'}
+                    </button>
                 </div>
             </div>
+
+            {/* Ignoramos el footer genérico puesto por error por el diseñador en el otro formulario, 
+                ya incluimos los botones correctos arriba. */}
         </Modal>
     );
 };

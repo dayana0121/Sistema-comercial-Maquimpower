@@ -1,129 +1,68 @@
 <?php
-// index.php — Router principal del backend de Maquimpower
-date_default_timezone_set("America/Lima");
+// index.php — ROUTER Maquimpower (v5.2) — INMUNE A DOBLE /API/
+date_default_timezone_set('America/Lima');
 
-require_once __DIR__ . "/config/env.php";
-require_once __DIR__ . "/config/db.php";
-require_once __DIR__ . "/config/cors.php";
-require_once __DIR__ . "/helpers/Response.php";
+// Captura de errores fatales para JSON
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error && ($error['type'] === E_ERROR || $error['type'] === E_PARSE)) {
+        header('Content-Type: application/json', true, 500);
+        echo json_encode([
+            'success' => false,
+            'message' => 'ERROR FATAL: ' . $error['message'] . ' en ' . $error['file'] . ' linea ' . $error['line']
+        ]);
+    }
+});
 
-// 1. Calcular la ruta limpia
-$basePath = str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']);
-$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$route = str_replace($basePath, '', $requestUri);
+require_once __DIR__ . '/config/env.php';
+require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/cors.php';
+require_once __DIR__ . '/helpers/Response.php';
 
-// Nos aseguramos de que la ruta siempre empiece con /
-if (!str_starts_with($route, '/')) {
-    $route = '/' . $route;
-}
-$route = rtrim($route, '/') ?: '/';
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$base = str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']);
+$route = str_replace($base, '', $uri);
 
-// Eliminar el prefijo '/api' si el frontend lo envía
-if (str_starts_with($route, '/api/')) {
-    $route = substr($route, 4);
-} elseif ($route === '/api') {
-    $route = '/';
-}
-$method = $_SERVER["REQUEST_METHOD"];
+// Lógica de limpieza agresiva para evitar /api/api/
+$route = str_replace('/api/api/', '/api/', $route);
+if (str_starts_with($route, '/api/')) $route = substr($route, 4);
+$route = '/' . ltrim($route, '/');
+$method = $_SERVER['REQUEST_METHOD'];
 
-// Manejo de pre-flight CORS
-if ($method === "OPTIONS") {
-    http_response_code(200);
-    exit;
-}
+if ($method === 'OPTIONS') { http_response_code(200); exit; }
 
-// ==========================================
-// 2. RUTEO POR MÓDULOS
-// ==========================================
 try {
-    // --- MÓDULO DE AUTENTICACIÓN ---
-    if (str_starts_with($route, '/auth')) {
-        require_once __DIR__ . "/modules/Auth/AuthController.php";
-        $ctrl = new AuthController();
+    $map = [
+        'auth'         => ['Auth/AuthController.php', 'AuthController'],
+        'clientes'     => ['clientes/ClientesController.php', 'ClientesController'],
+        'ventas'       => ['ventas/VentasController.php', 'VentasController'],
+        'productos'    => ['productos/ProductosController.php', 'ProductosController'],
+        'compras'      => ['compras/ComprasController.php', 'ComprasController'],
+        'dashboard'    => ['dashboard/EstadisticasController.php', 'EstadisticasController'],
+        'caja'         => ['caja/CajaController.php', 'CajaController'],
+        'inventario'   => ['inventario/InventarioController.php', 'InventarioController'],
+        'cotizaciones' => ['cotizaciones/CotizacionesController.php', 'CotizacionesController'],
+        'notas-credito'=> ['notas-credito/NotasCreditoController.php', 'NotasCreditoController'],
+        'proveedores'  => ['proveedores/ProveedoresController.php', 'ProveedoresController'],
+        'reportes'     => ['reportes/ReportesController.php', 'ReportesController'],
+        'vendedores'   => ['vendedores/VendedoresController.php', 'VendedoresController'],
+        'guias'        => ['guias/GuiasController.php', 'GuiasController'],
+        'sunat/ruc'    => ['sunat/RucController.php', 'RucController', 'buscar']
+    ];
 
-        match (true) {
-            $route === '/auth/login' && $method === 'POST' => $ctrl->login(),
-            $route === '/auth/me' && $method === 'GET' => $ctrl->me(),
-            $route === '/auth/cambiar-password' && $method === 'POST' => $ctrl->cambiarPassword(),
-            str_starts_with($route, '/auth/usuarios') => (function () use ($ctrl, $route, $method) {
-                    $id = basename($route) !== 'usuarios' ? basename($route) : null;
-                    match (true) {
-                        $method === 'GET' && !$id => $ctrl->listarUsuarios(),
-                        $method === 'POST' => $ctrl->crearUsuario(),
-                        $method === 'PUT' && $id => $ctrl->editarUsuario($id),
-                        $method === 'DELETE' && $id => $ctrl->eliminarUsuario($id),
-                        default => Response::error("Método no permitido", 405)
-                    };
-                })(),
-            default => Response::error("Ruta de auth no encontrada", 404)
-        };
+    foreach ($map as $prefix => $cfg) {
+        if (str_starts_with($route, '/' . $prefix)) {
+            $file = __DIR__ . '/modules/' . $cfg[0];
+            if (!file_exists($file)) throw new Exception("No se encuentra modulo: $file");
+            require_once $file;
+            $ctrl = new $cfg[1]();
+            $action = $cfg[2] ?? 'handle';
+            $ctrl->$action($route, $method);
+            exit;
+        }
     }
+    Response::error("Ruta no encontrada: $method $route", 404);
 
-    // --- OTROS MÓDULOS (Clientes, Productos, Ventas) ---
-    elseif (str_starts_with($route, '/clientes')) {
-        require_once __DIR__ . "/modules/clientes/ClientesController.php";
-        (new ClientesController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/dashboard')) {
-        require_once __DIR__ . "/modules/dashboard/EstadisticasController.php";
-        (new EstadisticasController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/productos')) {
-        require_once __DIR__ . "/modules/productos/ProductosController.php";
-        (new ProductosController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/inventario')) {
-        require_once __DIR__ . "/modules/inventario/InventarioController.php";
-        (new InventarioController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/ventas')) {
-        require_once __DIR__ . "/modules/ventas/VentasController.php";
-        (new VentasController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/reportes')) {
-        require_once __DIR__ . "/modules/reportes/ReportesController.php";
-        (new ReportesController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/proveedores')) {
-        require_once __DIR__ . "/modules/proveedores/ProveedoresController.php";
-        (new ProveedoresController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/compras')) {
-        require_once __DIR__ . "/modules/compras/ComprasController.php";
-        (new ComprasController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/caja')) {
-        require_once __DIR__ . "/modules/caja/CajaController.php";
-        (new CajaController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/guias')) {
-        require_once __DIR__ . "/modules/guias/GuiasController.php";
-        (new GuiasController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/vendedores')) {
-        require_once __DIR__ . "/modules/vendedores/VendedoresController.php";
-        (new VendedoresController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/cotizaciones')) {
-        require_once __DIR__ . "/modules/cotizaciones/CotizacionesController.php";
-        (new CotizacionesController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/notas-credito')) {
-        require_once __DIR__ . "/modules/notas-credito/NotasCreditoController.php";
-        (new NotasCreditoController())->handle($route, $method);
-
-    } elseif (str_starts_with($route, '/sunat/ruc')) {
-        require_once __DIR__ . '/modules/sunat/RucController.php';
-        (new RucController())->buscar();
-
-    } elseif (str_starts_with($route, '/guias')) {
-        require_once __DIR__ . "/modules/guias/GuiasController.php";
-        (new GuiasController())->handle($route, $method);
-    } else {
-        Response::error("Ruta no encontrada: $method $route", 404);
-    }
-
-} catch (Exception $e) {
-    // Captura general de errores no controlados para que no rompa el JSON
-    Response::error("Error interno: " . $e->getMessage(), 500);
+} catch (Throwable $t) {
+    Response::error("Error Servidor: " . $t->getMessage(), 500);
 }

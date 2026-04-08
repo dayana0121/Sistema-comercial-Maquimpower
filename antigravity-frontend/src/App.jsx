@@ -24,6 +24,7 @@ import CotizacionesPage from './pages/cotizaciones/CotizacionesPage';
 
 // Clientes
 import ClientesPage from './pages/clientes/ClientesPage';
+import ClienteFormPage from './pages/clientes/ClienteFormPage';
 
 // Productos / Inventario (✅ Importaciones limpias y unificadas)
 import ProductosPage from './pages/productos/ProductosPage';
@@ -87,6 +88,8 @@ function App() {
 
             {/* Clientes */}
             <Route path="/clientes" element={<ClientesPage />} />
+            <Route path="/clientes/nuevo" element={<ClienteFormPage />} />
+            <Route path="/clientes/editar/:id" element={<ClienteFormPage />} />
 
             {/* Productos (✅ Ruteo unificado a una sola página) */}
             <Route path="/productos" element={<ProductosPage />} />

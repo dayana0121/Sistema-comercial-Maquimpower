@@ -43,7 +43,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
             unidad_medida: d.unidad_medida || 'NIU'
         })),
         observaciones: ''
-    });
+        });
 
     const [itemActual, setItemActual] = useState({
         codigo: '', descripcion: '', cantidad: 1, unidad_medida: 'NIU'
@@ -72,7 +72,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
         }));
     };
 
-    // ==========================================
+     // ==========================================
     // LÓGICA DE IMPORTACIÓN MULTIPLE
     // ==========================================
     const abrirImportador = async () => {
@@ -188,12 +188,12 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <form onSubmit={handleSubmit} className="modal-guias-form flex flex-col h-full">
             {/* Tabs Navigation */}
-            <div className="flex border-b mb-4">
-                <button type="button" onClick={() => setActiveTab(1)} className={`py-2 px-4 ${activeTab === 1 ? 'border-b-2 border-blue-600 text-blue-600 font-bold' : 'text-gray-500'}`}>1. General</button>
-                <button type="button" onClick={() => setActiveTab(2)} className={`py-2 px-4 ${activeTab === 2 ? 'border-b-2 border-blue-600 text-blue-600 font-bold' : 'text-gray-500'}`}>2. Traslado</button>
-                <button type="button" onClick={() => setActiveTab(3)} className={`py-2 px-4 ${activeTab === 3 ? 'border-b-2 border-blue-600 text-blue-600 font-bold' : 'text-gray-500'}`}>3. Bienes</button>
+            <div className="modal-guias-tabs flex items-center border-b border-slate-200 mb-6 sticky top-0 bg-white z-10 w-full overflow-x-auto">
+                <button type="button" onClick={() => setActiveTab(1)} className={`modal-guias-tab py-3 px-6 text-sm font-bold flex-1 md:flex-none border-b-2 transition-colors ${activeTab === 1 ? 'is-active border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>1. General</button>
+                <button type="button" onClick={() => setActiveTab(2)} className={`modal-guias-tab py-3 px-6 text-sm font-bold flex-1 md:flex-none border-b-2 transition-colors ${activeTab === 2 ? 'is-active border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>2. Traslado</button>
+                <button type="button" onClick={() => setActiveTab(3)} className={`modal-guias-tab py-3 px-6 text-sm font-bold flex-1 md:flex-none border-b-2 transition-colors ${activeTab === 3 ? 'is-active border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>3. Bienes</button>
             </div>
 
             {/* Contenido scrolleable */}
@@ -201,7 +201,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
 
                 {/* TAB 1: GENERAL */}
                 {activeTab === 1 && (
-                    <div className="space-y-4">
+                    <div className="modal-guias-tab-panel space-y-6 mt-4">
                         <div className="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100 mb-2">
                             <div>
                                 <h3 className="text-sm font-bold text-blue-800">Importación Rápida</h3>
@@ -211,30 +211,30 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
                                 📥 Importar Comprobantes
                             </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Serie y Correlativo</label>
-                                <div className="flex gap-2">
-                                    <input type="text" name="serie" value={form.serie} onChange={handleChange} className="mt-1 block w-1/3 border-gray-300 rounded-md shadow-sm" readOnly />
-                                    <input type="text" name="numero" placeholder="Auto" disabled className="mt-1 block w-2/3 border-gray-300 bg-gray-100 rounded-md shadow-sm" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="form-group-custom">
+                                <label className="form-label-custom">Serie y Correlativo</label>
+                                <div className="flex gap-3">
+                                    <input type="text" name="serie" value={form.serie} onChange={handleChange} className="form-input-custom w-[100px] bg-slate-50" readOnly />
+                                    <input type="text" name="numero" placeholder="Auto" disabled className="form-input-custom bg-slate-100 flex-1" />
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Motivo de Traslado</label>
-                                <select name="motivo_traslado" value={form.motivo_traslado} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            <div className="form-group-custom">
+                                <label className="form-label-custom">Motivo de Traslado</label>
+                                <select name="motivo_traslado" value={form.motivo_traslado} onChange={handleChange} className="form-input-custom">
                                     <option value="01">Venta</option>
                                     <option value="02">Compra</option>
                                     <option value="04">Traslado entre establecimientos</option>
                                     <option value="13">Otros</option>
                                 </select>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Fecha de Emisión</label>
-                                <input type="date" name="fecha_emision" value={form.fecha_emision} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+                            <div className="form-group-custom">
+                                <label className="form-label-custom">Fecha de Emisión</label>
+                                <input type="date" name="fecha_emision" value={form.fecha_emision} onChange={handleChange} className="form-input-custom" />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Fecha de Traslado</label>
-                                <input type="date" name="fecha_traslado" value={form.fecha_traslado} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+                            <div className="form-group-custom">
+                                <label className="form-label-custom">Fecha de Traslado</label>
+                                <input type="date" name="fecha_traslado" value={form.fecha_traslado} onChange={handleChange} className="form-input-custom" />
                             </div>
                             <div className="col-span-2">
                                 <label className="block text-sm font-medium text-gray-700">Observaciones / Doc. Relacionados</label>
@@ -242,9 +242,8 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t">
-                            <h3 className="font-medium text-gray-900 mb-2">Datos del Destinatario</h3>
-                            {/* Integramos tu mejora Prioridad 1B */}
+                        <div className="pt-6 border-t border-slate-100">
+                            <h3 className="form-label-custom mb-3">Datos del Destinatario</h3>
                             <BuscadorDocumento
                                 onFound={(data) => setForm({
                                     ...form,
@@ -252,17 +251,9 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
                                     destinatario_nombre: data.razonSocial || data.nombres
                                 })}
                             />
-                            <div className="grid grid-cols-2 gap-4 mt-2">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] text-slate-500 uppercase font-bold">Documento</label>
-                                    <input type="text" placeholder="RUC/DNI" value={form.destinatario_ruc} readOnly className="block w-full border-gray-300 bg-gray-50 rounded-md shadow-sm text-sm" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] text-slate-500 uppercase font-bold">
-                                        {form.destinatario_ruc?.length === 8 ? 'Nombres y Apellidos' : 'Razón Social'}
-                                    </label>
-                                    <input type="text" placeholder="Nombre completo" value={form.destinatario_nombre} readOnly className="block w-full border-gray-300 bg-gray-50 rounded-md shadow-sm text-sm" />
-                                </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                                <input type="text" placeholder="RUC/DNI" value={form.destinatario_ruc} readOnly className="form-input-custom bg-slate-50" />
+                                <input type="text" placeholder="Razón Social / Nombres" value={form.destinatario_nombre} readOnly className="form-input-custom bg-slate-50" />
                             </div>
                         </div>
                     </div>
@@ -270,47 +261,36 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
 
                 {/* TAB 2: TRASLADO */}
                 {activeTab === 2 && (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Modalidad de Traslado</label>
-                            <select name="modalidad_traslado" value={form.modalidad_traslado} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    <div className="modal-guias-tab-panel space-y-6 mt-4">
+                        <div className="form-group-custom">
+                            <label className="form-label-custom">Modalidad de Traslado</label>
+                            <select name="modalidad_traslado" value={form.modalidad_traslado} onChange={handleChange} className="form-input-custom">
                                 <option value="01">Transporte Público (Terceros)</option>
                                 <option value="02">Transporte Privado (Propio)</option>
                             </select>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6 pt-2">
-                            <div className="space-y-3">
-                                <h3 className="font-medium text-gray-900 border-b pb-1">Punto de Partida</h3>
-                                <div>
-                                    <label className="block text-xs text-gray-500">Ubigeo</label>
-                                    <input type="text" name="partida_ubigeo" value={form.partida_ubigeo} onChange={handleChange} maxLength="6" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                            <div className="space-y-4">
+                                <h3 className="form-label-custom border-b border-slate-100 pb-2">Punto de Partida</h3>
+                                <div className="form-group-custom">
+                                    <label className="form-label-custom">Ubigeo</label>
+                                    <input type="text" name="partida_ubigeo" value={form.partida_ubigeo} onChange={handleChange} maxLength="6" className="form-input-custom" />
                                 </div>
-                                <div>
-                                    <label className="block text-xs text-gray-500">Dirección completa</label>
-                                    <input type="text" name="partida_direccion" value={form.partida_direccion} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+                                <div className="form-group-custom">
+                                    <label className="form-label-custom">Dirección completa</label>
+                                    <input type="text" name="partida_direccion" value={form.partida_direccion} onChange={handleChange} className="form-input-custom" />
                                 </div>
                             </div>
-                            <div className="space-y-3">
-                                <h3 className="font-medium text-gray-900 border-b pb-1">Punto de Llegada</h3>
-                                <div>
-                                    <label className="block text-xs text-gray-500">Ubigeo</label>
-                                    <input type="text" name="llegada_ubigeo" value={form.llegada_ubigeo} onChange={handleChange} maxLength="6" placeholder="Ej: 150101" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
+                            <div className="space-y-4">
+                                <h3 className="form-label-custom border-b border-slate-100 pb-2">Punto de Llegada</h3>
+                                <div className="form-group-custom">
+                                    <label className="form-label-custom">Ubigeo</label>
+                                    <input type="text" name="llegada_ubigeo" value={form.llegada_ubigeo} onChange={handleChange} maxLength="6" placeholder="Ej: 150101" className="form-input-custom" />
                                 </div>
-                                <div>
-                                    <label className="block text-xs text-gray-500">Dirección completa</label>
-                                    <input type="text" name="llegada_direccion" value={form.llegada_direccion} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm" />
-                                </div>
-                                <div className="pt-2">
-                                    <label className="block text-xs font-bold text-blue-700 uppercase">Agencia / Destino (Ej: Shalom)</label>
-                                    <input 
-                                        type="text" 
-                                        name="agencia_destino" 
-                                        value={form.agencia_destino} 
-                                        onChange={handleChange} 
-                                        placeholder="Ingrese agencia de transporte"
-                                        className="mt-1 block w-full border-blue-300 bg-blue-50 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
-                                    />
+                                <div className="form-group-custom">
+                                    <label className="form-label-custom">Dirección completa</label>
+                                    <input type="text" name="llegada_direccion" value={form.llegada_direccion} onChange={handleChange} className="form-input-custom" />
                                 </div>
                             </div>
                         </div>
@@ -319,7 +299,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
 
                 {/* TAB 3: BIENES */}
                 {activeTab === 3 && (
-                    <div className="space-y-4">
+                    <div className="modal-guias-tab-panel space-y-4">
                         <div className="flex gap-4 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
                             <div className="flex-1">
                                 <label className="block text-xs text-gray-500">Código</label>
@@ -383,22 +363,22 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
             </div>
 
             {/* Footer / Botones de Acción */}
-            <div className="pt-4 border-t flex justify-end gap-3 mt-auto bg-white">
-                <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+            <div className="form-actions-custom border-t border-slate-100 bg-white sticky bottom-0 z-10">
+                <button type="button" onClick={onCancel} className="btn-cancel-custom">
                     Cancelar
                 </button>
                 {activeTab < 3 ? (
-                    <button type="button" onClick={() => setActiveTab(activeTab + 1)} className="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900">
+                    <button type="button" onClick={() => setActiveTab(activeTab + 1)} className="btn-submit-custom bg-slate-800 hover:bg-slate-900 border-none">
                         Siguiente
                     </button>
                 ) : (
-                    <button type="submit" disabled={loading} className={`px-4 py-2 text-white rounded-md ${loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                        {loading ? 'Registrando...' : 'Registrar Guía'}
+                    <button type="submit" disabled={loading} className={`btn-submit-custom ${loading ? 'opacity-50' : ''}`}>
+                        {loading ? 'Emitiendo...' : 'Firmar y Enviar a SUNAT'}
                     </button>
                 )}
             </div>
 
-            {/* Modal de Importación Multiples Ventas */}
+             {/* Modal de Importación Multiples Ventas */}
             <Modal isOpen={showImportModal} onClose={() => setShowImportModal(false)} title="Importar Comprobantes de Venta">
                 <div className="p-4 w-[600px] max-w-full">
                     <p className="text-sm text-gray-600 mb-4">Seleccione una o más ventas para consolidar sus productos en esta guía de remisión.</p>

@@ -1,8 +1,15 @@
 :root {
+    /* Paleta solicitada */
+    --primary: #FF4500;
+    --primary-dark: #e8531d;
+    --dark: #0a0a0a;
+    --grey-light: #f4f4f4;
+    --grey-light-2: #333333;
+
     /* Fondos */
-    --color-bg-principal: #F4F6F9;
+    --color-bg-principal: #FFF8F4; /* Fondo suave del figma */
     --color-bg-secundario: #FFFFFF;
-    --color-bg-sidebar: #000000ce;
+    --color-bg-sidebar: var(--dark);
     --color-bg-topbar: #FFFFFF;
     --color-bg-card: #FFFFFF;
 
@@ -11,35 +18,35 @@
     --color-borde-suave: #F1F5F9;
     --color-borde-sidebar: #2D3139;
 
-    /* Textos generales — NUNCA blanco en área de contenido */
+    /* Textos generales */
     --color-texto-principal: #1A202C;
-    --color-texto-secundario: #64748B;
-    --color-texto-suave: #94A3B8;
+    --color-texto-secundario: var(--grey-light-2);
+    --color-texto-suave: #8B949E;
 
-    /* Textos sidebar — blancos porque el fondo es oscuro */
-    --color-sidebar-texto: #C9D1D9;
+    /* Textos sidebar */
+    --color-sidebar-texto: #A0AEC0;
     --color-sidebar-texto-hover: #FFFFFF;
     --color-sidebar-texto-activo: #FFFFFF;
     --color-sidebar-label: #8B949E;
 
-    /* Naranja — solo en CTAs, logo, activos */
-    --color-cta-primario: #FF6B00;
-    --color-cta-hover: #E05A00;
+    /* CTAs e Interacciones */
+    --color-cta-primario: var(--primary);
+    --color-cta-hover: var(--primary-dark);
     --color-cta-suave: #FFF3E8;
     --color-cta-borde: #FFD4B0;
 
     /* Estados */
-    --color-exito: #10B981;
-    --color-exito-suave: #D1FAE5;
-    --color-error: #EF4444;
-    --color-error-suave: #FEE2E2;
-    --color-warning: #F59E0B;
-    --color-warning-suave: #FEF3C7;
-    --color-info: #3B82F6;
-    --color-info-suave: #DBEAFE;
+    --color-exito: #28a745;
+    --color-exito-suave: #e6f4ea;
+    --color-error: #dc3545;
+    --color-error-suave: #fce8e6;
+    --color-warning: #ff9800;
+    --color-warning-suave: #fff4e5;
+    --color-info: #007bff;
+    --color-info-suave: #e8f4fd;
 
-    /* Sombras */
-    --sombra-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    /* Sombras refinadas */
+    --sombra-card: 0 4px 15px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
     --sombra-modal: 0 20px 60px rgba(0, 0, 0, 0.15);
     --sombra-sidebar: 2px 0 12px rgba(0, 0, 0, 0.15);
 
@@ -53,10 +60,11 @@
     --font-size-base: 14px;
     --radius-base: 8px;
     --radius-lg: 12px;
+    --radius-xl: 16px;
 
     /* Legacy */
-    --sidebar-width: 240px;
-    --topbar-height: 60px;
+    --sidebar-width: 260px;
+    --topbar-height: 70px;
     --border-radius: var(--radius-base);
 }
 
@@ -213,3 +221,4 @@ a {
         grid-template-columns: 1fr;
     }
 }
+

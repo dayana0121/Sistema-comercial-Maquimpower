@@ -1,0 +1,32 @@
+.modal-ventas-create > div {
+    border-radius: 16px;
+}
+
+.modal-ventas-create .bg-white,
+.modal-ventas-create .bg-gray-50 {
+    border: 1px solid #e7edf5;
+    border-radius: 14px;
+}
+
+.modal-ventas-create .bg-\[\#1b2532\] {
+    border-radius: 16px;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.2);
+}
+
+.modal-ventas-cotizaciones button {
+    border-radius: 12px;
+}
+
+.modal-ventas-cotizaciones button:hover {
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.12);
+}
+
+.modal-ventas-detalle-shell .venta-detalle .stats-grid {
+    margin-top: 0.25rem;
+}
+
+.modal-ventas-detalle-shell .venta-detalle .table-container {
+    border: 1px solid #e7edf5;
+    border-radius: 14px;
+    overflow: hidden;
+}

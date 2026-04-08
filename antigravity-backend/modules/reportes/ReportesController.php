@@ -184,8 +184,8 @@ class ReportesController {
             $stmtGlobal = $this->conn->prepare("
                 SELECT 
                     SUM(vd.precio_total) AS ingresos_totales,
-                    SUM(vd.cantidad * IFNULL(p.costo_promedio, 0)) AS costo_bienes_vendidos,
-                    SUM(vd.precio_total - (vd.cantidad * IFNULL(p.costo_promedio, 0))) AS utilidad_bruta
+                    SUM(vd.cantidad * 0) AS costo_bienes_vendidos,
+                    SUM(vd.precio_total - (vd.cantidad * 0)) AS utilidad_bruta
                 $queryBase
             ");
             $stmtGlobal->bindValue(':desde', $desde);
@@ -206,8 +206,8 @@ class ReportesController {
                 SELECT
                     DATE(v.fecha_emision) AS fecha,
                     SUM(vd.precio_total) AS ingresos,
-                    SUM(vd.cantidad * IFNULL(p.costo_promedio, 0)) AS cogs,
-                    SUM(vd.precio_total - (vd.cantidad * IFNULL(p.costo_promedio, 0))) AS utilidad
+                    SUM(vd.cantidad * 0) AS cogs,
+                    SUM(vd.precio_total - (vd.cantidad * 0)) AS utilidad
                 $queryBase
                 GROUP BY DATE(v.fecha_emision)
                 ORDER BY fecha ASC
@@ -236,7 +236,7 @@ class ReportesController {
                     vd.codigo_producto AS codigo,
                     SUM(vd.cantidad) AS cantidad_vendida,
                     SUM(vd.precio_total) AS ingresos,
-                    SUM(vd.precio_total - (vd.cantidad * IFNULL(p.costo_promedio, 0))) AS utilidad
+                    SUM(vd.precio_total - (vd.cantidad * 0)) AS utilidad
                 $queryBase
                 GROUP BY vd.codigo_producto, vd.descripcion
                 ORDER BY utilidad DESC
@@ -277,12 +277,11 @@ class ReportesController {
     }
 
     private function error($e) {
-        error_log("ReportesController Error: " . $e->getMessage());
         http_response_code(500);
         echo json_encode([
             "success" => false, 
-            "message" => "Error interno del servidor.",
-            "debug_temp" => $e->getMessage()
+            "message" => "DB_CRASH: " . $e->getMessage()
         ]);
+        exit;
     }
 }

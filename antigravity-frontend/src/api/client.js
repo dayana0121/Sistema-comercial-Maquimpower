@@ -1,4 +1,6 @@
-export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
+// src/api/client.js
+// Yo dejo este fallback alineado al repo actual para no consumir accidentalmente un backend antiguo.
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/Sistema-comercial-Maquimpower/antigravity-backend';
 
 async function getToken() {
     // ✅ Obtenemos el token que guardamos en AuthController.php
@@ -52,6 +54,18 @@ async function fetchWithAuth(url, options = {}) {
         }
 
         if (res.status >= 500) throw new Error(data.message || `Error ${res.status}`);
+
+        // Yo emito una señal de refresco cuando hay cambios de datos para mantener dashboard/sidebar sincronizados.
+        const method = (options.method || 'GET').toUpperCase();
+        if (res.ok && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
+            try {
+                const stamp = String(Date.now());
+                localStorage.setItem('mq_dashboard_refresh', stamp);
+                window.dispatchEvent(new CustomEvent('mq:dashboard-refresh', { detail: { stamp, url, method } }));
+            } catch (_) {
+                // Ignorado para no romper flujo principal.
+            }
+        }
 
         return data;
     } catch (err) {

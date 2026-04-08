@@ -1,4 +1,5 @@
-import apiClient, { BASE_URL } from './client';
+// src/api/cotizaciones.js
+import apiClient from './client';
 
 export const cotizacionesApi = {
     listar: async (params = {}) => {
@@ -34,18 +35,14 @@ export const cotizacionesApi = {
         try {
             return await apiClient.put(`/cotizaciones/${id}`, data);
         } catch (error) {
-            console.error('Error actualizando cotización:', error);
+            console.error('Error actualizando cotizacion:', error);
             throw error;
         }
     },
 
     generarPdf: async (id) => {
         try {
-            const response = await fetch(`${BASE_URL}/cotizaciones/${id}/pdf`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+            const response = await fetch(`/api/cotizaciones/${id}/pdf`);
             if (!response.ok) throw new Error('Error descargando PDF');
             
             const blob = await response.blob();

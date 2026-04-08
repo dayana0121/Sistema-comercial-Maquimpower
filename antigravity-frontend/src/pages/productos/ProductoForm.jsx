@@ -5,6 +5,7 @@ import Button from "../../components/ui/Button";
 import { useToast } from "../../hooks/useToast";
 // ✅ 1. Corrección: Importar apiClient correctamente
 import { apiClient } from "../../api/client";
+import "../../styles/modal-producto.css";
 
 export default function ProductoForm({ productoToEdit, onCancel, onSuccess, isReadOnly }) {
     const toast = useToast();
@@ -71,34 +72,36 @@ export default function ProductoForm({ productoToEdit, onCancel, onSuccess, isRe
         <button
             type="button"
             onClick={() => setActiveTab(idBtn)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === idBtn ? "border-orange-500 text-orange-600" : "border-transparent text-slate-500 hover:text-slate-700"
-                }`}
+            className={`modal-productos-tab ${activeTab === idBtn ? "is-active" : ""}`}
         >
             <Icon size={16} /> {label}
         </button>
     );
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Cabecera de Pestañas */}
-            <div className="flex border-b border-slate-200 overflow-x-auto">
-                <TabButton idBtn="general" label="General" icon={Package} />
-                <TabButton idBtn="precios" label="Precios/SUNAT" icon={DollarSign} />
-                <TabButton idBtn="inventario" label="Inventario" icon={Truck} />
-                <TabButton idBtn="web" label="Marketing/Web" icon={Globe} />
-            </div>
+        <form
+  onSubmit={handleSubmit}
+  className={`modal-productos-form space-y-6 ${activeTab === 'general' ? 'is-active' : ''}`}
+>
+  {/* Cabecera de Pestañas */}
+  <div className="modal-productos-tabs flex border-b border-slate-200 overflow-x-auto">
+    <TabButton idBtn="general" label="General" icon={Package} active={activeTab === 'general'} />
+    <TabButton idBtn="precios" label="Precios/SUNAT" icon={DollarSign} active={activeTab === 'precios'} />
+    <TabButton idBtn="inventario" label="Inventario" icon={Truck} active={activeTab === 'inventario'} />
+    <TabButton idBtn="web" label="Marketing/Web" icon={Globe} active={activeTab === 'web'} />
+  </div>
 
             <div className="min-h-[400px]">
                 {/* PESTAÑA: GENERAL */}
                 {activeTab === "general" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in duration-300">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-300 mt-2">
                         <Input label="Código Interno *" name="codigo_interno" value={formData.codigo_interno} onChange={handleChange} required disabled={isReadOnly} />
                         <Input label="SKU / Código de Barras" name="sku" value={formData.sku} onChange={handleChange} disabled={isReadOnly} />
-                        <div className="md:col-span-2">
-                            <label className="text-xs font-bold text-slate-500 uppercase">Descripción del Producto *</label>
+                        <div className="md:col-span-2 form-group-custom">
+                            <label className="form-label-custom">Descripción del Producto *</label>
                             <textarea
                                 name="descripcion" value={formData.descripcion} onChange={handleChange} required disabled={isReadOnly}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm min-h-[80px] focus:ring-2 focus:ring-orange-100 outline-none"
+                                className="form-input-custom min-h-[80px]"
                             />
                         </div>
                         <Input label="Categoría" name="categoria" value={formData.categoria} onChange={handleChange} disabled={isReadOnly} />
@@ -108,28 +111,27 @@ export default function ProductoForm({ productoToEdit, onCancel, onSuccess, isRe
 
                 {/* PESTAÑA: PRECIOS Y SUNAT */}
                 {activeTab === "precios" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-right-4 duration-300">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-right-4 duration-300 mt-2">
                         <Input label="Precio Unitario SIN IGV *" type="number" step="0.01" name="precio_unitario_sin_igv" value={formData.precio_unitario_sin_igv} onChange={handleChange} required disabled={isReadOnly} />
                         <Input label="Costo Promedio Unitario *" type="number" step="0.01" name="costo_promedio" value={formData.costo_promedio} onChange={handleChange} required disabled={isReadOnly} />
-                        
-                        <div className="flex flex-col gap-1">
+                        <div className="form-group-custom">
                             <label className="text-xs font-bold text-slate-400 uppercase">Precio Venta (Referencial IGV)</label>
                             <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold text-slate-700">
                                 S/ {precioConIgv}
                             </div>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs font-bold text-slate-500 uppercase">Unidad de Medida</label>
-                            <select name="unidad_medida" value={formData.unidad_medida} onChange={handleChange} disabled={isReadOnly} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-orange-100">
+                        <div className="form-group-custom">
+                            <label className="form-label-custom">Unidad de Medida</label>
+                            <select name="unidad_medida" value={formData.unidad_medida} onChange={handleChange} disabled={isReadOnly} className="form-input-custom">
                                 <option value="NIU">Unidades (NIU)</option>
                                 <option value="ZZ">Servicios (ZZ)</option>
                                 <option value="KGM">Kilogramos (KGM)</option>
                                 <option value="MTR">Metros (MTR)</option>
                             </select>
                         </div>
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs font-bold text-slate-500 uppercase">Afectación IGV</label>
-                            <select name="tipo_afectacion_igv" value={formData.tipo_afectacion_igv} onChange={handleChange} disabled={isReadOnly} className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-orange-100">
+                        <div className="form-group-custom">
+                            <label className="form-label-custom">Afectación IGV</label>
+                            <select name="tipo_afectacion_igv" value={formData.tipo_afectacion_igv} onChange={handleChange} disabled={isReadOnly} className="form-input-custom">
                                 <option value="10">Gravado - Op. Onerosa (10)</option>
                                 <option value="20">Exonerado - Op. Onerosa (20)</option>
                                 <option value="30">Inafecto - Op. Onerosa (30)</option>
@@ -140,7 +142,7 @@ export default function ProductoForm({ productoToEdit, onCancel, onSuccess, isRe
 
                 {/* PESTAÑA: INVENTARIO */}
                 {activeTab === "inventario" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-right-4 duration-300">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-right-4 duration-300 mt-2">
                         <Input label="Stock Actual" type="number" name="stock_actual" value={formData.stock_actual} onChange={handleChange} disabled={isReadOnly} />
                         <Input label="Stock Mínimo (Alerta)" type="number" name="stock_minimo" value={formData.stock_minimo} onChange={handleChange} disabled={isReadOnly} />
                         <Input label="Peso (Kg)" type="number" step="0.001" name="peso_kg" value={formData.peso_kg} onChange={handleChange} disabled={isReadOnly} />
@@ -153,7 +155,7 @@ export default function ProductoForm({ productoToEdit, onCancel, onSuccess, isRe
 
                 {/* PESTAÑA: WEB / MARKETING */}
                 {activeTab === "web" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-right-4 duration-300">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-right-4 duration-300 mt-2">
                         <Input label="URL Imagen Principal" name="imagen_url" value={formData.imagen_url} onChange={handleChange} placeholder="https://..." disabled={isReadOnly} />
                         <Input label="Slug (URL Amigable)" name="slug" value={formData.slug} onChange={handleChange} placeholder="nombre-del-producto" disabled={isReadOnly} />
                         <Input label="Video URL (YouTube/Vimeo)" name="video_url" value={formData.video_url} onChange={handleChange} disabled={isReadOnly} />
@@ -166,12 +168,12 @@ export default function ProductoForm({ productoToEdit, onCancel, onSuccess, isRe
             </div>
 
             {/* Acciones */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <Button variant="secondary" onClick={onCancel} type="button">Cerrar</Button>
+            <div className="form-actions-custom border-t border-slate-100">
+                <button type="button" onClick={onCancel} className="btn-cancel-custom">Cerrar</button>
                 {!isReadOnly && (
-                    <Button type="submit" variant="primary" loading={loading} icon={Save}>
-                        {id ? "Actualizar Producto" : "Guardar Producto"}
-                    </Button>
+                    <button type="submit" className="btn-submit-custom disabled:opacity-50 flex items-center gap-2" disabled={loading}>
+                        <Save size={16} /> {id ? "Actualizar Producto" : "Guardar Producto"}
+                    </button>
                 )}
             </div>
         </form>

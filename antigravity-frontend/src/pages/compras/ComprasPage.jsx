@@ -4,6 +4,7 @@ import { useToast } from '../../hooks/useToast';
 import { Plus, Eye, X, Search, ShoppingCart, Package } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
 import apiClient from '../../api/client';
+import '../../styles/modal-compras.css';
 
 const itemVacio = { producto_id: '', descripcion: '', unidad_medida: 'NIU', cantidad: 1, costo_unitario: 0, tipo_afectacion_igv: '10', incluye_igv: false };
 
@@ -52,7 +53,7 @@ export default function ComprasPage() {
     }
     cambiarItem(idx, 'producto_id', productoId);
   };
-  
+
   // Buscador de productos
   const [busquedaProducto, setBusquedaProducto] = useState({});
   const buscarProd = (idx, texto) => {
@@ -62,7 +63,7 @@ export default function ComprasPage() {
   };
 
   const totales = items.reduce((acc, it) => {
-    const cantidad = parseFloat(it.cantidad) || 0;
+     const cantidad = parseFloat(it.cantidad) || 0;
     const pIngresado = parseFloat(it.costo_unitario) || 0;
     const pBase = it.incluye_igv ? pIngresado / 1.18 : pIngresado;
     const subtotal = cantidad * pBase;
@@ -163,27 +164,27 @@ export default function ComprasPage() {
 
       {/* Modal Nueva Compra */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Nueva Orden de Compra" size="xl">
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex flex-col gap-1 md:col-span-1">
-              <label className="text-xs font-bold text-slate-500 uppercase">Proveedor *</label>
+        <div className="modal-compras-create space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="form-group-custom md:col-span-1">
+              <label className="form-label-custom">Proveedor *</label>
               <select value={form.proveedor_id} onChange={e => setForm(f => ({...f, proveedor_id: e.target.value}))}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white outline-none">
+                className="form-input-custom">
                 <option value="">— Seleccionar —</option>
                 {proveedores.map(p => <option key={p.id} value={p.id}>{p.razon_social}</option>)}
               </select>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-500 uppercase">Tipo Comprobante</label>
+            <div className="form-group-custom">
+              <label className="form-label-custom">Tipo Comprobante</label>
               <select value={form.tipo_comprobante} onChange={e => setForm(f=>({...f, tipo_comprobante: e.target.value}))}
-                className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white outline-none">
+                className="form-input-custom">
                 <option value="FACTURA">Factura</option>
                 <option value="BOLETA">Boleta</option>
                 <option value="ORDEN">Orden de Compra</option>
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-500 uppercase">Serie y Número</label>
+               <label className="text-xs font-bold text-slate-500 uppercase">Serie y Número</label>
               <div className="flex gap-2">
                   <input value={form.serie} onChange={e => setForm(f=>({...f, serie: e.target.value}))}
                     placeholder="F001" className="w-1/3 px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none uppercase" />
@@ -220,21 +221,21 @@ export default function ComprasPage() {
               <label className="text-xs font-bold text-slate-500 uppercase">Ítems de Compra</label>
               <button onClick={agregarItem} className="text-xs text-orange-500 hover:text-orange-600 font-semibold flex items-center gap-1"><Plus size={12}/>Agregar ítem</button>
             </div>
-            <div className="border border-slate-200 rounded-lg overflow-hidden">
-              <table className="w-full text-xs">
-                <thead className="bg-slate-50"><tr>
-                  <th className="px-3 py-2 text-left font-bold text-slate-500 min-w[180px]">Producto</th>
+            <div className="border border-slate-200 rounded-lg overflow-hidden mt-3 shadow-sm">
+              <table className="w-full text-sm">
+                <thead className="bg-[#F8F9FA] border-b border-slate-100"><tr>
+                   <th className="px-3 py-2 text-left font-bold text-slate-500 min-w[180px]">Producto</th>
                   <th className="px-3 py-2 text-left font-bold text-slate-500">Descripción / U.M.</th>
                   <th className="px-3 py-2 text-center font-bold text-slate-500 min-w[80px]">Cant.</th>
                   <th className="px-3 py-2 text-center font-bold text-slate-500 min-w[110px]">Costo Unit.</th>
                   <th className="px-3 py-2 text-center font-bold text-slate-500">Afectación</th>
-                  <th className="px-3 py-2 text-right font-bold text-slate-500">Subtotal</th>
+                   <th className="px-3 py-2 text-right font-bold text-slate-500">Subtotal</th>
                   <th className="px-3 py-2"></th>
                 </tr></thead>
                 <tbody className="divide-y divide-slate-100">
                   {items.map((it, idx) => (
                     <tr key={idx}>
-                      <td className="px-2 py-1.5 align-top relative">
+                    <td className="px-2 py-1.5 align-top relative">
                         <input value={busquedaProducto[idx] !== undefined ? busquedaProducto[idx] : (productos.find(p=>p.id===it.producto_id)?.codigo_interno || '')} onChange={e => buscarProd(idx, e.target.value)} placeholder="Buscar SKU..." className="w-full px-2 py-1.5 border border-slate-200 rounded text-xs"/>
                         {(busquedaProducto[idx] && !it.producto_id) && (
                             <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 shadow-md rounded max-h-32 overflow-y-auto">
@@ -290,16 +291,16 @@ export default function ComprasPage() {
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-slate-500 uppercase">Observación</label>
+          <div className="form-group-custom">
+            <label className="form-label-custom">Observación</label>
             <textarea value={form.observacion} onChange={e => setForm(f=>({...f, observacion: e.target.value}))} rows={2}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none resize-none"/>
+              className="form-input-custom resize-none"/>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+          <div className="form-actions-custom border-t border-slate-100">
+            <button onClick={() => setIsModalOpen(false)} className="btn-cancel-custom">Cancelar</button>
             <button onClick={handleGuardar} disabled={guardando}
-              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg disabled:opacity-50">
+              className="btn-submit-custom disabled:opacity-50">
               {guardando ? 'Registrando...' : 'Registrar Compra'}
             </button>
           </div>
@@ -309,8 +310,8 @@ export default function ComprasPage() {
       {/* Modal Detalle */}
       <Modal isOpen={detalleOpen} onClose={() => setDetalleOpen(false)} title={`Detalle: ${compraDetalle?.numero_comprobante || ''}`} size="lg">
         {compraDetalle && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="modal-compras-detalle space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-sm bg-slate-50 p-6 rounded-xl border border-dashed border-slate-200">
               <div><span className="text-slate-500 text-xs uppercase font-bold">Proveedor</span><p className="font-semibold">{compraDetalle.proveedor_nombre}</p></div>
               <div><span className="text-slate-500 text-xs uppercase font-bold">Estado</span><p>{compraDetalle.estado}</p></div>
               <div><span className="text-slate-500 text-xs uppercase font-bold">Fecha</span><p>{compraDetalle.fecha_comprobante}</p></div>

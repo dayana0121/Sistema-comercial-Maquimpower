@@ -9,6 +9,8 @@ import DataTable from "../../components/ui/DataTable";
 import Modal from "../../components/ui/Modal";
 import { useToast } from '../../hooks/useToast';
 import ClienteForm from "./ClienteForm";
+import "../../styles/clientes.css"
+import "../../styles/modal-clientes.css";
 
 export default function ClientesPage() {
     const toast = useToast();
@@ -20,33 +22,29 @@ export default function ClientesPage() {
 
     // Estados de Filtros y Paginación
     const [search, setSearch] = useState("");
-    const [filtroTipo, setFiltroTipo] = useState("");
+    const [filtroTipo, setFiltroTipo] = useState(""); // Requerimiento: Filtro tipo_doc
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    const itemsPerPage = 10; // Requerimiento: 10 por página
 
-    useEffect(() => { cargarClientes(); }, [currentPage, search, filtroTipo]);
+    // Estados del Modal
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [clienteToEdit, setClienteToEdit] = useState(null);
+    const [isReadOnly, setIsReadOnly] = useState(false);
+
+    useEffect(() => { cargarClientes(); }, []);
 
     async function cargarClientes() {
         try {
             setLoading(true);
-            const res = await apiClient.get(`/clientes?page=${currentPage}&limit=20&search=${search}&tipo_documento=${filtroTipo}`);
-            if (res.success) {
-                setData(res.data);
-                if (res.pagination) {
-                    setTotalPages(res.pagination.pages);
-                }
-            } else setError(res.message);
+            const res = await apiClient.get("/clientes");
+            if (res.success) setData(res.data);
+            else setError(res.message);
         } catch (e) {
             setError("Error de conexión con el servidor.");
         } finally {
             setLoading(false);
         }
     }
-
-    // Estados del Modal
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [clienteToEdit, setClienteToEdit] = useState(null);
-    const [isReadOnly, setIsReadOnly] = useState(false);
 
     // Handlers de Acciones
     const handleNew = () => {
@@ -77,6 +75,22 @@ export default function ClientesPage() {
             } else toast.error(res.message);
         } catch (e) { toast.error("Error al conectar con el servidor."); }
     };
+
+    // Lógica de Filtrado (Búsqueda + Tipo de Documento)
+    const filtrados = data.filter(c => {
+        const matchesSearch = (
+            c.razon_social?.toLowerCase().includes(search.toLowerCase()) ||
+            c.numero_documento?.includes(search)
+        );
+        const matchesTipo = filtroTipo === "" || c.tipo_documento === filtroTipo;
+        return matchesSearch && matchesTipo;
+    });
+
+    // Lógica de Paginación
+    const totalPages = Math.ceil(filtrados.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = filtrados.slice(indexOfFirstItem, indexOfLastItem);
 
     const columns = [
         {
@@ -112,7 +126,7 @@ export default function ClientesPage() {
             header: "Estado",
             align: "center",
             render: (row) => (
-                <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-bold uppercase ${row.activo == 1 ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+                <span className={`px-2 py-0.5 text-[0.65rem] font-bold uppercase ${row.activo == 1 ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
                     }`}>
                     {row.activo == 1 ? "Activo" : "Inactivo"}
                 </span>
@@ -126,10 +140,10 @@ export default function ClientesPage() {
                     <button onClick={() => handleView(row)} title="Ver detalles" className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
                         <Eye size={17} />
                     </button>
-                    <button onClick={() => handleEdit(row)} title="Editar" className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-md transition-colors">
+                    <button onClick={() => handleEdit(row)} title="Editar" className="p-1.5 text-blue-500 hover:text-orange-500 hover:bg-orange-50 rounded-md transition-colors">
                         <Edit size={17} />
                     </button>
-                    <button onClick={() => handleDesactivar(row.id)} title="Desactivar" className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                    <button onClick={() => handleDesactivar(row.id)} title="Desactivar" className="p-2 text-red-500 hover:text-red-500 hover:bg-slate-800 rounded-lg transition-all bg-slate-900">
                         <UserX size={17} />
                     </button>
                 </div>
@@ -147,6 +161,7 @@ export default function ClientesPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
+                    {/* Filtro por Tipo de Documento */}
                     <select
                         value={filtroTipo}
                         onChange={(e) => { setFiltroTipo(e.target.value); setCurrentPage(1); }}
@@ -171,14 +186,29 @@ export default function ClientesPage() {
             {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-semibold">{error}</div>}
 
             {/* Tabla Principal */}
-            <DataTable
-                columns={columns}
-                data={data}
-                loading={loading}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-            />
+            <DataTable columns={columns} data={currentItems} loading={loading} />
+
+            {/* Paginación */}
+            {!loading && filtrados.length > 0 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4 text-sm text-slate-500">
+                    <p>Mostrando <b>{indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filtrados.length)}</b> de {filtrados.length} clientes</p>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="secondary"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => prev - 1)}
+                            className="px-4"
+                        > Anterior </Button>
+                        <span className="px-4 font-bold text-slate-700">Página {currentPage} de {totalPages || 1}</span>
+                        <Button
+                            variant="secondary"
+                            disabled={currentPage >= totalPages}
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                            className="px-4"
+                        > Siguiente </Button>
+                    </div>
+                </div>
+            )}
 
             {/* Modal de Formulario */}
             <Modal
@@ -187,15 +217,17 @@ export default function ClientesPage() {
                 title={isReadOnly ? "Detalles del Cliente" : (clienteToEdit ? "Modificar Cliente" : "Nuevo Cliente")}
                 size="lg"
             >
-                <ClienteForm
-                    clienteToEdit={clienteToEdit}
-                    isReadOnly={isReadOnly}
-                    onCancel={() => setIsModalOpen(false)}
-                    onSuccess={() => {
-                        setIsModalOpen(false);
-                        cargarClientes();
-                    }}
-                />
+                <div className="modal-clientes-shell">
+                    <ClienteForm
+                        clienteToEdit={clienteToEdit}
+                        isReadOnly={isReadOnly}
+                        onCancel={() => setIsModalOpen(false)}
+                        onSuccess={() => {
+                            setIsModalOpen(false);
+                            cargarClientes();
+                        }}
+                    />
+                </div>
             </Modal>
         </div>
     );
