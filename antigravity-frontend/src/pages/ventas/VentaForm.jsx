@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import BuscadorDocumento from '../../components/ui/BuscadorDocumento';
+import '../../styles/modal-ventas.css';
 
 // Opciones de afectación (solo 3)
 const TIPO_AFECTACION = [
@@ -244,7 +245,7 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
     return (
         <>
             <Modal isOpen={isOpen} onClose={onClose} title="Nueva Venta Electrónica" size="6xl" bgClass="bg-[#FFF9F2]">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="modal-ventas-create grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* COLUMNA 1: CLIENTE Y DATOS */}
                     <div className="space-y-5 lg:border-r border-slate-200 lg:pr-8">
                         <h3 className="text-xl font-bold text-slate-800">Datos Principales</h3>
@@ -569,7 +570,7 @@ const VentaForm = ({ isOpen, onClose, onSuccess }) => {
 
             {/* Modal para Cotizaciones */}
             <Modal isOpen={showCotizacionesModal} onClose={() => setShowCotizacionesModal(false)} title="Importar Cotización" size="2xl">
-                <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
+                <div className="modal-ventas-cotizaciones p-6 space-y-4 max-h-96 overflow-y-auto">
                     {cotizaciones.length === 0 ? (
                         <p className="text-gray-500 text-center">No hay cotizaciones disponibles</p>
                     ) : (

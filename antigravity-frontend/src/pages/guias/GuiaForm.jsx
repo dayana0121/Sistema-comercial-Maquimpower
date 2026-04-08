@@ -188,12 +188,12 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <form onSubmit={handleSubmit} className="modal-guias-form flex flex-col h-full">
             {/* Tabs Navigation */}
-            <div className="flex border-b border-slate-200 mb-6 sticky top-0 bg-white z-10 w-full overflow-x-auto">
-                <button type="button" onClick={() => setActiveTab(1)} className={`py-3 px-6 text-sm font-bold flex-1 md:flex-none border-b-2 transition-colors ${activeTab === 1 ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>1. General</button>
-                <button type="button" onClick={() => setActiveTab(2)} className={`py-3 px-6 text-sm font-bold flex-1 md:flex-none border-b-2 transition-colors ${activeTab === 2 ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>2. Traslado</button>
-                <button type="button" onClick={() => setActiveTab(3)} className={`py-3 px-6 text-sm font-bold flex-1 md:flex-none border-b-2 transition-colors ${activeTab === 3 ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>3. Bienes</button>
+            <div className="modal-guias-tabs flex items-center border-b border-slate-200 mb-6 sticky top-0 bg-white z-10 w-full overflow-x-auto">
+                <button type="button" onClick={() => setActiveTab(1)} className={`modal-guias-tab py-3 px-6 text-sm font-bold flex-1 md:flex-none border-b-2 transition-colors ${activeTab === 1 ? 'is-active border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>1. General</button>
+                <button type="button" onClick={() => setActiveTab(2)} className={`modal-guias-tab py-3 px-6 text-sm font-bold flex-1 md:flex-none border-b-2 transition-colors ${activeTab === 2 ? 'is-active border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>2. Traslado</button>
+                <button type="button" onClick={() => setActiveTab(3)} className={`modal-guias-tab py-3 px-6 text-sm font-bold flex-1 md:flex-none border-b-2 transition-colors ${activeTab === 3 ? 'is-active border-orange-500 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>3. Bienes</button>
             </div>
 
             {/* Contenido scrolleable */}
@@ -201,7 +201,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
 
                 {/* TAB 1: GENERAL */}
                 {activeTab === 1 && (
-                    <div className="space-y-6 mt-4">
+                    <div className="modal-guias-tab-panel space-y-6 mt-4">
                         <div className="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100 mb-2">
                             <div>
                                 <h3 className="text-sm font-bold text-blue-800">Importación Rápida</h3>
@@ -261,7 +261,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
 
                 {/* TAB 2: TRASLADO */}
                 {activeTab === 2 && (
-                    <div className="space-y-6 mt-4">
+                    <div className="modal-guias-tab-panel space-y-6 mt-4">
                         <div className="form-group-custom">
                             <label className="form-label-custom">Modalidad de Traslado</label>
                             <select name="modalidad_traslado" value={form.modalidad_traslado} onChange={handleChange} className="form-input-custom">
@@ -299,7 +299,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
 
                 {/* TAB 3: BIENES */}
                 {activeTab === 3 && (
-                    <div className="space-y-4">
+                    <div className="modal-guias-tab-panel space-y-4">
                         <div className="flex gap-4 items-end bg-gray-50 p-3 rounded-lg border border-gray-200">
                             <div className="flex-1">
                                 <label className="block text-xs text-gray-500">Código</label>

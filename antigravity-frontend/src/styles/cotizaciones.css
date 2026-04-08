@@ -32,11 +32,6 @@ i:hover{
     padding: 4px;
 }
 
-.bg-white.border.border-slate-200.rounded-lg.text-sm.shadow-sm.outline-none{
-    margin-top: 4px;
-    margin-bottom: 16px;
-}
-
 .border.rounded-lg.p-3.bg-gray-50.max-h-64.overflow-y-auto{
     margin-bottom: 16px;
     padding: 2px;
@@ -46,14 +41,19 @@ i:hover{
     padding: 3px;
 }
 
+/*CUADRO DE LOS PRDUCTOS*/
+.border.rounded-lg.p-3.bg-gray-50.max-h-167.overflow-y-auto{
+    margin-top: 10px;
+    padding: 4px;   
+}
 .text-left.p-2.border.border-gray-200.rounded.hover\:bg-blue-50.transition-all.text-xs{
-    background-color: #f7ae94;
-    border-color: #d63f08;
+    background-color: #eeeded;
+    border-color: #090706;
 }
 
 .text-left.p-2.border.border-gray-200.rounded.hover\:bg-blue-50.transition-all.text-xs:hover{
-    background-color: #ff5c20;
-    color: var(--dark);
+    background-color: var(--primary);
+    color: var(--dark) !important;
 }
 
 .border-b.border-slate-200.p-2\.5.text-xs.font-bold.text-slate-800.grid.grid-cols-4.gap-1{
@@ -181,4 +181,379 @@ i:hover{
 
 .text-gray-500:hover{
     color: var(--dark);
+}
+
+/*BOTON DE BUSCAR*/
+.hover\:bg-\[\#d5731d\]\.text-white\.px-4\.py-2\.rounded-lg\.text-sm\.font-bold\.flex\.items-center\.gap-2\.shadow-sm\.transition-colors{
+    padding: 10px !important;
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
+}
+
+/*SECCION DE RESUMEN*/
+.space-y-3.flex.flex-col.items-stretch {
+    height: 80vh; /* Ajusta este valor (70vh, 90vh) según prefieras */
+    max-h: 700px; /* Un tope máximo para pantallas muy grandes */
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* 2. Seleccionamos el título "Resumen" */
+.text-xl.font-bold.text-slate-800 {
+  flex-shrink: 0;
+  margin-bottom: 12px; 
+}
+
+.bg-white.border.border-slate-200.rounded-xl.shadow-sm.overflow-hidden.min-h-\[160px\] {
+    flex-grow: 1; 
+    overflow-y: auto !important;
+    min-h: 0 !important; 
+    margin-bottom: 16px;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.bg-\[\#f8f9fa\].border-b.border-slate-200.p-2\.5.text-xs.font-bold.text-slate-800.grid.grid-cols-4.gap-1 {
+  position: sticky;
+  top: 0;
+  z-index: 10; 
+  flex-shrink: 0;
+}
+
+.max-h-96.overflow-y-auto.bg-white {
+  max-h: none !important; 
+  overflow-y: visible !important; /* El scroll lo maneja el padre ahora */
+}
+
+.bg-\[\#1b2532\].text-white.p-5.rounded-lg.space-y-4.shadow-xl,
+button[type="button"].w-full.py-3\.5 {
+  flex-shrink: 0;
+}
+
+
+/*SECCION DE LOS PRODUCTOS Y CARRITOS*/
+/* Estilo base para el botón de producto (no seleccionado) */
+.text-left.p-2.border.border-gray-200.rounded.transition-all.text-xs {
+    /* Mantenemos tus estilos base, pero aseguramos colores por defecto */
+    background-color: #eeeded; /* Tu color de fondo base */
+    border-color: #090706; /* Tu color de borde base */
+    color: var(--dark); /* Color de texto base (heredado por los <p>) */
+}
+
+/* --- ESTADO: HOVER (Pasar el cursor por encima) --- */
+/* Esto asegura que los que ya están seleccionados se queden naranjas */
+.is-selected {
+    background-color: var(--primary) !important; /* Tu color anaranjado */
+    color: white !important;
+    border-color: var(--primary-dark) !important;
+}
+
+/* Opcional: Si quieres que al pasar el mouse por un ya seleccionado se vea distinto */
+.is-selected:hover {
+    filter: brightness(0.9);
+}
+/* Cuando pasamos el cursor sobre un botón que NO está seleccionado */
+.text-left.p-2.border.border-gray-200.rounded.transition-all.text-xs:not(.is-selected):hover {
+    background-color: var(--primary) !important; /* Fondo color primario */
+    color: #ffffff !important; /* Texto NEGRO (forzado) */
+}
+
+/* --- ESTADO: SELECCIONADO (Persistente) --- */
+/* Cuando el botón tiene la clase 'is-selected' (independientemente del hover) */
+.text-left.p-2.border.border-gray-200.rounded.transition-all.text-xs.is-selected {
+    background-color: var(--primary) !important; /* Fondo color primario persistente */
+    color: #ffffff !important; /* Texto NEGRO persistente (forzado) */
+    border-color: var(--primary-dark) !important; /* Opcional: borde un poco más oscuro */
+    box-shadow: 0px 3px 10px rgba(var(--primary-rgb), 0.5); /* Opcional: sombra para resaltar */
+}
+
+/* Opcional: Asegurar que los <p> dentro del botón seleccionado/hover no tengan márgenes raros */
+.text-left.p-2.border.border-gray-200.rounded.transition-all.text-xs p {
+    margin: 0;
+}
+
+/*ESTILOS DEL INPUT DE LOS PRODUCTOS Q APARECEN EN EL RESUEMN AL SER SELECCIONADOS*/
+input{
+    display: flex;
+}
+
+/* =========================================
+   Cotizaciones Listado - estilo tabla premium
+   ========================================= */
+.cotizaciones-page .cotizaciones-table-wrap {
+    border: 1px solid #d7dde8;
+    border-radius: 14px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.cotizaciones-page .cotizaciones-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.cotizaciones-page .cotizaciones-table thead tr {
+    background: #e9edf2;
+}
+
+.cotizaciones-page .cotizaciones-table th {
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #0f172a;
+    border-bottom: 1px solid #cfd8e3;
+    text-align: left;
+}
+
+.cotizaciones-page .cotizaciones-table tbody tr:nth-child(odd) {
+    background: #f7f8fb;
+}
+
+.cotizaciones-page .cotizaciones-table tbody tr:nth-child(even) {
+    background: #f3eee5;
+}
+
+.cotizaciones-page .cotizaciones-table tbody tr:hover {
+    background: #fff5ea;
+}
+
+.cotizaciones-page .cotizaciones-table td {
+    padding: 16px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f2a4d;
+    border-bottom: 1px solid #d7dde8;
+    vertical-align: middle;
+}
+
+.cotizaciones-page .cot-comprobante .cot-numero {
+    font-size: 29px;
+    font-weight: 800;
+    color: #17345a;
+    line-height: 1.1;
+}
+
+.cotizaciones-page .cot-comprobante .cot-tipo {
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #8a97ae;
+}
+
+.cotizaciones-page .cot-total {
+    color: #ff4500;
+    font-weight: 800;
+    font-size: 29px;
+}
+
+.cotizaciones-page .cot-estado {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.cotizaciones-page .cot-estado.is-pendiente {
+    background: #f59e0b;
+}
+
+.cotizaciones-page .cot-estado.is-convertida {
+    background: #16a34a;
+}
+
+.cotizaciones-page .cot-estado.is-rechazada {
+    background: #ef4444;
+}
+
+.cotizaciones-page .cot-estado.is-anulada {
+    background: #e74c3c;
+}
+
+.cotizaciones-page .cot-estado.is-expirada,
+.cotizaciones-page .cot-estado.is-default {
+    background: #64748b;
+}
+
+.cotizaciones-page .cot-canal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 62px;
+    min-height: 34px;
+    padding: 5px 10px;
+    border: 1px solid #cfd8e3;
+    border-radius: 4px;
+    background: #e8edf3;
+    color: #17345a;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.cotizaciones-page .cot-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cotizaciones-page .cot-action-btn {
+    width: 38px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid #15181e;
+    background: #15181e;
+    color: #cbd5e1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.cotizaciones-page .cot-action-btn:hover {
+    transform: translateY(-1px);
+    background: #0f1115;
+    color: #ffffff;
+}
+
+.cotizaciones-page .cot-action-btn.is-whatsapp {
+    color: #00e676;
+}
+
+.cotizaciones-page .cot-action-btn.is-danger {
+    color: #a78bfa;
+}
+
+@media (max-width: 1100px) {
+    .cotizaciones-page .cotizaciones-table th,
+    .cotizaciones-page .cotizaciones-table td {
+        padding: 12px 10px;
+    }
+}
+
+/* =========================================
+   Cotizaciones - solo color (misma estructura)
+   ========================================= */
+.cotizaciones-page .bg-white.rounded-lg.shadow.overflow-hidden {
+    border: 1px solid #d7dde8;
+    border-radius: 14px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.cotizaciones-page thead.bg-gray-50 th {
+    color: #0f172a !important;
+    border-bottom: 1px solid #cfd8e3;
+}
+
+.cotizaciones-page tbody.bg-white tr:nth-child(odd) {
+    background: #f7f8fb;
+}
+
+.cotizaciones-page tbody.bg-white tr:nth-child(even) {
+    background: #f3eee5;
+}
+
+.cotizaciones-page tbody.bg-white tr:hover {
+    background: #fff5ea !important;
+}
+
+.cotizaciones-page tbody.bg-white td {
+    border-bottom-color: #d7dde8 !important;
+}
+
+.cotizaciones-page tbody.bg-white td:nth-child(1) {
+    color: #17345a !important;
+    font-weight: 800 !important;
+}
+
+.cotizaciones-page tbody.bg-white td:nth-child(4) {
+    color: #ff4500 !important;
+    font-weight: 800 !important;
+}
+
+.cotizaciones-page tbody.bg-white td:nth-child(5) .rounded-full {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+}
+
+.cotizaciones-page tbody.bg-white td:nth-child(5) .bg-yellow-100 {
+    background: #f59e0b !important;
+}
+
+.cotizaciones-page tbody.bg-white td:nth-child(5) .bg-green-100 {
+    background: #16a34a !important;
+}
+
+.cotizaciones-page tbody.bg-white td:nth-child(5) .bg-red-100 {
+    background: #ef4444 !important;
+}
+
+.cotizaciones-page tbody.bg-white td:nth-child(5) .bg-gray-100 {
+    background: #64748b !important;
+}
+
+.cotizaciones-page .p-2.hover\:bg-gray-100.rounded {
+    background: #15181e;
+    color: #cbd5e1;
+    border: 1px solid #15181e;
+    border-radius: 9px;
+}
+
+.cotizaciones-page .p-2.hover\:bg-gray-100.rounded:hover {
+    background: #0f1115 !important;
+    color: #ffffff !important;
+}
+
+/* =========================================
+   Acciones inline tipo referencia (fila única)
+   ========================================= */
+.cotizacion-actions-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.cotizacion-action-chip {
+    width: 36px;
+    height: 32px;
+    min-width: 36px;
+    border-radius: 9px;
+    border: 1px solid #15181e;
+    background: #15181e;
+    color: #d1d9e6;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    transition: all 0.2s ease;
+}
+
+.cotizacion-action-chip:hover {
+    transform: translateY(-1px);
+    background: #0f1115;
+    color: #ffffff;
+}
+
+.cotizacion-action-chip.is-default {
+    color: #d1d9e6;
+}
+
+.cotizacion-action-chip.is-blue {
+    color: #60a5fa;
+}
+
+.cotizacion-action-chip.is-green {
+    color: #00e676;
+}
+
+.cotizacion-action-chip.is-red {
+    color: #ef4444;
 }

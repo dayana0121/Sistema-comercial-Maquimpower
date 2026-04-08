@@ -1,5 +1,5 @@
 -- Align producto_id collation to utf8mb4_general_ci to match productos.id
--- Backup already created: backup_u264219614_maquimpower_pre_alter.sql
+-- Backup already created: backup_maquimpower_sistema_comercial_pre_alter.sql
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS;
 SET FOREIGN_KEY_CHECKS=0;
 START TRANSACTION;

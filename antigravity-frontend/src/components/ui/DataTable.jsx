@@ -28,8 +28,7 @@ export default function DataTable({ columns, data, loading = false, onRowClick }
                             {columns.map((col, index) => (
                                 <th
                                     key={index}
-                                    className={`px-8 py-5 text-[11.5px] font-bold text-slate-500 uppercase tracking-wider ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
-                                >
+                                    className="px-8 py-5 text-[11.5px] font-bold text-slate-500 uppercase tracking-wider">
                                     {col.header}
                                 </th>
                             ))}

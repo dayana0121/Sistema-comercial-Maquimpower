@@ -126,11 +126,15 @@ class CotizacionesController
         try {
             $this->pdo->beginTransaction();
 
+            // Generar UUID para la cotización
+            $cotizacion_id = $this->service->uuidV4();
+
             // Crear cotización
-            $sql = "INSERT INTO cotizaciones (cliente_id, vendedor_id, fecha_vigencia, numero_whatsapp, observaciones, moneda)
-                    VALUES (:cliente_id, :vendedor_id, :fecha_vigencia, :numero_whatsapp, :observaciones, :moneda)";
+            $sql = "INSERT INTO cotizaciones (id, cliente_id, vendedor_id, fecha_vigencia, numero_whatsapp, observaciones, moneda)
+                    VALUES (:id, :cliente_id, :vendedor_id, :fecha_vigencia, :numero_whatsapp, :observaciones, :moneda)";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
+                ':id' => $cotizacion_id,
                 ':cliente_id' => $data->cliente_id,
                 ':vendedor_id' => $data->vendedor_id ?? null,
                 ':fecha_vigencia' => $data->fecha_vigencia ?? null,
@@ -138,8 +142,6 @@ class CotizacionesController
                 ':observaciones' => $data->observaciones ?? null,
                 ':moneda' => $data->moneda ?? 'PEN'
             ]);
-
-            $cotizacion_id = $this->pdo->lastInsertId();
 
             // Crear detalles
             $totales = $this->service->agregarDetalles($cotizacion_id, $data->detalles);

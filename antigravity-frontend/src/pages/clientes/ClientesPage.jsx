@@ -10,6 +10,7 @@ import Modal from "../../components/ui/Modal";
 import { useToast } from '../../hooks/useToast';
 import ClienteForm from "./ClienteForm";
 import "../../styles/clientes.css"
+import "../../styles/modal-clientes.css";
 
 export default function ClientesPage() {
     const toast = useToast();
@@ -216,15 +217,17 @@ export default function ClientesPage() {
                 title={isReadOnly ? "Detalles del Cliente" : (clienteToEdit ? "Modificar Cliente" : "Nuevo Cliente")}
                 size="lg"
             >
-                <ClienteForm
-                    clienteToEdit={clienteToEdit}
-                    isReadOnly={isReadOnly}
-                    onCancel={() => setIsModalOpen(false)}
-                    onSuccess={() => {
-                        setIsModalOpen(false);
-                        cargarClientes();
-                    }}
-                />
+                <div className="modal-clientes-shell">
+                    <ClienteForm
+                        clienteToEdit={clienteToEdit}
+                        isReadOnly={isReadOnly}
+                        onCancel={() => setIsModalOpen(false)}
+                        onSuccess={() => {
+                            setIsModalOpen(false);
+                            cargarClientes();
+                        }}
+                    />
+                </div>
             </Modal>
         </div>
     );

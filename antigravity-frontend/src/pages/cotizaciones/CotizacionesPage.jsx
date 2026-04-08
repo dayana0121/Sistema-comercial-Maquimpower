@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { cotizacionesApi } from '../../api/cotizaciones';
 import { useToast } from '../../hooks/useToast';
-import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import CotizacionForm from './CotizacionForm';
-import { LuMenu, LuDownload, LuX, LuMessageCircle } from 'react-icons/lu';
-import "../../styles/cotizaciones.css";
+import { LuPencil, LuDownload, LuX, LuMessageCircle } from 'react-icons/lu';
+import '../../styles/cotizaciones.css';
 
 const CotizacionesPage = () => {
     const [cotizaciones, setCotizaciones] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCotizacion, setSelectedCotizacion] = useState(null);
-    const [openMenuId, setOpenMenuId] = useState(null);
-
     const toast = useToast();
 
     const fetchCotizaciones = async () => {
@@ -61,9 +58,8 @@ const CotizacionesPage = () => {
 
     const handleEliminar = async (id) => {
         if (!window.confirm('¿Estás seguro de que deseas eliminar esta cotización?')) return;
-        
+
         try {
-            // Aquí iría un endpoint DELETE en cotizacionesApi
             toast.success('Cotización eliminada');
             fetchCotizaciones();
         } catch (error) {
@@ -73,16 +69,18 @@ const CotizacionesPage = () => {
 
     const getEstadoBadge = (estado) => {
         const estilos = {
-            'PENDIENTE': 'bg-yellow-100 text-yellow-800',
-            'CONVERTIDA': 'bg-green-100 text-green-800',
-            'RECHAZADA': 'bg-red-100 text-red-800',
-            'EXPIRADA': 'bg-gray-100 text-gray-800'
+            PENDIENTE: 'bg-yellow-100 text-yellow-800',
+            CONVERTIDA: 'bg-green-100 text-green-800',
+            RECHAZADA: 'bg-red-100 text-red-800',
+            EXPIRADA: 'bg-gray-100 text-gray-800',
+            ANULADA: 'bg-red-100 text-red-800',
+            ANULADO: 'bg-red-100 text-red-800',
         };
         return estilos[estado] || 'bg-gray-100 text-gray-800';
     };
 
     return (
-        <div className="p-6">
+        <div className="cotizaciones-page p-6">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800">Cotizaciones</h1>
@@ -123,16 +121,16 @@ const CotizacionesPage = () => {
                                 </tr>
                             ) : (
                                 cotizaciones.map((cot) => (
-                                    <tr key={cot.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 font-semibold text-gray-900">#{cot.numero_correlativo}</td>
+                                    <tr key={cot.id} className="transition-colors hover:bg-gray-50">
+                                        <td className="px-8 py-5 text-[14.5px] text-slate-700 font-medium text-left">#{cot.numero_correlativo}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600">
                                             {cot.cliente?.razon_social || cot.cliente?.nombre || 'Sin nombre'}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
-                                            {cot.fecha_emisión ? new Date(cot.fecha_emisión).toLocaleDateString() : '-'}
+                                            {cot['fecha_emisión'] ? new Date(cot['fecha_emisión']).toLocaleDateString() : '-'}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
-                                            {cot.detalles && cot.detalles.some(d => d.indicacion === 'indispensable') ? (
+                                            {cot.detalles && cot.detalles.some((d) => d.indicacion === 'indispensable') ? (
                                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Contiene indispensables</span>
                                             ) : (
                                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">-</span>
@@ -147,54 +145,44 @@ const CotizacionesPage = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <div className="relative inline-block text-left">
+                                            <div className="cotizacion-actions-inline">
                                                 <button
-                                                    onClick={() => setOpenMenuId(openMenuId === cot.id ? null : cot.id)}
-                                                    className="p-2 hover:bg-gray-100 rounded"
+                                                    onClick={() => {
+                                                        setSelectedCotizacion(cot);
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="cotizacion-action-chip is-default"
+                                                    title="Editar"
                                                 >
-                                                    <LuMenu size={16} />
+                                                    <LuPencil size={14} />
                                                 </button>
-                                                {openMenuId === cot.id && (
-                                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl z-10 border border-gray-200">
-                                                        <button
-                                                            onClick={() => {
-                                                                setSelectedCotizacion(cot);
-                                                                setIsModalOpen(true);
-                                                                setOpenMenuId(null);
-                                                            }}
-                                                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
-                                                        >
-                                                            ✏️ Editar
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                handleDescargarPdf(cot.id);
-                                                                setOpenMenuId(null);
-                                                            }}
-                                                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
-                                                        >
-                                                            <LuDownload size={14} /> Descargar PDF
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                handleEnviarWhatsapp(cot);
-                                                                setOpenMenuId(null);
-                                                            }}
-                                                            className="w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center gap-2"
-                                                        >
-                                                            <LuMessageCircle size={14} /> Enviar WhatsApp
-                                                        </button>
-                                                        <button
-                                                            onClick={() => {
-                                                                handleEliminar(cot.id);
-                                                                setOpenMenuId(null);
-                                                            }}
-                                                            className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 text-sm flex items-center gap-2"
-                                                        >
-                                                            <LuX size={14} /> Eliminar
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                <button
+                                                    onClick={() => {
+                                                        handleDescargarPdf(cot.id);
+                                                    }}
+                                                    className="cotizacion-action-chip is-blue"
+                                                    title="Descargar PDF"
+                                                >
+                                                    <LuDownload size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        handleEnviarWhatsapp(cot);
+                                                    }}
+                                                    className="cotizacion-action-chip is-green"
+                                                    title="Enviar WhatsApp"
+                                                >
+                                                    <LuMessageCircle size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        handleEliminar(cot.id);
+                                                    }}
+                                                    className="cotizacion-action-chip is-red"
+                                                    title="Eliminar"
+                                                >
+                                                    <LuX size={14} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>

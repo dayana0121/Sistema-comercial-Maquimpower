@@ -128,7 +128,7 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                 cantidad: 1,
                 precio_unitario: precioVenta,
                 descuento_unitario: 0,
-                 tipo_afectacion_igv: '10',
+                tipo_afectacion_igv: '10',
                 indicacion: '' // '', 'indispensable', 'remplazable', 'prescindible'
             }]);
             toast.success(`${producto.descripcion} agregado`);
@@ -208,14 +208,14 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                     <div className="flex flex-col gap-1">
                         <label className="text-sm font-bold text-slate-800">Buscar en SUNAT/RENIEC</label>
                         <div className="flex gap-2">
-                            <input 
-                                className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm shadow-sm outline-none w-full" 
-                                placeholder="8 u 11 dígitos" 
+                            <input
+                                className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm shadow-sm outline-none w-full"
+                                placeholder="8 u 11 dígitos"
                                 value={searchCliente}
                                 onChange={e => setSearchCliente(e.target.value)}
                             />
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 className="hover:bg-[#d5731d] text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm transition-colors"
                             >
                                 <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.35-4.35"></path></svg>
@@ -323,20 +323,33 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                         onChange={e => setSearchProducto(e.target.value)}
                     />
 
-                    <div className="border rounded-lg p-3 bg-gray-50 max-h-64 overflow-y-auto">
+                    <div className="border rounded-lg p-3 bg-gray-50 max-h-167 overflow-y-auto">
                         <div className="grid grid-cols-1 gap-2">
-                            {productosOptions.map(p => (
-                                <button
-                                    key={p.id}
-                                    onClick={() => agregarProducto(p)}
-                                    className="text-left p-2 border border-gray-200 rounded hover:bg-blue-50 transition-all text-xs"
-                                >
-                                    <p className="font-semibold text-gray-800">{p.descripcion}</p>
-                                    <p className="text-gray-500">S/ {parseFloat(p.precio_venta).toFixed(2)}</p>
-                                </button>
-                            ))}
+                            {productosOptions.map(p => {
+                                // CAMBIO AQUÍ: Verificamos si el ID del producto está en la lista de detalles
+                                const isSelected = detalles.some(det => det.producto_id === p.id);
+
+                                return (
+                                    <button
+                                        key={p.id}
+                                        onClick={() => {
+                                            agregarProducto(p);
+                                            // Ya no necesitas el setSelectedProductoId(p.id)
+                                        }}
+                                        className={`text-left p-2 border border-gray-200 rounded transition-all text-xs flex flex-col gap-1 ${isSelected ? 'is-selected' : 'hover:bg-blue-50'}`}
+                                    >
+                                        <p className="font-semibold">{p.descripcion}</p>
+                                        <p className="">S/ {parseFloat(p.precio_venta).toFixed(2)}</p>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
+                </div>
+
+                {/* COLUMNA 3: TOTALES Y FINALIZAR */}
+                <div className="space-y-3 flex flex-col items-stretch">
+                    <h3 className="text-xl font-bold text-slate-800">Resumen</h3>
 
                     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden min-h-[160px]">
                         <div className="bg-[#f8f9fa] border-b border-slate-200 p-2.5 text-xs font-bold text-slate-800 grid grid-cols-4 gap-1">
@@ -389,7 +402,7 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                                             </div>
                                         </div>
 
-                                         {/* Indicaciones: prioridad/importance */}
+                                        {/* Indicaciones: prioridad/importance */}
                                         <div className="flex items-center gap-2 pt-4">
                                             <label className="text-xs font-semibold">Indicacion:</label>
                                             <div className="flex items-center gap-2">
@@ -426,11 +439,6 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                             )}
                         </div>
                     </div>
-                </div>
-
-                {/* COLUMNA 3: TOTALES Y FINALIZAR */}
-                <div className="space-y-3 flex flex-col items-stretch">
-                    <h3 className="text-xl font-bold text-slate-800">Resumen</h3>
 
                     <div className="bg-[#1b2532] text-white p-5 rounded-lg space-y-4 shadow-xl">
                         <div className="flex justify-between text-[15px] border-b border-slate-600 pb-3">
@@ -454,10 +462,10 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                     >
                         Cancelar
                     </button>
-                    
+
                     <button
                         type="button"
-                        className={`w-full py-3.5 bg-[#5ca335] hover:bg-[#4d8b2d] text-white rounded-lg font-bold transition-colors ${loading ? 'opacity-50' : ''}`}
+                        className={`w-full py-3.5 bg-[#5ca335] hover:bg-[#4d8b2d] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-bold transition-colors ${loading ? 'opacity-50' : ''}`}
                         onClick={handleGuardar}
                         disabled={loading}
                     >

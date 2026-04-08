@@ -1,0 +1,276 @@
+/* Modal visual refresh:
+   - Keeps existing palette.
+   - Focuses on cleaner hierarchy and softer cards.
+   - Scoped mainly to modal surface/body to avoid abrupt global changes.
+*/
+
+.mq-modal {
+    background: rgba(10, 10, 10, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+.mq-modal-panel {
+    background: #ffffff;
+    border: 1px solid #e9edf3;
+    border-radius: 20px;
+    box-shadow: 0 24px 56px rgba(15, 23, 42, 0.28);
+    overflow: hidden;
+}
+
+.mq-modal-header {
+    background: #fff8f4;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.mq-modal-title {
+    color: #111827;
+    font-size: 2rem;
+    line-height: 1.15;
+}
+
+.mq-modal-close {
+    background: #1f2937;
+    color: #ffffff;
+    font-size: 1.9rem;
+    line-height: 1;
+}
+
+.mq-modal-close:hover {
+    background: #111827;
+}
+
+.mq-modal-body {
+    background: #ffffff;
+}
+
+/* Shared form language for modal content */
+.mq-modal-body .form-group-custom {
+    gap: 0.4rem;
+}
+
+.mq-modal-body .form-label-custom {
+    margin-top: 10px;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.mq-modal-body .form-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.mq-modal-body .form-input-icon {
+    position: absolute;
+    left: 14px;
+    z-index: 2;
+    color: #94a3b8;
+}
+
+.mq-modal-body .form-input-icon.text-orange {
+    color: var(--primary);
+}
+
+.mq-modal-body .form-input-icon.text-blue {
+    color: #3b82f6;
+}
+
+.mq-modal-body .form-input-icon.text-green {
+    color: #22a06b;
+}
+
+.mq-modal-body .form-input-custom {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.78rem 1rem;
+    border: 1px solid #d9e0ea;
+    border-radius: 14px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 15px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.mq-modal-body .form-input-custom.with-icon {
+    padding-left: 2.95rem;
+}
+
+.mq-modal-body .form-input-custom::placeholder {
+    color: #9aa6b7;
+}
+
+.mq-modal-body .form-input-custom:focus,
+.mq-modal-body .form-input-custom.highlight {
+    border-color: #ffbe8f;
+    background: #fffaf6;
+    box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.12);
+    outline: none;
+}
+
+/* SUNAT quick search block, aligned to provided mock */
+.mq-modal-body .modal-soft-section {
+    margin-bottom: 1.5rem;
+    padding: 1.15rem 1.2rem;
+    border: 1px solid #e8edf4;
+    border-radius: 14px;
+    background: #f8fafc;
+}
+
+.mq-modal-body .proveedores-modal-content {
+    padding-top: 0.15rem;
+}
+
+.mq-modal-body .proveedores-modal-actions {
+    margin-top: 1.25rem;
+}
+
+.mq-modal-body .sunat-search-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.mq-modal-body .sunat-search-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.mq-modal-body .sunat-search-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.mq-modal-body .sunat-search-input {
+    min-height: 48px;
+    border-radius: 14px;
+    border-color: #d9e0ea;
+    font-size: 15px;
+}
+
+.mq-modal-body .sunat-search-input:focus {
+    border-color: #ffbe8f;
+    box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.12);
+}
+
+.mq-modal-body .sunat-search-button {
+    min-width: 140px;
+    min-height: 48px;
+    border-radius: 14px;
+    background: var(--primary);
+    color: #ffffff;
+    border: 1px solid transparent;
+    box-shadow: 0 8px 18px rgba(255, 69, 0, 0.2);
+}
+
+.mq-modal-body .sunat-search-button:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+}
+
+.mq-modal-body .form-actions-custom {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eef2f7;
+}
+
+.mq-modal-body .btn-cancel-custom,
+.mq-modal-body .btn-submit-custom {
+    min-height: 50px;
+    padding: 0.78rem 1.7rem;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.mq-modal-body .btn-cancel-custom {
+    background: #1f2937;
+    color: #ffffff;
+}
+
+.mq-modal-body .btn-cancel-custom:hover {
+    background: #111827;
+}
+
+.mq-modal-body .btn-submit-custom {
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(255, 69, 0, 0.2);
+}
+
+.mq-modal-body .btn-submit-custom:hover {
+    background: var(--primary-dark);
+}
+
+/* Better mobile behavior without changing layout structure */
+@media (max-width: 768px) {
+    .mq-modal {
+        padding: 0.75rem;
+    }
+
+    .mq-modal-header {
+        padding: 1rem 1.1rem;
+    }
+
+    .mq-modal-title {
+        font-size: 1.45rem;
+    }
+
+    .mq-modal-close {
+        width: 42px;
+        height: 42px;
+        font-size: 1.5rem;
+    }
+
+    .mq-modal-body {
+        padding: 1rem 1rem !important;
+    }
+
+    .mq-modal-body .sunat-search-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .mq-modal-body .sunat-search-button {
+        width: 100%;
+    }
+}
+
+/*MARGEN DE LOS TITULOS*/
+/* HEADER MODAL - PADDING ESPECÍFICO PROTOTIPO */
+.mq-modal-header {
+  padding: 8px 15px !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .mq-modal-header {
+    padding: 20px 24px !important;
+  }
+}
+
+/* Título modal más grande y bold */
+.mq-modal-header .mq-modal-title {
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+/* Botón cerrar más prominente */
+.mq-modal-header .mq-modal-close {
+  width: 56px !important;
+  height: 56px !important;
+  font-size: 24px !important;
+  border-radius: 16px !important;
+}
+
+.mq-modal-header .mq-modal-close:hover{
+    background-color: var(--dark) !important;
+    box-shadow: 0px 1px 13px var(--dark);
+    border-color: var(--dark);
+}
+

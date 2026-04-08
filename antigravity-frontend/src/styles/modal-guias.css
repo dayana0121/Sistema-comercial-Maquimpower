@@ -1,0 +1,258 @@
+/* =========================================================
+   MODAL GUÍAS - ESTILO VISUAL
+   Objetivo:
+   - Mantener la estructura actual del JSX (sin cambios de layout).
+   - Mejorar únicamente la apariencia para acercarla al mock.
+   - Mantener consistencia con la paleta actual del sistema.
+   ========================================================= */
+
+/* Contenedor interno del formulario en el modal */
+.modal-guias-shell {
+    padding-top: 0.2rem;
+}
+
+/* =========================================================
+   BLOQUE DE PESTAÑAS (1. General / 2. Traslado / 3. Bienes)
+   ========================================================= */
+
+/* Caja que envuelve las pestañas */
+.modal-guias-form .modal-guias-tabs {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.2rem;
+    padding: 0.35rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    background: white;
+    gap: 0.45rem;
+    position: sticky;
+    top: 0;
+    z-index: 12;
+}
+
+/* Estilo base de cada pestaña */
+.modal-guias-form .modal-guias-tab {
+    display: flex;             /* convierte cada botón en flex */
+  align-items: center;       /* centra verticalmente el texto dentro del botón */
+  justify-content: center;   /* centra horizontalmente el texto */
+    border: 1px solid transparent;
+    border-radius: 12px;
+    min-height: 44px;
+    padding: 0 0.95rem;
+    color: #334155;
+    background: var(--color-bg-principal); /* beige suave */
+    font-weight: 800;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+/* Hover de pestaña inactiva */
+.modal-guias-form .modal-guias-tab:hover {
+    border-color: #ffd9be;
+    background: #fff7f0;
+}
+
+/* Pestaña activa: naranja fuerte con texto blanco */
+.modal-guias-form .modal-guias-tab.is-active {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 10px 20px rgba(255, 69, 0, 0.25);
+}
+
+/* =========================================================
+   CONTENIDO INTERNO DE CADA TAB
+   ========================================================= */
+
+/* Espaciado general por panel */
+.modal-guias-form .modal-guias-tab-panel {
+    padding: 0.15rem 0.1rem 0.25rem;
+}
+
+/* =========================================================
+   TARJETA "IMPORTACIÓN RÁPIDA"
+   ========================================================= */
+
+/* Fondo azul suave del bloque de importación */
+.modal-guias-form .modal-guias-tab-panel .bg-blue-50 {
+    border: 1px solid #d4dff1;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #edf4ff 0%, #e9f0ff 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    margin-bottom: 17px;
+    padding: 13px !important;
+}
+
+/* Título de importación */
+.modal-guias-form .modal-guias-tab-panel .bg-blue-50 h3 {
+    color: #1f4fb5;
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+/* Texto descriptivo de importación */
+.modal-guias-form .modal-guias-tab-panel .bg-blue-50 p {
+    color: #2563eb;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+/* Botón "Importar Comprobantes" */
+.modal-guias-form .modal-guias-tab-panel .bg-blue-50 button {
+    min-width: 220px;
+    min-height: 56px;
+    border-radius: 16px;
+    border: 1px solid transparent;
+    background: var(--primary);
+    color: #ffffff;
+    font-weight: 800;
+    box-shadow: 0 10px 20px rgba(255, 69, 0, 0.22);
+}
+
+/* Hover del botón importar */
+.modal-guias-form .modal-guias-tab-panel .bg-blue-50 button:hover {
+    background: var(--primary-dark);
+}
+
+/* =========================================================
+   LABELS E INPUTS DEL FORMULARIO
+   ========================================================= */
+
+/* Etiquetas en mayúsculas, gris azulado */
+.modal-guias-form .form-label-custom {
+    padding-top: 13px;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #64748b;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+/* Inputs/selects principales del formulario */
+.modal-guias-form .form-input-custom {
+    min-height: 58px;
+    border: 1px solid #d3dce8;
+    border-radius: 14px;
+    background: #fdfdfd;
+    color: #334155;
+    font-size: 1.15rem;
+    font-weight: 500;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Estado focus de inputs/selects */
+.modal-guias-form .form-input-custom:focus {
+    border-color: #ffbe8f;
+    box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.12);
+    background: #fffaf6;
+}
+
+/* Inputs con utilidades tailwind dentro del formulario */
+.modal-guias-form input.mt-1.block.w-full,
+.modal-guias-form select.mt-1.block.w-full,
+.modal-guias-form input.w-32.border-gray-300.rounded-md.shadow-sm {
+    min-height: 56px;
+    border: 1px solid #d3dce8;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #334155;
+    font-size: 1.12rem;
+    padding: 0.75rem 0.95rem;
+}
+
+/* =========================================================
+   TABLA DE BIENES (TAB 3)
+   ========================================================= */
+
+/* Encabezado de tabla de bienes */
+.modal-guias-form .modal-guias-tab-panel table thead {
+    background: #eef2f7;
+}
+
+/* Celdas de la tabla en estilo limpio */
+.modal-guias-form .modal-guias-tab-panel table th,
+.modal-guias-form .modal-guias-tab-panel table td {
+    border-color: #dbe3ee;
+}
+
+/* =========================================================
+   BOTONES FINALES (Cancelar / Siguiente / Firmar)
+   ========================================================= */
+
+/* Contenedor de acciones en footer */
+.modal-guias-form .form-actions-custom {
+    margin-top: 1.15rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5ebf3;
+}
+
+/* Botón secundario oscuro */
+.modal-guias-form .btn-cancel-custom {
+    min-height: 52px;
+    border-radius: 14px;
+    background: #24344d;
+    color: #ffffff;
+    font-weight: 800;
+}
+
+/* Botón principal naranja */
+.modal-guias-form .btn-submit-custom {
+    min-height: 52px;
+    border-radius: 14px;
+    background: var(--primary);
+    color: #ffffff;
+    font-weight: 800;
+    box-shadow: 0 8px 18px rgba(255, 69, 0, 0.2);
+}
+
+/* Hover del botón principal */
+.modal-guias-form .btn-submit-custom:hover {
+    background: var(--primary-dark);
+}
+
+/* =========================================================
+   AJUSTES RESPONSIVE (móvil)
+   ========================================================= */
+@media (max-width: 768px) {
+    /* Tabs más compactas */
+    .modal-guias-form .modal-guias-tab {
+        font-size: 12px;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        min-height: 40px;
+    }
+
+    /* Tarjeta importación apilada */
+    .modal-guias-form .modal-guias-tab-panel .bg-blue-50 {
+        gap: 0.8rem;
+    }
+
+    /* Botón importar ocupa ancho completo */
+    .modal-guias-form .modal-guias-tab-panel .bg-blue-50 button {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+
+/*INGRESAR DATOS*/
+.grid.grid-cols-1.gap-6.mt-4{
+    margin-top: 10px;
+}
+
+/*tercera pestaña*/
+.flex.gap-4.items-end.bg-gray-50.p-3.rounded-lg.border.border-gray-200{
+    padding: 13px !important;
+}
+
+.block.text-xs.text-gray-500{
+    padding-bottom: 10px;
+}
+
+.min-w-full.divide-y.divide-gray-200.text-sm{
+    margin-top: 15px;
+}
+
+.mb-px.bg-gray-800.text-white.px-4.py-2.rounded.shadow.text-sm:hover{
+    background-color: var(--primary);
+}

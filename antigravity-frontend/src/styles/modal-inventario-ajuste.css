@@ -1,0 +1,17 @@
+.movimiento-modal--ajuste.movimiento-modal-overlay {
+    backdrop-filter: blur(2px);
+}
+
+.movimiento-modal-content.movimiento-modal--ajuste {
+    border: 1px solid #f2ddcf;
+    border-radius: 18px !important;
+    box-shadow: 0 24px 50px rgba(255, 69, 0, 0.16);
+}
+
+.movimiento-modal-header.movimiento-modal--ajuste {
+    background: linear-gradient(180deg, #fff7f2 0%, #ffffff 100%);
+}
+
+.movimiento-modal-actions.movimiento-modal--ajuste .btn-primary {
+    box-shadow: 0 8px 16px rgba(255, 69, 0, 0.18);
+}

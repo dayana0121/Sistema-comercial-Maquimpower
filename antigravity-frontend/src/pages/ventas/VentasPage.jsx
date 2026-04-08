@@ -13,6 +13,7 @@ import { exportToExcel } from "../../utils/exportar";
 import { abrirPdfVenta, abrirTicketVenta, abrirGuiaEnvio } from "../../utils/pdf";
 import { FileSpreadsheet } from "lucide-react";
 import '../../styles/ventas.css';
+import '../../styles/modal-ventas.css';
 
 const VentasPage = () => {
     const navigate = useNavigate();
@@ -153,20 +154,20 @@ const VentasPage = () => {
         {
             header: "Acciones",
             render: (row) => (
-                <div className="flex items-center gap-2">
+                <div className="venta-actions-row flex items-center gap-2">
                     <button
                         onClick={() => {
                             setVentaToView(row);
                         }}
-                        className="w-10 h-8 flex justify-center items-center rounded-md bg-[#232733] text-white hover:bg-[#343a49] transition-colors"
+                        className="venta-action-btn is-default"
                         title="Ver detalle"
                     >
-                        <Eye size={18} className="opacity-80"/>
+                        <Eye size={16} />
                     </button>
 
                     <button
                          onClick={() => abrirTicketVenta(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar Ticket'))}
-                        className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors"
+                        className="venta-action-btn is-default"
                         title="Imprimir Ticket Térmico"
                     >
                         <Printer size={16} />
@@ -174,24 +175,34 @@ const VentasPage = () => {
 
                     <button
                         onClick={() => abrirPdfVenta(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar PDF A4'))}
-                        className="w-10 h-8 flex justify-center items-center rounded-md bg-[#232733] text-blue-300 hover:bg-[#343a49] hover:text-blue-200 transition-colors"
+                        className="venta-action-btn is-blue"
                         title="Ver PDF A4"
                     >
-                        <FileText size={18} />
+                        <FileText size={16} />
                     </button>
+
+                    {(row.estado_sunat === 'PENDIENTE' || row.estado_sunat === 'RECHAZADO') && (
+                        <button
+                            onClick={() => handleReintentar(row.id)}
+                            className="venta-action-btn is-amber"
+                            title="Reintentar SUNAT"
+                        >
+                            <RefreshCw size={16} />
+                        </button>
+                    )}
 
                     <button
                         onClick={() => handleWhatsApp(row)}
-                        className="w-10 h-8 flex justify-center items-center rounded-md bg-[#232733] text-green-400 hover:bg-[#343a49] hover:text-green-300 transition-colors"
+                        className="venta-action-btn is-whatsapp"
                         title="Enviar por WhatsApp"
                     >
-                        <MessageCircle size={18} />
+                        <MessageCircle size={16} />
                     </button>
                     
                     {row.estado_sunat === 'ACEPTADO' && (
                         <button
                             onClick={() => handleNotaCredito(row)}
-                            className="p-1.5 rounded-lg text-purple-500 hover:bg-purple-50 transition-colors"
+                            className="venta-action-btn is-violet"
                             title="Crear Nota de Crédito"
                         >
                             📋
@@ -200,7 +211,7 @@ const VentasPage = () => {
 
                     <button
                     onClick={() => abrirGuiaEnvio(row.id, import.meta.env.VITE_API_URL).catch(() => toast.error('Error al generar Guía de Envío'))}
-                        className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+                        className="venta-action-btn is-indigo"
                         title="Generar Guía de Envío (Shalom/Agencia)"
                          >
                         <Truck size={16} />
@@ -209,7 +220,7 @@ const VentasPage = () => {
                     {row.estado_sunat !== 'ANULADO' && (
                         <button
                             onClick={() => handleAnular(row.id)}
-                            className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors hidden"
+                            className="venta-action-btn is-red"
                             title="Anular"
                         >
                             <X size={16} />
@@ -259,13 +270,6 @@ const VentasPage = () => {
                 />
 
                 <button 
-                    onClick={cargarVentas} 
-                    className="bg-[#1f2937] hover:bg-slate-800 text-white px-6 py-2.5 rounded-md font-semibold text-sm shadow-sm transition-colors"
-                >
-                    Buscar
-                </button>
-
-                <button 
                     onClick={() => exportToExcel(filteredData, 'ventas_maquimpower', 'Ventas')} 
                     className="bg-[#fefaf0] border border-slate-200 hover:bg-orange-50 text-slate-700 px-4 py-2.5 rounded-md font-medium text-sm shadow-sm transition-colors flex items-center gap-2"
                 >
@@ -275,6 +279,13 @@ const VentasPage = () => {
                 <div className="ml-auto w-full md:w-auto md:min-w-[280px]">
                     <SearchInput onSearch={setSearch} placeholder="Cliente o número..." />
                 </div>
+
+                <button 
+                    onClick={cargarVentas} 
+                    className="bg-[#1f2937] hover:bg-slate-800 text-white px-6 py-2.5 rounded-md font-semibold text-sm shadow-sm transition-colors"
+                >
+                    Buscar
+                </button>
             </div>
 
             {/* Tabla */}
@@ -291,7 +302,9 @@ const VentasPage = () => {
                 title={`Detalle de Comprobante: ${ventaToView?.numero_completo}`}
                 size="xl"
             >
-                {ventaToView && <VentaDetalle id={ventaToView.id} />}
+                <div className="modal-ventas-detalle-shell">
+                    {ventaToView && <VentaDetalle id={ventaToView.id} />}
+                </div>
             </Modal>
         </div>
     );

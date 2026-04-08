@@ -383,7 +383,7 @@ const VentasCreatePage = () => {
                                     <button
                                         key={p.id}
                                         onClick={() => agregarProducto(p)}
-                                        className="w-full p-3 bg-gradient-to-r from-emerald-50 to-green-50 hover:from-emerald-100 hover:to-green-100 border border-emerald-200 rounded-lg text-left transition-colors text-sm"
+                                        className="w-full p-3 bg-gradient-to-r border rounded-lg text-left transition-colors text-sm"
                                     >
                                         <div className="font-semibold text-slate-800">{p.descripcion}</div>
                                         <div className="text-xs text-slate-600 mt-1 flex justify-between">
@@ -457,10 +457,10 @@ const VentasCreatePage = () => {
                         )}
                     </div>
 
-                    {/* Totales y Acciones */}
-                    <div className="border-t border-slate-200 px-6 py-4 space-y-4">
+                    {/* Totales y Acciones - MATCH PROTOTIPO */}
+                    <div className="totales-container border-t border-slate-200 px-6 py-4 space-y-4">
                         {/* Resumen Totales */}
-                        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-4 rounded-lg space-y-2">
+                        <div className="totales-card from-slate-800 to-slate-900 text-white p-4 rounded-lg space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-300">Op. Gravada:</span>
                                 <span className="font-bold">S/ {totales.gravada.toFixed(2)}</span>
@@ -517,7 +517,7 @@ const VentasCreatePage = () => {
                             <button
                                 onClick={handleGuardar}
                                 disabled={loading || detalles.length === 0 || !form.cliente_id}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="flex-1 px-4 py-2 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 <Send size={16} />
                                 {loading ? 'Procesando...' : 'EMITIR VENTA'}

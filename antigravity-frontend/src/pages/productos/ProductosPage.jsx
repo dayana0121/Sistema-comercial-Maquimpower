@@ -10,6 +10,7 @@ import Modal from "../../components/ui/Modal";
 import { useToast } from '../../hooks/useToast';
 import ProductoForm from "./ProductoForm";
 import { exportToExcel } from "../../utils/exportar";
+import "../../styles/modal-productos.css";
 
 export default function ProductosPage() {
     const toast = useToast();
@@ -202,12 +203,14 @@ export default function ProductosPage() {
                 title={isReadOnly ? "Detalles de Producto" : (productoToEdit ? "Editar Producto" : "Nuevo Producto")}
                 size="lg"
             >
-                <ProductoForm
-                    productoToEdit={productoToEdit}
-                    isReadOnly={isReadOnly}
-                    onCancel={() => setIsModalOpen(false)}
-                    onSuccess={() => { setIsModalOpen(false); cargarProductos(); }}
-                />
+                <div className="modal-productos-shell">
+                    <ProductoForm
+                        productoToEdit={productoToEdit}
+                        isReadOnly={isReadOnly}
+                        onCancel={() => setIsModalOpen(false)}
+                        onSuccess={() => { setIsModalOpen(false); cargarProductos(); }}
+                    />
+                </div>
             </Modal>
         </div>
     );

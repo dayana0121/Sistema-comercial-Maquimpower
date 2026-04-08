@@ -1,7 +1,7 @@
 <?php
 // database/verify.php
 
-$pdo = new PDO('mysql:host=localhost;dbname=u264219614_maquimpower;charset=utf8mb4', 'root', '');
+$pdo = new PDO('mysql:host=localhost;dbname=maquimpower_sistema_comercial;charset=utf8mb4', 'root', '');
 
 // Verificar guias
 $stmt = $pdo->query('SHOW TABLES LIKE "guias%"');

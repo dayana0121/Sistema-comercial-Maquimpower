@@ -3,6 +3,7 @@
     margin-top: 20px;
     margin-bottom: 27px;
     color: black;
+    font-weight: bold;
 }
 .flex.flex-wrap.items-center.gap-3.mb-4.bg-transparent{
     margin-bottom: 27px;
@@ -63,12 +64,14 @@ i:hover{
     font-size: 0.95rem !important;
     color: #64748b !important;
 }
+/*BLOQUE DE CARDS*/
+.flex-1.grid.grid-cols-3.gap-4.overflow-hidden{
+    padding-bottom: 10px;
+}
 
 /* Cards principales */
 [class*="bg-white rounded-xl shadow-sm border"] {
-    border-radius: 2px !important;
-    box-shadow: 0 25px 75px rgba(0,0,0,0.1), 0 8px 25px rgba(0,0,0,0.05) !important;
-    border: 2px solid rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 0 8px 8px rgba(0,0,0,0.1), 0 9px 15px rgba(0,0,0,0.05) !important;
 }
 
 /* Headers de columnas */
@@ -107,7 +110,7 @@ i:hover{
 
 [class*="w-full px-3 py-2 border"][class*="rounded-lg"]:focus,
 [class*="w-full px-4 py-2 border"]:focus {
-    border-color: #f59e0b !important;
+    border-color: var(--primary) !important;
     box-shadow: 0 0 0 4px rgba(245,158,11,0.2) !important;
     transform: translateY(-2px) !important;
 }
@@ -116,17 +119,22 @@ i:hover{
 [class*="w-full p-3 bg-gradient-to-r"] {
     padding: 24px !important;
     border-radius: 20px !important;
-    border: 2px solid #bbf7d0 !important;
-    background: linear-gradient(135deg, #f0fdf4, #dcfce7) !important;
-    box-shadow: 0 12px 32px rgba(34,197,94,0.2) !important;
+    box-shadow: 0 12px 32px var(--grey-light) !important;
 }
 
-[class*="w-full p-3 bg-gradient-to-r"]:hover {
-    background: linear-gradient(135deg, #22c55e, #16a34a) !important;
-    border-color: #16a34a !important;
-    color: white !important;
+.w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm{
+    margin: 6px;
+    background-color: #eeeded;
+    border-color: #090706;
+    transition: all 0.3s ease;
+}
+
+.w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm:hover{
     transform: translateY(-4px) !important;
-    box-shadow: 0 20px 48px rgba(34,197,94,0.3) !important;
+    background-color: #ff6600 ;
+    color: var(--grey-light) !important;
+    box-shadow: 0 10px 48px var(--primary) !important;
+    border-color: var(--primary);
 }
 
 /* Cantidad input carrito */
@@ -136,18 +144,10 @@ i:hover{
     border: 2px solid #f3f4f6 !important;
 }
 
-/* Totales card */
-[class*="bg-gradient-to-r from-slate-800"] {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
-    border-radius: 20px !important;
-    padding: 32px !important;
-    box-shadow: 0 25px 75px rgba(15,23,42,0.4) !important;
-}
-
 [class*="text-2xl font-black text-orange-400"] {
     font-size: 3rem !important;
     font-weight: 900 !important;
-    text-shadow: 0 6px 24px rgba(251,146,60,0.5) !important;
+    text-shadow: 0 6px 24px var(--primary) !important;
 }
 
 /* Botones finales */
@@ -159,10 +159,11 @@ i:hover{
     box-shadow: 0 12px 36px rgba(0,0,0,0.15) !important;
 }
 
-[class*="flex gap-2"] button:first-child {
+/*COLOR DE BOTON*/
+/*[class*="flex gap-2"] button:first-child {
     background: linear-gradient(135deg, #f8fafc, #f1f5f9) !important;
     border: 2px solid #e2e8f0 !important;
-}
+}*/
 
 [class*="flex gap-2"] button:last-child {
     background-color: var(--primary);
@@ -197,3 +198,159 @@ i:hover{
     font-weight: bold;
 }
 
+.flex.gap-2{
+    display: flex;
+    align-items: center;
+}
+
+/* ========================================
+   TOTALES SECTION - MATCH PROTOTIPO IMAGE
+   ======================================== */
+
+.totales-container.border-t.border-slate-200.px-6.py-4.space-y-4{
+    padding: 10px;
+}
+.totales-card.from-slate-800.to-slate-900.text-white.p-4.rounded-lg.space-y-2{
+    margin-bottom: 14px;
+    background-color: var(--dark) !important;
+    padding: 10px;
+}
+.flex.justify-between.text-sm{
+    padding: 14px;
+}
+
+.border-t.border-slate-700.pt-2.flex.justify-between{
+    padding: 14px;
+}
+
+.text-lg.font-bold{
+    display: flex;
+    justify-content: center;
+}
+
+.border-t.border-slate-700.pt-2.flex.justify-between .text-lg.font-bold{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.border-t.border-slate-700.pt-2.flex.justify-between .text-2xl.font-black.text-orange-400{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-1.px-4.py-2.border.border-slate-300.rounded-lg.text-slate-700.font-semibold.transition-colors{
+    background-color: #1a1a1a;
+    color: var(--grey-light);
+    font-weight: 500;    
+    cursor: pointer;
+}
+
+.flex-1.px-4.py-2.border.border-slate-300.rounded-lg.text-slate-700.font-semibold.transition-colors:hover{
+    background-color: var(--dark);
+    border-color: var(--dark);
+}
+
+/*MENSAJE Q ESTA DEBAJO DEL BUSCADOR DE PRODUCTOS*/
+.text-center.text-slate-400.text-sm.py-8{
+    padding-top: 15px
+}
+
+/* ========================================
+   Ventas - Action Buttons (single row style)
+   ======================================== */
+.venta-actions-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+
+.venta-action-btn {
+    width: 38px;
+    height: 34px;
+    min-width: 38px;
+    border-radius: 9px;
+    border: 1px solid #15181e;
+    background: #15181e;
+    color: #cbd5e1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    transition: all 0.2s ease;
+}
+
+.venta-action-btn:hover {
+    transform: translateY(-1px);
+    background: #0f1115;
+    color: #ffffff;
+}
+
+.venta-action-btn.is-default {
+    color: #d4d9e2;
+}
+
+.venta-action-btn.is-blue {
+    color: #60a5fa;
+}
+
+.venta-action-btn.is-whatsapp {
+    color: #00e676;
+}
+
+.venta-action-btn.is-amber {
+    color: #f59e0b;
+}
+
+.venta-action-btn.is-violet {
+    color: #8b5cf6;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.venta-action-btn.is-indigo {
+    color: #6366f1;
+}
+
+.venta-action-btn.is-red {
+    color: #ef4444;
+}
+
+/*BOTONES DE LAS ACCIONES*/
+/* ===== Hover mejorado para botones de acciones ===== */
+button {
+  transition: all 0.25s ease;
+}
+
+/* Botones oscuros (Ver detalle, PDF, WhatsApp) */
+button:hover {
+  background-color: #3b3f4f;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+/* Botones de color (Ticket, Reintentar, Nota, Guía, Anular) */
+button.text-slate-500:hover,
+button.text-amber-500:hover,
+button.text-purple-500:hover,
+button.text-indigo-500:hover,
+button.text-red-400:hover {
+  background-color: rgba(240,240,240,0.2);
+  transform: scale(1.08);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+
+/* Efecto general al pasar el mouse */
+button:hover svg,
+button:hover .icon {
+  opacity: 1;
+  filter: brightness(1.2);
+}
+
+/* Suaviza el color del texto en hover */
+button:hover {
+  color: #fff;
+}

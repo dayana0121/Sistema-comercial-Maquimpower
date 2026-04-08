@@ -3,6 +3,9 @@ import { apiClient } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { LuX, LuTrendingDown, LuTrendingUp, LuPackage } from 'react-icons/lu';
 import '../../styles/business.css';
+import '../../styles/modal-inventario-entrada.css';
+import '../../styles/modal-inventario-traslado.css';
+import '../../styles/modal-inventario-ajuste.css';
 
 const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) => {
     const { user } = useAuth();
@@ -131,13 +134,19 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
         return 'var(--color-error)';
     };
 
+    const modalTypeClass = form.tipo === 'TRASLADO'
+        ? 'movimiento-modal--traslado'
+        : form.tipo === 'AJUSTE'
+            ? 'movimiento-modal--ajuste'
+            : 'movimiento-modal--entrada';
+
     return (
-        <div className="modal-overlay" style={{
+        <div className={`modal-overlay movimiento-modal-overlay ${modalTypeClass}`} style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000,
             display: 'flex', justifyContent: 'center', alignItems: 'center'
         }}>
-            <div className="modal-content" style={{
+            <div className={`modal-content movimiento-modal-content ${modalTypeClass}`} style={{
                 backgroundColor: 'var(--color-bg-principal)',
                 width: '100%', maxWidth: '500px',
                 borderRadius: 'var(--radius-base)',
@@ -145,7 +154,7 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
                 overflow: 'hidden'
             }}>
                 {/* HEAD */}
-                <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--color-borde)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className={`movimiento-modal-header ${modalTypeClass}`} style={{ padding: '1.5rem', borderBottom: '1px solid var(--color-borde)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {form.tipo === 'ENTRADA' ? <LuTrendingUp color="var(--color-exito)" /> : <LuTrendingDown color="var(--color-error)" />}
                         Registrar {form.tipo}
@@ -158,7 +167,7 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
                 </div>
 
                 {/* BODY */}
-                <div style={{ padding: '1.5rem' }}>
+                <div className={`movimiento-modal-body ${modalTypeClass}`} style={{ padding: '1.5rem' }}>
                     {resultado ? (
                         /* ESTADO: ÉXITO ANIMADO */
                         <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
@@ -281,7 +290,7 @@ const MovimientoModal = ({ isOpen, onClose, onSuccess, producto, tipoInicial }) 
                                 />
                             </div>
 
-                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', paddingTop: '1rem', borderTop: '1px solid var(--color-borde)' }}>
+                            <div className={`movimiento-modal-actions ${modalTypeClass}`} style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', paddingTop: '1rem', borderTop: '1px solid var(--color-borde)' }}>
                                 <button type="button" onClick={onClose} className="btn-secondary" disabled={loading}>
                                     Cancelar
                                 </button>

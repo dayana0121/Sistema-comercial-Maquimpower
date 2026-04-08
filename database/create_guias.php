@@ -2,7 +2,7 @@
 // database/create_guias.php
 
 try {
-    $pdo = new PDO('mysql:host=localhost;dbname=u264219614_maquimpower;charset=utf8mb4', 'root', '');
+    $pdo = new PDO('mysql:host=localhost;dbname=maquimpower_sistema_comercial;charset=utf8mb4', 'root', '');
     
     $sql = file_get_contents(__DIR__ . '/05_guias_table.sql');
     $statements = array_filter(array_map('trim', explode(';', $sql)));

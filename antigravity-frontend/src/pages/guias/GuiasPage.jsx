@@ -4,13 +4,12 @@ import { useToast } from '../../hooks/useToast';
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 import GuiaForm from './GuiaForm';
+import '../../styles/modal-guias.css';
 
 const GuiasPage = () => {
     const [guias, setGuias] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-
-    // Regla estricta: const toast = useToast()
     const toast = useToast();
 
     const fetchGuias = async () => {
@@ -18,7 +17,6 @@ const GuiasPage = () => {
         try {
             const res = await guiasApi.listar();
             if (res?.success) {
-                // El API retorna data directamente o data.guias
                 const guiasData = Array.isArray(res.data) ? res.data : (res.data?.guias || []);
                 setGuias(guiasData);
             } else {
@@ -43,7 +41,7 @@ const GuiasPage = () => {
             const res = await guiasApi.consultarEstado(id);
             if (res?.success) {
                 toast.success('Estado actualizado desde SUNAT');
-                fetchGuias(); // Recargamos la tabla para ver el nuevo badge
+                fetchGuias();
             } else {
                 toast.error(res?.message || 'Error al consultar el ticket en SUNAT');
             }
@@ -61,13 +59,16 @@ const GuiasPage = () => {
         }
     };
 
-    // Helper para pintar el badge de estado SUNAT
     const getBadgeColor = (estado) => {
         switch (estado?.toLowerCase()) {
-            case 'aceptado': return 'bg-green-100 text-green-800';
-            case 'rechazado': return 'bg-red-100 text-red-800';
-            case 'enviada': return 'bg-blue-100 text-blue-800';
-            default: return 'bg-yellow-100 text-yellow-800'; // borrador o pendiente
+            case 'aceptado':
+                return 'bg-green-100 text-green-800';
+            case 'rechazado':
+                return 'bg-red-100 text-red-800';
+            case 'enviada':
+                return 'bg-blue-100 text-blue-800';
+            default:
+                return 'bg-yellow-100 text-yellow-800';
         }
     };
 
@@ -101,7 +102,6 @@ const GuiasPage = () => {
                         <tbody className="bg-white divide-y divide-gray-200">
                             {loading ? (
                                 <tr>
-                                    {/* Aquí luego aplicaremos tu mejora Prioridad 4 de SkeletonRow */}
                                     <td colSpan="5" className="px-6 py-8 text-center text-gray-500">Cargando guías...</td>
                                 </tr>
                             ) : guias.length === 0 ? (
@@ -149,15 +149,16 @@ const GuiasPage = () => {
                 </div>
             </div>
 
-            {/* Regla estricta: Formulario siempre en Modal */}
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Emitir Nueva Guía">
-                <GuiaForm 
-                    onSuccess={() => {
-                        setIsModalOpen(false);
-                        fetchGuias();
-                    }} 
-                    onCancel={() => setIsModalOpen(false)}
-                />
+                <div className="modal-guias-shell">
+                    <GuiaForm
+                        onSuccess={() => {
+                            setIsModalOpen(false);
+                            fetchGuias();
+                        }}
+                        onCancel={() => setIsModalOpen(false)}
+                    />
+                </div>
             </Modal>
         </div>
     );

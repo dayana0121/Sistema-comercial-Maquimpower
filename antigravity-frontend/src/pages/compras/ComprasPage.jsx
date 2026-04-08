@@ -4,6 +4,7 @@ import { useToast } from '../../hooks/useToast';
 import { Plus, Eye, X, Search, ShoppingCart, Package } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
 import apiClient from '../../api/client';
+import '../../styles/modal-compras.css';
 
 const itemVacio = { producto_id: '', descripcion: '', unidad_medida: 'NIU', cantidad: 1, costo_unitario: 0, tipo_afectacion_igv: '10', incluye_igv: false };
 
@@ -163,7 +164,7 @@ export default function ComprasPage() {
 
       {/* Modal Nueva Compra */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Nueva Orden de Compra" size="xl">
-        <div className="space-y-6">
+        <div className="modal-compras-create space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="form-group-custom md:col-span-1">
               <label className="form-label-custom">Proveedor *</label>
@@ -309,7 +310,7 @@ export default function ComprasPage() {
       {/* Modal Detalle */}
       <Modal isOpen={detalleOpen} onClose={() => setDetalleOpen(false)} title={`Detalle: ${compraDetalle?.numero_comprobante || ''}`} size="lg">
         {compraDetalle && (
-          <div className="space-y-6">
+          <div className="modal-compras-detalle space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-sm bg-slate-50 p-6 rounded-xl border border-dashed border-slate-200">
               <div><span className="text-slate-500 text-xs uppercase font-bold">Proveedor</span><p className="font-semibold">{compraDetalle.proveedor_nombre}</p></div>
               <div><span className="text-slate-500 text-xs uppercase font-bold">Estado</span><p>{compraDetalle.estado}</p></div>

@@ -1,6 +1,6 @@
 <?php
 $host = '127.0.0.1:3306';
-$db = 'u264219614_maquimpower';
+$db = 'maquimpower_sistema_comercial';
 $user = 'root';
 $pass = '';
 $charset = 'utf8mb4';

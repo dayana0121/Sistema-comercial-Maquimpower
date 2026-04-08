@@ -5,6 +5,7 @@ import Button from "../../components/ui/Button";
 import { useToast } from "../../hooks/useToast";
 // ✅ 1. Corrección: Importar apiClient correctamente
 import { apiClient } from "../../api/client";
+import "../../styles/modal-producto.css";
 
 export default function ProductoForm({ productoToEdit, onCancel, onSuccess, isReadOnly }) {
     const toast = useToast();
@@ -79,14 +80,17 @@ export default function ProductoForm({ productoToEdit, onCancel, onSuccess, isRe
     );
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Cabecera de Pestañas */}
-            <div className="flex border-b border-slate-200 overflow-x-auto">
-                <TabButton idBtn="general" label="General" icon={Package} />
-                <TabButton idBtn="precios" label="Precios/SUNAT" icon={DollarSign} />
-                <TabButton idBtn="inventario" label="Inventario" icon={Truck} />
-                <TabButton idBtn="web" label="Marketing/Web" icon={Globe} />
-            </div>
+        <form
+  onSubmit={handleSubmit}
+  className={`modal-productos-form space-y-6 ${activeTab === 'general' ? 'is-active' : ''}`}
+>
+  {/* Cabecera de Pestañas */}
+  <div className="modal-productos-tabs flex border-b border-slate-200 overflow-x-auto">
+    <TabButton idBtn="general" label="General" icon={Package} active={activeTab === 'general'} />
+    <TabButton idBtn="precios" label="Precios/SUNAT" icon={DollarSign} active={activeTab === 'precios'} />
+    <TabButton idBtn="inventario" label="Inventario" icon={Truck} active={activeTab === 'inventario'} />
+    <TabButton idBtn="web" label="Marketing/Web" icon={Globe} active={activeTab === 'web'} />
+  </div>
 
             <div className="min-h-[400px]">
                 {/* PESTAÑA: GENERAL */}

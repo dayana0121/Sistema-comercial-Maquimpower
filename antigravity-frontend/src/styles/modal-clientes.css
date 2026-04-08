@@ -1,0 +1,20 @@
+.modal-clientes-shell {
+    padding-top: 0.25rem;
+}
+
+.modal-clientes-form .modal-clientes-sunat {
+    margin-bottom: 15px;
+    border-style: solid;
+    border-color: #e7edf5;
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 1rem;
+}
+
+.modal-clientes-form .form-actions-custom {
+    margin-top: 1.25rem;
+}
+
+.modal-clientes-form .btn-submit-custom {
+    box-shadow: 0 8px 18px rgba(255, 69, 0, 0.16);
+}

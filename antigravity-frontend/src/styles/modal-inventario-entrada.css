@@ -1,0 +1,17 @@
+.movimiento-modal--entrada.movimiento-modal-overlay {
+    backdrop-filter: blur(2px);
+}
+
+.movimiento-modal-content.movimiento-modal--entrada {
+    border: 1px solid #d6f0e4;
+    border-radius: 18px !important;
+    box-shadow: 0 24px 50px rgba(22, 160, 107, 0.18);
+}
+
+.movimiento-modal-header.movimiento-modal--entrada {
+    background: linear-gradient(180deg, #f0fbf6 0%, #ffffff 100%);
+}
+
+.movimiento-modal-actions.movimiento-modal--entrada .btn-primary {
+    box-shadow: 0 8px 16px rgba(22, 160, 107, 0.2);
+}
