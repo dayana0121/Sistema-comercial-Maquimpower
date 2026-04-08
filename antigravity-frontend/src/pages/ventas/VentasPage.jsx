@@ -67,13 +67,13 @@ const VentasPage = () => {
             'RECHAZADO': 'bg-red-600 text-white',
             'ANULADO': 'bg-[#E74C3C] text-white shadow-sm',
         };
-        return <span className={`px-6 py-6 rounded-[6px] text-[11px] gap-1 flex items-center w-fit font-bold uppercase tracking-wide ${map[estado] || 'bg-slate-500 text-white'}`}>{estado}</span>;
+        return <span className={`px-6 py-6 rounded-[6px] text-[11px] gap-1 flex items-center w-fit font-bold text-center uppercase tracking-wide ${map[estado] || 'bg-slate-500 text-white'}`}>{estado}</span>;
     };
 
     const badgePago = (estado) => {
         const isPagado = estado === 'PAGADO';
         return (
-            <span className={`px-3 py-1 rounded-[6px] text-[11px] font-bold uppercase shadow-sm ${isPagado ? 'bg-emerald-50 text-emerald-600' : 'bg-[#FFF8E7] text-[#D97706]'}`}>
+            <span className={`px-3 py-1 rounded-[6px] text-[11px] font-bold text-center uppercase shadow-sm ${isPagado ? 'bg-emerald-50 text-emerald-600' : 'bg-[#FFF8E7] text-[#D97706]'}`}>
                 {estado || 'PENDIENTE'}
             </span>
         );
@@ -149,12 +149,19 @@ const VentasPage = () => {
             header: "Total",
             render: (row) => <span className="font-bold text-[#f2542d] text-[15px]">S/ {parseFloat(row.importe_total).toFixed(2)}</span>
         },
-        { header: "SUNAT", render: (row) => badgeSunat(row.estado_sunat) },
+        { 
+            header: "SUNAT", 
+            render: (row) => (
+                <div className="flex justify-center">
+                    {badgeSunat(row.estado_sunat)}
+                </div>
+            )
+        },
         { header: "Canal", render: (row) => <span className="text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded capitalize">{row.canal_venta?.replace('_', ' ') || 'Tienda'}</span> },
         {
             header: "Acciones",
             render: (row) => (
-                <div className="venta-actions-row flex items-center gap-2">
+                <div className="venta-actions-row flex justify-center items-center gap-2">
                     <button
                         onClick={() => {
                             setVentaToView(row);

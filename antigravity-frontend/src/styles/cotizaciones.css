@@ -307,7 +307,7 @@ input{
     text-align: left;
 }
 
-.cotizaciones-page .cotizaciones-table tbody tr:nth-child(odd) {
+/*.cotizaciones-page .cotizaciones-table tbody tr:nth-child(odd) {
     background: #f7f8fb;
 }
 
@@ -317,7 +317,7 @@ input{
 
 .cotizaciones-page .cotizaciones-table tbody tr:hover {
     background: #fff5ea;
-}
+}*/
 
 .cotizaciones-page .cotizaciones-table td {
     padding: 16px;
@@ -438,8 +438,15 @@ input{
 }
 
 /* =========================================
-   Cotizaciones - solo color (misma estructura)
+   Cotizaciones
    ========================================= */
+/*CABECERA ACCIONES*/
+.acciones{
+    text-align: center;
+}
+th{
+    text-align: center !important;
+}
 .cotizaciones-page .bg-white.rounded-lg.shadow.overflow-hidden {
     border: 1px solid #d7dde8;
     border-radius: 14px;
@@ -452,15 +459,15 @@ input{
 }
 
 .cotizaciones-page tbody.bg-white tr:nth-child(odd) {
-    background: #f7f8fb;
+    background: white;
 }
 
 .cotizaciones-page tbody.bg-white tr:nth-child(even) {
-    background: #f3eee5;
+    background: #FFF9F0;
 }
 
 .cotizaciones-page tbody.bg-white tr:hover {
-    background: #fff5ea !important;
+    background: #FDEFE6 !important;
 }
 
 .cotizaciones-page tbody.bg-white td {
@@ -481,9 +488,12 @@ input{
     color: #ffffff !important;
     font-weight: 800 !important;
 }
-
+/*TABLA: SPAN DE ESTADO*/
 .cotizaciones-page tbody.bg-white td:nth-child(5) .bg-yellow-100 {
     background: #f59e0b !important;
+    padding: 6px;
+    color: white;
+    border-radius: 6px;
 }
 
 .cotizaciones-page tbody.bg-white td:nth-child(5) .bg-green-100 {

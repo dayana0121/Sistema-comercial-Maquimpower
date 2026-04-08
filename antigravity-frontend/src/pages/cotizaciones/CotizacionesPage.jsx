@@ -107,7 +107,7 @@ const CotizacionesPage = () => {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Monto</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                                <th className="acciones px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -121,30 +121,23 @@ const CotizacionesPage = () => {
                                 </tr>
                             ) : (
                                 cotizaciones.map((cot) => (
-                                    <tr key={cot.id} className="transition-colors hover:bg-gray-50">
-                                        <td className="px-8 py-5 text-[14.5px] text-slate-700 font-medium text-left">#{cot.numero_correlativo}</td>
+                                    <tr key={cot.id} className="transition-colors hover:bg-gray-50 text-center">
+                                        <td className="px-8 py-5 text-[14.5px] text-slate-700 font-medium text-center">#{cot.numero_correlativo}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600">
                                             {cot.cliente?.razon_social || cot.cliente?.nombre || 'Sin nombre'}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
                                             {cot['fecha_emisión'] ? new Date(cot['fecha_emisión']).toLocaleDateString() : '-'}
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-500">
-                                            {cot.detalles && cot.detalles.some((d) => d.indicacion === 'indispensable') ? (
-                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Contiene indispensables</span>
-                                            ) : (
-                                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">-</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-semibold text-gray-900">
+                                        <td className="px-6 py-4 text-center font-semibold text-gray-900">
                                             S/ {parseFloat(cot.total).toFixed(2)}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getEstadoBadge(cot.estado)}`}>
+                                            <span className={`px-3 py-1 text-xs font-semibold ${getEstadoBadge(cot.estado)}`}>
                                                 {cot.estado}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
+                                        <td className="px-6 py-4 text-center">
                                             <div className="cotizacion-actions-inline">
                                                 <button
                                                     onClick={() => {
