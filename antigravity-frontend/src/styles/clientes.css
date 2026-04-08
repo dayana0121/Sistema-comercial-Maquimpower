@@ -1,5 +1,6 @@
-.px-2.rounded-full{
-    padding: 16px;
+.px-2{
+    border-radius: 10px;
+    padding: 10px;
 }
 
 i:hover{

@@ -11,6 +11,7 @@ import { useToast } from '../../hooks/useToast';
 import ProductoForm from "./ProductoForm";
 import { exportToExcel } from "../../utils/exportar";
 import "../../styles/modal-productos.css";
+import "../../styles/productos-page.css";
 
 export default function ProductosPage() {
     const toast = useToast();
@@ -158,7 +159,7 @@ export default function ProductosPage() {
     ];
 
     return (
-        <div className="p-6 max-w-[1400px] mx-auto">
+        <div className="p-6 max-w-[1400px] mx-auto productos-page">
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-8">
                 <div>
@@ -166,11 +167,11 @@ export default function ProductosPage() {
                     <p className="text-sm text-slate-500">Gestión de inventario y precios SUNAT</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 productos-toolbar">
                     <select
                         value={filtroStock}
                         onChange={(e) => setFiltroStock(e.target.value)}
-                        className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white h-[42px] outline-none focus:ring-2 focus:ring-orange-100"
+                        className="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white h-[42px] outline-none focus:ring-2 focus:ring-orange-100 productos-toolbar-select"
                     >
                         <option value="">Todos los niveles</option>
                         <option value="EN STOCK">En Stock</option>
@@ -178,17 +179,36 @@ export default function ProductosPage() {
                         <option value="AGOTADO">Agotados</option>
                     </select>
 
-                    <SearchInput onSearch={setSearch} placeholder="Buscar por código, descripción..." />
+                    <SearchInput
+                        onSearch={setSearch}
+                        placeholder="Buscar por código, descripción..."
+                        className="productos-toolbar-search"
+                    />
 
-                    <Button variant="secondary" onClick={() => exportToExcel(filtrados, 'catalogo_maquimpower', 'Productos')} icon={FileSpreadsheet}>
+                    <Button
+                        variant="secondary"
+                        onClick={() => exportToExcel(filtrados, 'catalogo_maquimpower', 'Productos')}
+                        icon={FileSpreadsheet}
+                        className="productos-toolbar-btn"
+                    >
                         Exportar Excel
                     </Button>
 
-                    <Button variant="secondary" onClick={handleGenerarPDF} icon={FileText}>
+                    <Button
+                        variant="secondary"
+                        onClick={handleGenerarPDF}
+                        icon={FileText}
+                        className="productos-toolbar-btn"
+                    >
                         Orden de Reposición
                     </Button>
 
-                    <Button variant="primary" onClick={() => { setProductoToEdit(null); setIsReadOnly(false); setIsModalOpen(true); }} icon={Plus}>
+                    <Button
+                        variant="primary"
+                        onClick={() => { setProductoToEdit(null); setIsReadOnly(false); setIsModalOpen(true); }}
+                        icon={Plus}
+                        className="productos-toolbar-btn"
+                    >
                         Nuevo Producto
                     </Button>
                 </div>

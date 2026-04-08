@@ -72,7 +72,6 @@ const VentaDetalle = ({ id: propId }) => {
                     >
                         🚚 Generar Guía
                     </button>
-                    <button onClick={() => navigate('/ventas')} className="btn-secondary">Volver</button>
                 </div>
             </header>
 

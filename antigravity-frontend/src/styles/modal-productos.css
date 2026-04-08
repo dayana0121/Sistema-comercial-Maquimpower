@@ -3,10 +3,42 @@
 }
 
 .modal-productos-form .modal-productos-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
     background: #fff8f4;
     border: 1px solid #e7edf5;
     border-radius: 14px;
     padding: 0.3rem 0.4rem;
+}
+
+.modal-productos-form .modal-productos-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0 0.95rem;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: var(--color-bg-principal);
+    color: #334155;
+    font-size: 0.95rem;
+    font-weight: 800;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+    transition: all 0.2s ease;
+}
+
+.modal-productos-form .modal-productos-tab:hover {
+    border-color: #ffd9be;
+    background: #fff7f0;
+}
+
+.modal-productos-form .modal-productos-tab.is-active {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 10px 20px rgba(255, 69, 0, 0.25);
 }
 
 .modal-productos-form .form-input-custom.min-h-\[80px\] {

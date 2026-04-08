@@ -126,7 +126,7 @@ export default function ClientesPage() {
             header: "Estado",
             align: "center",
             render: (row) => (
-                <span className={`px-2 py-0.5 rounded-full text-[0.65rem] font-bold uppercase ${row.activo == 1 ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+                <span className={`px-2 py-0.5 text-[0.65rem] font-bold uppercase ${row.activo == 1 ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
                     }`}>
                     {row.activo == 1 ? "Activo" : "Inactivo"}
                 </span>
@@ -140,10 +140,10 @@ export default function ClientesPage() {
                     <button onClick={() => handleView(row)} title="Ver detalles" className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
                         <Eye size={17} />
                     </button>
-                    <button onClick={() => handleEdit(row)} title="Editar" className="p-1.5 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-md transition-colors">
+                    <button onClick={() => handleEdit(row)} title="Editar" className="p-1.5 text-blue-500 hover:text-orange-500 hover:bg-orange-50 rounded-md transition-colors">
                         <Edit size={17} />
                     </button>
-                    <button onClick={() => handleDesactivar(row.id)} title="Desactivar" className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                    <button onClick={() => handleDesactivar(row.id)} title="Desactivar" className="p-2 text-red-500 hover:text-red-500 hover:bg-slate-800 rounded-lg transition-all bg-slate-900">
                         <UserX size={17} />
                     </button>
                 </div>

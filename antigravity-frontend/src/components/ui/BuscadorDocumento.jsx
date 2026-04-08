@@ -23,10 +23,15 @@ export default function BuscadorDocumento({ onFound, label = "Documento (DNI/RUC
             if (res.success && res.data) {
                 onFound(res.data);
             } else {
+                // Yo priorizo el mensaje del backend para que el usuario vea la causa real del fallo externo.
                 setError(res.message || 'No se encontraron resultados');
+                if (res.debug) {
+                    console.warn('SUNAT DEBUG:', res.debug);
+                }
             }
         } catch (err) {
-            setError('Error al consultar el documento');
+            // Yo muestro el error real cuando está disponible para facilitar soporte y diagnóstico.
+            setError(err?.message || 'Error al consultar el documento');
         } finally {
             setLoading(false);
         }

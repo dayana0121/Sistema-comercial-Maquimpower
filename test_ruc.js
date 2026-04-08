@@ -3,7 +3,8 @@
 // Script de diagnóstico detallado
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const API_BASE = 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
+// Yo sincronizo este script con la ruta real del backend en este repo.
+const API_BASE = 'http://localhost/Sistema-comercial-Maquimpower/antigravity-backend';
 const CREDS = { email: "admin@maquimpower.com", password: "password" };
 
 const C = {

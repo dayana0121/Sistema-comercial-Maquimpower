@@ -72,8 +72,7 @@ export default function ProductoForm({ productoToEdit, onCancel, onSuccess, isRe
         <button
             type="button"
             onClick={() => setActiveTab(idBtn)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-bold border-b-2 transition-colors ${activeTab === idBtn ? "border-orange-500 text-orange-600" : "border-transparent text-slate-500 hover:text-slate-700"
-                }`}
+            className={`modal-productos-tab ${activeTab === idBtn ? "is-active" : ""}`}
         >
             <Icon size={16} /> {label}
         </button>

@@ -110,7 +110,8 @@ const VentasPage = () => {
         }
         
         const numero = venta.cliente_telefono.replace(/\D/g, '');
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
+        // Yo uso el mismo fallback del proyecto actual para que el link de WhatsApp no apunte a otra copia.
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost/Sistema-comercial-Maquimpower/antigravity-backend';
         const linkPdf = `${baseUrl}/api/ventas/${venta.id}/pdf`;
         const mensaje = encodeURIComponent(
             `Estimado/a ${venta.cliente_nombre},\n\nAdjuntamos su ${venta.tipo_comprobante === '01' ? 'factura' : 'boleta'} ${venta.numero_completo} por el monto de S/ ${parseFloat(venta.importe_total).toFixed(2)}.\n\nPuede ver y descargar su comprobante aquí:\n${linkPdf}\n\n¡Gracias por su preferencia!`
@@ -137,7 +138,14 @@ const VentasPage = () => {
                 </div>
             ),
         },
-        { header: "Cliente", key: "cliente_nombre" },
+        {
+            header: "Cliente",
+            render: (row) => (
+                <span className="text-[15px] text-slate-700 font-medium">
+                    {row.cliente_nombre || row.cliente?.razon_social || 'Cliente final'}
+                </span>
+            )
+        },
         {
             header: "Fecha",
             render: (row) => {

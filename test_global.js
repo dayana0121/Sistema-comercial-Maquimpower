@@ -4,7 +4,8 @@
 // buscar debilidades de stock negativo y validar resiliencia del negocio.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const API = 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
+// Yo sincronizo este script con la ruta real del backend en este repo.
+const API = 'http://localhost/Sistema-comercial-Maquimpower/antigravity-backend';
 
 // ─── Estado global ─────────────────────────────────────────────────────────────
 let TOKEN = null;

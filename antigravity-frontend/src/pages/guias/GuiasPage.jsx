@@ -72,6 +72,11 @@ const GuiasPage = () => {
         }
     };
 
+    const getEstadoLabel = (estado) => {
+        // Yo normalizo el estado para que la tabla no se rompa si viene vacío desde la API.
+        return String(estado ?? 'pendiente').trim().toUpperCase();
+    };
+
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
@@ -122,11 +127,11 @@ const GuiasPage = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getBadgeColor(guia.estado)}`}>
-                                                {guia.estado.toUpperCase()}
+                                                {getEstadoLabel(guia.estado)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            {guia.estado === 'enviada' && (
+                                            {String(guia.estado ?? '').toLowerCase() === 'enviada' && (
                                                 <button
                                                     onClick={() => handleConsultarEstado(guia.id)}
                                                     className="text-indigo-600 hover:text-indigo-900 mr-4"

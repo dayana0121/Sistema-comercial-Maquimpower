@@ -31,6 +31,15 @@ export const cotizacionesApi = {
         }
     },
 
+    actualizar: async (id, data) => {
+        try {
+            return await apiClient.put(`/cotizaciones/${id}`, data);
+        } catch (error) {
+            console.error('Error actualizando cotizacion:', error);
+            throw error;
+        }
+    },
+
     generarPdf: async (id) => {
         try {
             const response = await fetch(`/api/cotizaciones/${id}/pdf`);

@@ -29,10 +29,17 @@ class RucController
             if ($longitud === 11) {
                 $data = $this->buscarRuc($numero);
                 if (empty($data['razon_social'])) {
+                    $mensaje = 'RUC no encontrado.';
+                    // Yo explico mejor cuando el servidor no logra salir a internet para consultar APIs externas.
+                    if (!empty($data['debug']) && $this->sinConexionExterna($data['debug'])) {
+                        $mensaje = 'No se pudo conectar con servicios externos SUNAT desde el servidor.';
+                    } elseif (!empty($data['debug'])) {
+                        $mensaje = 'RUC no encontrado o error en API externa.';
+                    }
                     http_response_code(400);
                     echo json_encode([
                         'success' => false, 
-                        'message' => 'RUC no encontrado o error en API externa (consultar debug).',
+                        'message' => $mensaje,
                         'debug' => $data['debug'] ?? null
                     ]);
                     return;
@@ -40,10 +47,14 @@ class RucController
             } elseif ($longitud === 8) {
                 $data = $this->buscarDni($numero);
                 if (empty($data['razon_social'])) {
+                    $mensaje = 'DNI no encontrado.';
+                    if (!empty($data['debug']) && $this->sinConexionExterna($data['debug'])) {
+                        $mensaje = 'No se pudo conectar con servicios externos RENIEC/SUNAT desde el servidor.';
+                    }
                     http_response_code(400);
                     echo json_encode([
                         'success' => false, 
-                        'message' => 'DNI no encontrado.',
+                        'message' => $mensaje,
                         'debug' => $data['debug'] ?? null
                     ]);
                     return;
@@ -64,7 +75,8 @@ class RucController
     private function buscarRuc($ruc)
     {
         $debug = [];
-        $token = getenv('APIS_NET_PE_TOKEN') ?: 'apis-token-1.aTSI1U7KEuT-6bbbCguH-4Y8TI6KS73N';
+        // Yo quito token hardcodeado para evitar depender de un secreto expirado/ajeno al entorno.
+        $token = getenv('APIS_NET_PE_TOKEN') ?: '';
         
         $default_data = [
             'ruc' => $ruc,
@@ -77,11 +89,19 @@ class RucController
         ];
 
         // 1. APIs.net.pe (V2) - Principal
-        $res = $this->curlRequest("https://api.apis.net.pe/v2/sunat/ruc?numero=$ruc", [
-            'Authorization: Bearer ' . $token,
-            'Accept: application/json'
-        ]);
-        $debug['apis_net_pe_v2'] = ['status' => $res['status'], 'raw' => substr($res['raw'], 0, 100)];
+        $headersV2 = ['Accept: application/json'];
+        if (!empty($token)) {
+            $headersV2[] = 'Authorization: Bearer ' . $token;
+        }
+        $res = $this->curlRequest("https://api.apis.net.pe/v2/sunat/ruc?numero=$ruc", $headersV2);
+        if ($res['status'] === 0) {
+            $res = $this->fallbackHttpRequest("https://api.apis.net.pe/v2/sunat/ruc?numero=$ruc", $headersV2);
+        }
+        $debug['apis_net_pe_v2'] = [
+            'status' => $res['status'],
+            'error' => $res['error'] ?? null,
+            'raw' => substr($res['raw'] ?? '', 0, 140)
+        ];
         if ($res['status'] === 200 && !empty($res['data']['razonSocial'] ?? '')) {
             $data = $res['data'];
             return array_merge($default_data, [
@@ -95,8 +115,19 @@ class RucController
         }
 
         // 2. APIs.net.pe (V1) - Fallback Potente (A veces funciona sin token)
-        $resV1 = $this->curlRequest("https://api.apis.net.pe/v1/ruc?numero=$ruc");
-        $debug['apis_net_pe_v1'] = ['status' => $resV1['status'], 'raw' => substr($resV1['raw'], 0, 100)];
+        $headersV1 = ['Accept: application/json'];
+        if (!empty($token)) {
+            $headersV1[] = 'Authorization: Bearer ' . $token;
+        }
+        $resV1 = $this->curlRequest("https://api.apis.net.pe/v1/ruc?numero=$ruc", $headersV1);
+        if ($resV1['status'] === 0) {
+            $resV1 = $this->fallbackHttpRequest("https://api.apis.net.pe/v1/ruc?numero=$ruc", $headersV1);
+        }
+        $debug['apis_net_pe_v1'] = [
+            'status' => $resV1['status'],
+            'error' => $resV1['error'] ?? null,
+            'raw' => substr($resV1['raw'] ?? '', 0, 140)
+        ];
         if ($resV1['status'] === 200 && !empty($resV1['data']['nombre'] ?? '')) {
             $data = $resV1['data'];
             return array_merge($default_data, [
@@ -111,7 +142,14 @@ class RucController
 
         // 3. ConsultaRUC.win
         $res2 = $this->curlRequest("https://consultaruc.win/api/ruc/$ruc");
-        $debug['consultaruc_win'] = ['status' => $res2['status'], 'raw' => substr($res2['raw'], 0, 100)];
+        if ($res2['status'] === 0) {
+            $res2 = $this->fallbackHttpRequest("https://consultaruc.win/api/ruc/$ruc");
+        }
+        $debug['consultaruc_win'] = [
+            'status' => $res2['status'],
+            'error' => $res2['error'] ?? null,
+            'raw' => substr($res2['raw'] ?? '', 0, 140)
+        ];
         $data2 = $res2['data']['result'] ?? $res2['data'] ?? [];
         if ($res2['status'] === 200 && !empty($data2['razon_social'] ?? $data2['razonSocial'] ?? '')) {
             return array_merge($default_data, [
@@ -147,14 +185,24 @@ class RucController
     private function buscarDni($dni)
     {
         $debug = [];
-        $token = getenv('APIS_NET_PE_TOKEN') ?: 'apis-token-1.aTSI1U7KEuT-6bbbCguH-4Y8TI6KS73N';
+        // Yo quito token hardcodeado para evitar depender de un secreto expirado/ajeno al entorno.
+        $token = getenv('APIS_NET_PE_TOKEN') ?: '';
         $default_data = ['dni' => $dni, 'razon_social' => '', 'direccion' => '', 'ubigeo' => '', 'fuente' => ''];
 
         // 1. APIs.net.pe (V2 DNI)
-        $res = $this->curlRequest("https://api.apis.net.pe/v2/reniec/dni?numero=$dni", [
-            'Authorization: Bearer ' . $token, 'Accept: application/json'
-        ]);
-        $debug['apis_net_pe_v2_dni'] = ['status' => $res['status'], 'raw' => substr($res['raw'], 0, 100)];
+        $headersV2 = ['Accept: application/json'];
+        if (!empty($token)) {
+            $headersV2[] = 'Authorization: Bearer ' . $token;
+        }
+        $res = $this->curlRequest("https://api.apis.net.pe/v2/reniec/dni?numero=$dni", $headersV2);
+        if ($res['status'] === 0) {
+            $res = $this->fallbackHttpRequest("https://api.apis.net.pe/v2/reniec/dni?numero=$dni", $headersV2);
+        }
+        $debug['apis_net_pe_v2_dni'] = [
+            'status' => $res['status'],
+            'error' => $res['error'] ?? null,
+            'raw' => substr($res['raw'] ?? '', 0, 140)
+        ];
         if ($res['status'] === 200 && !empty($res['data']['nombres'] ?? '')) {
             $data = $res['data'];
             $nombre_completo = trim($data['nombres'] . ' ' . $data['apellidoPaterno'] . ' ' . $data['apellidoMaterno']);
@@ -165,8 +213,19 @@ class RucController
         }
 
         // 2. APIs.net.pe (V1 DNI) - Fallback
-        $resV1 = $this->curlRequest("https://api.apis.net.pe/v1/dni?numero=$dni");
-        $debug['apis_net_pe_v1_dni'] = ['status' => $resV1['status'], 'raw' => substr($resV1['raw'], 0, 100)];
+        $headersV1 = ['Accept: application/json'];
+        if (!empty($token)) {
+            $headersV1[] = 'Authorization: Bearer ' . $token;
+        }
+        $resV1 = $this->curlRequest("https://api.apis.net.pe/v1/dni?numero=$dni", $headersV1);
+        if ($resV1['status'] === 0) {
+            $resV1 = $this->fallbackHttpRequest("https://api.apis.net.pe/v1/dni?numero=$dni", $headersV1);
+        }
+        $debug['apis_net_pe_v1_dni'] = [
+            'status' => $resV1['status'],
+            'error' => $resV1['error'] ?? null,
+            'raw' => substr($resV1['raw'] ?? '', 0, 140)
+        ];
         if ($resV1['status'] === 200 && !empty($resV1['data']['nombre'] ?? '')) {
             return array_merge($default_data, [
                 'razon_social' => $resV1['data']['nombre'], 'ubigeo' => $resV1['data']['ubigeo'] ?? '',
@@ -245,15 +304,82 @@ class RucController
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 5,
+            CURLOPT_CONNECTTIMEOUT => 6,
+            CURLOPT_TIMEOUT => 12,
             CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_USERAGENT => 'Maquimpower-RUC-Client/1.0',
+            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
             CURLOPT_HTTPHEADER => $headers
         ]);
         $response = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        $errno = curl_errno($ch);
         curl_close($ch);
 
         $data = json_decode($response, true);
-        return ['status' => $status, 'data' => $data, 'raw' => $response];
+        return [
+            'status' => $status,
+            'data' => $data,
+            'raw' => $response,
+            'error' => $error,
+            'errno' => $errno
+        ];
+    }
+
+    private function fallbackHttpRequest($url, $headers = [])
+    {
+        // Yo agrego fallback sin cURL porque en algunos servidores cURL falla pero stream HTTP sí funciona.
+        $headersText = implode("\r\n", $headers);
+        $ctx = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 12,
+                'ignore_errors' => true,
+                'header' => $headersText . "\r\nUser-Agent: Maquimpower-RUC-Client/1.0\r\n",
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+        ]);
+
+        $raw = @file_get_contents($url, false, $ctx);
+        $status = 0;
+        $error = null;
+
+        if (!empty($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m)) {
+            $status = (int)$m[1];
+        }
+        if ($raw === false) {
+            $error = error_get_last()['message'] ?? 'HTTP fallback failed';
+            $raw = '';
+        }
+
+        return [
+            'status' => $status,
+            'data' => json_decode($raw, true),
+            'raw' => $raw,
+            'error' => $error,
+            'errno' => null
+        ];
+    }
+
+    private function sinConexionExterna(array $debug): bool
+    {
+        $intentos = 0;
+        $sinConexion = 0;
+        foreach ($debug as $item) {
+            if (!is_array($item) || !array_key_exists('status', $item)) {
+                continue;
+            }
+            $intentos++;
+            if ((int)$item['status'] === 0) {
+                $sinConexion++;
+            }
+        }
+        return $intentos > 0 && $sinConexion === $intentos;
     }
 }

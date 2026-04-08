@@ -73,7 +73,13 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                 numero_whatsapp: cotizacion.numero_whatsapp || '',
                 observaciones: cotizacion.observaciones || '',
             });
-            setSelectedCliente(cotizacion.cliente);
+            setSelectedCliente(
+                cotizacion.cliente || (
+                    cotizacion.cliente_nombre
+                        ? { id: cotizacion.cliente_id, razon_social: cotizacion.cliente_nombre }
+                        : null
+                )
+            );
             setDetalles(cotizacion.detalles || []);
         } else {
             setForm({
@@ -182,7 +188,7 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
 
         try {
             const res = cotizacion
-                ? await apiClient.put(`/cotizaciones/${cotizacion.id}`, payload)
+                ? await cotizacionesApi.actualizar(cotizacion.id, payload)
                 : await cotizacionesApi.crear(payload);
 
             if (res.success) {
@@ -192,7 +198,8 @@ const CotizacionForm = ({ isOpen, onClose, onSuccess, cotizacion }) => {
                 toast.error(res.message || 'Error');
             }
         } catch (error) {
-            toast.error('Error al guardar la cotización');
+            // Yo muestro el mensaje real del backend para diagnosticar rapido cualquier fallo futuro.
+            toast.error(error?.message || 'Error al guardar la cotización');
         } finally {
             setLoading(false);
         }

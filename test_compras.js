@@ -1,4 +1,5 @@
-const BASE_URL = 'http://localhost/REPO3/Sistema-comercial-Maquimpower/antigravity-backend';
+// Yo sincronizo este script con la ruta real del backend en este repo.
+const BASE_URL = 'http://localhost/Sistema-comercial-Maquimpower/antigravity-backend';
 
 async function auth() {
     const res = await fetch(`${BASE_URL}/auth/login`, {

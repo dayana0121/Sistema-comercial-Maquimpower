@@ -21,7 +21,6 @@ class VentaPdfController
         
         $formato = $_GET['formato'] ?? 'ticket';
 
-        // Obtener venta completa con cliente
         $stmt = $this->conn->prepare("
             SELECT v.*, c.razon_social AS cliente_nombre,
                    c.numero_documento AS cliente_documento,
@@ -41,13 +40,20 @@ class VentaPdfController
             return;
         }
 
-        // Obtener detalles
         $stmtDet = $this->conn->prepare("SELECT * FROM ventas_detalle WHERE venta_id = :id ORDER BY item");
         $stmtDet->bindValue(':id', $venta_id);
         $stmtDet->execute();
         $detalles = $stmtDet->fetchAll(PDO::FETCH_ASSOC);
 
-        // Datos empresa desde .env
+        // Vendedor
+        $vendedor_nombre = 'SISTEMA';
+        if (!empty($venta['vendedor_id'])) {
+            $stmtV = $this->conn->prepare("SELECT CONCAT(nombre, ' ', apellido) FROM vendedores WHERE id = ?");
+            $stmtV->execute([$venta['vendedor_id']]);
+            $vn = $stmtV->fetchColumn();
+            if ($vn) $vendedor_nombre = mb_strtoupper($vn, 'UTF-8');
+        }
+
         $empresa = [
             'ruc'              => env('EMPRESA_RUC', '20000000001'),
             'razon_social'     => env('EMPRESA_RAZON_SOCIAL', 'EMPRESA DEMO SUNAT'),
@@ -65,12 +71,11 @@ class VentaPdfController
             str_pad($venta['correlativo'], 8, '0', STR_PAD_LEFT);
 
         if ($formato === 'a4') {
-            $pdf_path = $this->generarPDFA4($empresa, $venta, $detalles, $nombre_archivo);
+            $pdf_path = $this->generarPDFA4($empresa, $venta, $detalles, $nombre_archivo, $vendedor_nombre);
         } else {
             $pdf_path = $this->generarPDF($empresa, $venta, $detalles, $nombre_archivo);
         }
 
-        // Servir el PDF como descarga
         header('Content-Type: application/pdf');
         header('Content-Disposition: inline; filename="' . $nombre_archivo . '.pdf"');
         header('Content-Length: ' . filesize($pdf_path));
@@ -256,190 +261,256 @@ class VentaPdfController
         return $qr_path;
     }
 
-    private function generarPDFA4($empresa, $venta, $detalles, $nombre)
+    private function generarPDFA4($empresa, $venta, $detalles, $nombre, $vendedor_nombre = 'SISTEMA')
     {
-        $totalLetras = numeroALetras((float) $venta['importe_total']);
-        $totalLetras = 'Son: ' . $totalLetras;
-
-        $pdf = new FPDF('P', 'mm', 'A4');
-        $pdf->SetMargins(15, 15, 15);
-        $pdf->AddPage();
-
-        // 1. Cabecera
-        $logo = __DIR__ . '/../../storage/logo.png';
-        if (file_exists($logo)) {
-            $pdf->Image($logo, 15, 15, 60);
-        }
+        $totalLetras = 'SON ' . strtoupper(numeroALetras((float) $venta['importe_total']));
 
         // Tipo de comprobante
         $tipo = 'BOLETA';
         if ($venta['tipo_comprobante'] === '01') $tipo = 'FACTURA';
+        if ($venta['tipo_comprobante'] === '07') $tipo = 'NOTA DE CREDITO';
+        if ($venta['tipo_comprobante'] === '08') $tipo = 'NOTA DE DEBITO';
         if ($venta['tipo_comprobante'] === '00') $tipo = 'NOTA DE VENTA';
+        $numero_doc = $venta['serie'] . '-' . str_pad($venta['correlativo'], 8, '0', STR_PAD_LEFT);
+        $tipo_doc_cli = ($venta['cliente_tipo_doc'] === '6' || strtolower($venta['cliente_tipo_doc']) === 'ruc') ? 'RUC' : 'DNI';
 
-        // Cuadro RUC SUNAT (Derecha)
-        $pdf->SetXY(130, 15);
-        $pdf->SetFont('Arial', 'B', 14);
-        $pdf->Cell(65, 8, 'RUC: ' . $empresa['ruc'], 'LTR', 2, 'C');
-        $pdf->Cell(65, 8, utf8_decode($tipo . ' ELECTRONICA'), 'LR', 2, 'C');
-        $pdf->Cell(65, 8, $venta['serie'] . '-' . str_pad($venta['correlativo'], 8, '0', STR_PAD_LEFT), 'LBR', 0, 'C');
+        $pdf = new FPDF('P', 'mm', 'A4');
+        $pdf->SetMargins(13, 13, 13);
+        $pdf->SetAutoPageBreak(false);
+        $pdf->AddPage();
 
-        // Datos de la empresa (Izquierda)
-        $pdf->SetXY(15, 40);
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(100, 6, $empresa['nombre_comercial'], 0, 1, 'L');
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(100, 5, $empresa['razon_social'], 0, 1, 'L');
-        $pdf->MultiCell(100, 5, utf8_decode($empresa['domicilio_fiscal']));
+        // ================================================================
+        // CABECERA: Logo | Nombre empresa | Cuadro RUC/Tipo/Numero
+        // ================================================================
+        $Y_HEADER = 10;
+        $logo = __DIR__ . '/../../storage/logo.png';
+        if (file_exists($logo)) {
+            $pdf->Image($logo, 13, $Y_HEADER, 38, 22);
+        } else {
+            $pdf->SetXY(13, $Y_HEADER);
+            $pdf->SetFont('Helvetica', 'B', 12);
+            $pdf->Cell(38, 22, utf8_decode($empresa['nombre_comercial']), 1, 0, 'C');
+        }
 
-        $pdf->Ln(10);
+        // Centro: razon social + direccion
+        $pdf->SetXY(55, $Y_HEADER);
+        $pdf->SetFont('Helvetica', 'B', 13);
+        $pdf->Cell(95, 7, utf8_decode($empresa['razon_social']), 0, 2, 'C');
+        $pdf->SetX(55);
+        $pdf->SetFont('Helvetica', '', 7.5);
+        $pdf->MultiCell(95, 4, utf8_decode($empresa['domicilio_fiscal']), 0, 'C');
 
-        // 2. Datos del Cliente
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(25, 6, 'Cliente:', 1, 0, 'L', false);
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(160, 6, utf8_decode($venta['cliente_nombre'] ?? 'VARIOS'), 1, 1, 'L');
-        
-        $tipo_doc_cliente = ($venta['cliente_tipo_doc'] === 'RUC' || $venta['cliente_tipo_doc'] === '6') ? 'RUC' : 'DNI';
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(25, 6, $tipo_doc_cliente . ':', 1, 0, 'L');
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(65, 6, $venta['cliente_documento'] ?? '-', 1, 0, 'L');
-        
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(30, 6, 'Fecha de Emision:', 1, 0, 'L');
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(65, 6, $venta['fecha_emision'], 1, 1, 'L');
+        // Derecha: cuadro con RUC, tipo, numero
+        $bx = 154; $by = $Y_HEADER; $bw = 46;
+        $pdf->SetXY($bx, $by);
+        $pdf->SetFont('Helvetica', 'B', 9);
+        $pdf->Cell($bw, 8, 'R.U.C. N' . chr(176) . ' ' . $empresa['ruc'], 'LTR', 2, 'C');
+        $pdf->SetX($bx);
+        $pdf->SetFont('Helvetica', 'B', 8);
+        $pdf->Cell($bw, 7, utf8_decode($tipo . ' ELECTRONICA'), 'LR', 2, 'C');
+        $pdf->SetX($bx);
+        $pdf->SetFont('Helvetica', 'B', 10);
+        $pdf->Cell($bw, 8, 'N' . chr(176) . ' ' . $numero_doc, 'LBR', 0, 'C');
 
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(25, 6, 'Direccion:', 1, 0, 'L');
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(160, 6, utf8_decode($venta['cliente_direccion'] ?? '-'), 1, 1, 'L');
-        
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(25, 6, 'Metodo Pago:', 1, 0, 'L');
-        $pdf->SetFont('Arial', '', 9);
-        $pdf->Cell(160, 6, utf8_decode($venta['metodo_pago'] ?? 'EFECTIVO'), 1, 1, 'L');
+        // Separador horizontal
+        $pdf->SetXY(13, $Y_HEADER + 26);
+        $pdf->SetDrawColor(180, 180, 180);
+        $pdf->Line(13, $Y_HEADER + 26, 197, $Y_HEADER + 26);
+        $pdf->SetDrawColor(0, 0, 0);
 
-        $pdf->Ln(5);
+        // ================================================================
+        // DATOS DEL CLIENTE (tabla compacta)
+        // ================================================================
+        $pdf->SetXY(13, $Y_HEADER + 29);
+        $lbl = 27; // ancho columna etiqueta
+        $val_full = 157; // ancho valor (full width)
 
-        // 3. Tabla de Productos
-        $pdf->SetFont('Arial', 'B', 9);
-        $pdf->SetFillColor(230, 230, 230);
-        $pdf->Cell(15, 7, 'CANT.', 1, 0, 'C', true);
-        $pdf->Cell(12, 7, 'U.M.', 1, 0, 'C', true);
-        $pdf->Cell(103, 7, 'DESCRIPCION', 1, 0, 'C', true);
-        $pdf->Cell(20, 7, 'P. UNIT', 1, 0, 'C', true);
-        $pdf->Cell(15, 7, 'DSCTO', 1, 0, 'C', true);
-        $pdf->Cell(20, 7, 'TOTAL', 1, 1, 'C', true);
+        $rows_cli = [
+            [$tipo_doc_cli . ':', $venta['cliente_documento'] ?? '-'],
+            ['Nombres:', utf8_decode($venta['cliente_nombre'] ?? 'VARIOS')],
+            [utf8_decode('Dirección:'), utf8_decode($venta['cliente_direccion'] ?? '-')],
+        ];
 
-        $pdf->SetFont('Arial', '', 9);
-        $total_descuentos_a4 = 0;
+        $pdf->SetFont('Helvetica', '', 8);
+        foreach ($rows_cli as $i => $row) {
+            $border_top    = ($i === 0) ? 'LTR' : 'LR';
+            $pdf->SetFont('Helvetica', 'B', 8);
+            $pdf->Cell($lbl, 5.5, $row[0], $border_top, 0, 'L');
+            $pdf->SetFont('Helvetica', '', 8);
+            $pdf->Cell($val_full, 5.5, $row[1], ($i === 0 ? 'TR' : 'R'), 1, 'L');
+        }
+
+        // Fila fecha / moneda / pago / modo de pago
+        $pdf->SetFont('Helvetica', 'B', 8);
+        $pdf->Cell(25, 5.5, 'Fecha:', 'LBR', 0, 'L');
+        $pdf->SetFont('Helvetica', '', 8);
+        $pdf->Cell(27, 5.5, $venta['fecha_emision'] ?? '-', 'BR', 0, 'L');
+        $pdf->SetFont('Helvetica', 'B', 8);
+        $pdf->Cell(16, 5.5, 'Moneda:', 'BR', 0, 'L');
+        $pdf->SetFont('Helvetica', '', 8);
+        $pdf->Cell(15, 5.5, $venta['moneda'] ?? 'PEN', 'BR', 0, 'L');
+        $pdf->SetFont('Helvetica', 'B', 8);
+        $pdf->Cell(12, 5.5, 'Pago:', 'BR', 0, 'L');
+        $pdf->SetFont('Helvetica', '', 8);
+        $pdf->Cell(22, 5.5, utf8_decode($venta['condicion_pago'] ?? 'CONTADO'), 'BR', 0, 'L');
+        $pdf->SetFont('Helvetica', 'B', 8);
+        $pdf->Cell(20, 5.5, 'Modo de Pago:', 'BR', 0, 'L');
+        $pdf->SetFont('Helvetica', '', 8);
+        $pdf->Cell(47, 5.5, utf8_decode($venta['metodo_pago'] ?? 'EFECTIVO'), 'BR', 1, 'L');
+
+        $pdf->Ln(4);
+
+        // ================================================================
+        // TABLA DE PRODUCTOS
+        // Col widths: ITEM=8, DESCRIPCION=81, UND=13, CANT=14, V.UNIT=20, P.UNIT=20, VALOR=28
+        // Total = 8+81+13+14+20+20+28 = 184 (redondeado al ancho real)
+        // ================================================================
+        $c = [8, 81, 13, 14, 20, 20, 28];
+        $cols_offset = [];
+        $acc = 0;
+        foreach ($c as $w) { $cols_offset[] = $acc; $acc += $w; }
+
+        $pdf->SetFillColor(210, 210, 210);
+        $pdf->SetFont('Helvetica', 'B', 8);
+        $h_header = 6;
+        $pdf->Cell($c[0], $h_header, 'ITEM', 1, 0, 'C', true);
+        $pdf->Cell($c[1], $h_header, 'PRODUCTO', 1, 0, 'C', true);
+        $pdf->Cell($c[2], $h_header, 'UND.', 1, 0, 'C', true);
+        $pdf->Cell($c[3], $h_header, 'CANT.', 1, 0, 'C', true);
+        $pdf->Cell($c[4], $h_header, 'V. UNIT', 1, 0, 'C', true);
+        $pdf->Cell($c[5], $h_header, 'P. UNIT', 1, 0, 'C', true);
+        $pdf->Cell($c[6], $h_header, 'Valor Venta', 1, 1, 'C', true);
+
+        $pdf->SetFont('Helvetica', '', 8);
+        $total_descuentos = 0;
+        $row_num = 0;
+
         foreach ($detalles as $det) {
-            $desc = utf8_decode($det['descripcion'] ?? 'Producto');
-            $cant = (float) ($det['cantidad'] ?? 0);
-            $pu = (float) ($det['precio_unitario'] ?? 0);
-            $dscto = (float) ($det['descuento_unitario'] ?? 0);
-            $pu_neto = $pu - $dscto;
-            $total_linea = $cant * $pu_neto;
-            $total_descuentos_a4 += ($dscto * $cant);
-            
-            // Calculamos altura
-            $caracteresPorLinea = 60; 
-            $lineas = ceil(strlen($desc) / $caracteresPorLinea);
-            $alto = 6 * $lineas;
+            $row_num++;
+            $desc    = utf8_decode($det['descripcion'] ?? 'Producto');
+            $cant    = (float) ($det['cantidad'] ?? 0);
+            $pu      = (float) ($det['precio_unitario'] ?? 0);
+            $vu      = (float) ($det['valor_unitario'] ?? ($pu / 1.18));
+            $dscto   = (float) ($det['descuento_unitario'] ?? 0);
+            $total_l = $cant * ($pu - $dscto);
+            $total_descuentos += $dscto * $cant;
 
-            $x = $pdf->GetX();
-            $y = $pdf->GetY();
+            // Altura dinámica basada en longitud descripción
+            $lineas = max(1, ceil(mb_strlen($det['descripcion'] ?? '') / 52));
+            $rh = 5.5 * $lineas;
 
-            $pdf->Rect($x, $y, 15, $alto);           // CANT.
-            $pdf->Rect($x + 15, $y, 12, $alto);      // U.M.
-            $pdf->Rect($x + 27, $y, 103, $alto);     // DESCRIPCION
-            $pdf->Rect($x + 130, $y, 20, $alto);     // P. UNIT
-            $pdf->Rect($x + 150, $y, 15, $alto);     // DSCTO
-            $pdf->Rect($x + 165, $y, 20, $alto);     // TOTAL
-            
+            // Color de fila alternado
+            if ($row_num % 2 === 0) {
+                $pdf->SetFillColor(245, 247, 250);
+            } else {
+                $pdf->SetFillColor(255, 255, 255);
+            }
+
+            $x = $pdf->GetX(); $y = $pdf->GetY();
+
+            // Dibujar celdas con borde y fondo
+            foreach ($c as $i => $w) {
+                $pdf->Rect($x + $cols_offset[$i], $y, $w, $rh, 'DF');
+            }
+
+            // Contenido de cada celda
             $pdf->SetXY($x, $y);
-            $pdf->Cell(15, $alto, number_format($cant, 2), 0, 0, 'C');
-            
-            $pdf->SetXY($x + 15, $y);
-            $pdf->Cell(12, $alto, utf8_decode($det['unidad_medida'] ?? 'NIU'), 0, 0, 'C');
-            
-            $pdf->SetXY($x + 27, $y);
-            $pdf->MultiCell(103, 6, $desc, 0, 'L');
-            
-            $pdf->SetXY($x + 130, $y);
-            $pdf->Cell(20, $alto, number_format($pu, 2), 0, 0, 'R');
-            
-            $pdf->SetXY($x + 150, $y);
-            $pdf->Cell(15, $alto, $dscto > 0 ? "-".number_format($dscto, 2) : '0.00', 0, 0, 'R');
-            
-            $pdf->SetXY($x + 165, $y);
-            $pdf->Cell(20, $alto, number_format($total_linea, 2), 0, 1, 'R');
+            $pdf->Cell($c[0], $rh, $row_num, 0, 0, 'C');
+
+            $pdf->SetXY($x + $cols_offset[1], $y);
+            $pdf->MultiCell($c[1], 5.5, $desc, 0, 'L');
+
+            $pdf->SetXY($x + $cols_offset[2], $y);
+            $pdf->Cell($c[2], $rh, utf8_decode($det['unidad_medida'] ?? 'NIU'), 0, 0, 'C');
+
+            $pdf->SetXY($x + $cols_offset[3], $y);
+            $pdf->Cell($c[3], $rh, number_format($cant, 2), 0, 0, 'C');
+
+            $pdf->SetXY($x + $cols_offset[4], $y);
+            $pdf->Cell($c[4], $rh, number_format($vu, 2), 0, 0, 'R');
+
+            $pdf->SetXY($x + $cols_offset[5], $y);
+            $pdf->Cell($c[5], $rh, number_format($pu, 2), 0, 0, 'R');
+
+            $pdf->SetXY($x + $cols_offset[6], $y);
+            $pdf->Cell($c[6], $rh, number_format($total_l, 2), 0, 1, 'R');
+
+            $pdf->SetY($y + $rh);
         }
 
         $pdf->Ln(5);
 
-        // 4. Totales
-        $pdf->SetFont('Arial', '', 9);
-        
-        if ($total_descuentos_a4 > 0) {
-            $pdf->Cell(135, 5, '', 0, 0); 
-            $pdf->Cell(25, 5, 'Dsctos Totales:', 1, 0, 'R');
-            $pdf->Cell(25, 5, '-S/ ' . number_format($total_descuentos_a4, 2), 1, 1, 'R');
+        // ================================================================
+        // BLOQUE DE TOTALES (derecha) - siempre muestra los 5 campos
+        // ================================================================
+        $lbl_w = 35;
+        $val_w = 24;
+        $x_tot = 184 - $lbl_w - $val_w + 13; // empuja a la derecha
+
+        $totales = [
+            ['OP. Gravada',  number_format((float)($venta['op_gravada'] ?? 0),  2)],
+            ['I.G.V.',       number_format((float)($venta['igv'] ?? 0),          2)],
+            ['Op. Inafecta', number_format((float)($venta['op_inafecta'] ?? 0), 2)],
+            ['Op.',          number_format((float)($venta['op_exonerada'] ?? 0),2)],
+            ['Op. Gratuita', number_format((float)($venta['op_gratuita'] ?? 0), 2)],
+        ];
+
+        $pdf->SetFont('Helvetica', '', 8.5);
+        foreach ($totales as $t) {
+            $pdf->Cell($x_tot - 13, 5.5, '', 0, 0);
+            $pdf->SetX($x_tot);
+            $pdf->Cell($lbl_w, 5.5, $t[0], 1, 0, 'R');
+            $pdf->Cell($val_w, 5.5, $t[1] . ' S/', 1, 1, 'R');
         }
 
-        if ((float)$venta['op_gravada'] > 0 || (float)$venta['igv'] > 0) {
-            $pdf->Cell(135, 5, '', 0, 0);
-            $pdf->Cell(25, 5, 'Op. Gravada:', 1, 0, 'R');
-            $pdf->Cell(25, 5, 'S/ ' . number_format((float) $venta['op_gravada'], 2), 1, 1, 'R');
-        }
-        if ((float)$venta['op_exonerada'] > 0) {
-            $pdf->Cell(135, 5, '', 0, 0);
-            $pdf->Cell(25, 5, 'Op. Exonerada:', 1, 0, 'R');
-            $pdf->Cell(25, 5, 'S/ ' . number_format((float) $venta['op_exonerada'], 2), 1, 1, 'R');
-        }
-        if ((float)$venta['op_inafecta'] > 0) {
-            $pdf->Cell(135, 5, '', 0, 0);
-            $pdf->Cell(25, 5, 'Op. Inafecta:', 1, 0, 'R');
-            $pdf->Cell(25, 5, 'S/ ' . number_format((float) $venta['op_inafecta'], 2), 1, 1, 'R');
-        }
-        if ((float)$venta['op_gratuita'] > 0) {
-            $pdf->Cell(135, 5, '', 0, 0);
-            $pdf->Cell(25, 5, 'Op. Gratuita:', 1, 0, 'R');
-            $pdf->Cell(25, 5, 'S/ ' . number_format((float) $venta['op_gratuita'], 2), 1, 1, 'R');
+        if ($total_descuentos > 0) {
+            $pdf->Cell($x_tot - 13, 5.5, '', 0, 0);
+            $pdf->SetX($x_tot);
+            $pdf->Cell($lbl_w, 5.5, 'Dsctos Totales', 1, 0, 'R');
+            $pdf->Cell($val_w, 5.5, '-' . number_format($total_descuentos, 2) . ' S/', 1, 1, 'R');
         }
 
-        if ((float)$venta['igv'] > 0) {
-            $pdf->Cell(135, 5, '', 0, 0);
-            $pdf->Cell(25, 5, 'IGV (18%):', 1, 0, 'R');
-            $pdf->Cell(25, 5, 'S/ ' . number_format((float) $venta['igv'], 2), 1, 1, 'R');
-        }
+        $pdf->SetFont('Helvetica', 'B', 9.5);
+        $pdf->Cell($x_tot - 13, 6, '', 0, 0);
+        $pdf->SetX($x_tot);
+        $pdf->Cell($lbl_w, 6, 'Importe', 1, 0, 'R');
+        $pdf->Cell($val_w, 6, number_format((float)$venta['importe_total'], 2) . ' S/', 1, 1, 'R');
 
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->Cell(135, 6, '', 0, 0);
-        $pdf->Cell(25, 6, 'TOTAL:', 1, 0, 'R');
-        $pdf->Cell(25, 6, 'S/ ' . number_format((float) $venta['importe_total'], 2), 1, 1, 'R');
+        $pdf->Ln(4);
 
-        // Total letras
-        $pdf->Ln(2);
-        $pdf->SetFont('Arial', 'B', 8);
-        $pdf->MultiCell(185, 5, utf8_decode($totalLetras));
+        // Monto en letras
+        $pdf->SetFont('Helvetica', 'B', 8.5);
+        $pdf->MultiCell(184, 5, utf8_decode($totalLetras));
+        $pdf->Ln(5);
 
-        // 5. QR y Estado SUNAT
+        // ================================================================
+        // QR + REPRESENTACION IMPRESA + PIE
+        // ================================================================
         $qr_path = $this->generarQR($venta, $empresa, $nombre);
+        $y_pie = $pdf->GetY();
+
         if ($qr_path && file_exists($qr_path)) {
-            $y_qr = $pdf->GetY() + 5;
-            $pdf->Image($qr_path, 15, $y_qr, 30, 30);
-            $pdf->SetXY(50, $y_qr + 5);
-            $pdf->SetFont('Arial', '', 8);
-            $pdf->MultiCell(100, 4, utf8_decode("Representacion impresa de la $tipo ELECTRONICA\nAutorizada mediante Resolución de SUNAT\nConsulte el documento en nubefact.com/pe (o sitio oficial)\nEstado SUNAT: " . ($venta['estado_sunat'] ?? 'PENDIENTE')));
+            $pdf->Image($qr_path, 13, $y_pie, 28, 28);
+            $pdf->SetXY(45, $y_pie + 2);
+            $pdf->SetFont('Helvetica', '', 7.5);
+            $pdf->MultiCell(139, 4.2, utf8_decode(
+                'Representacion impresa de la ' . $tipo . ' ELECTRONICA' . "\n" .
+                'Autorizada mediante Resolucion de SUNAT' . "\n" .
+                'Consulte el documento en nubefact.com/pe (o sitio oficial)' . "\n" .
+                'Estado SUNAT: ' . ($venta['estado_sunat'] ?? 'PENDIENTE')
+            ));
+            $pdf->SetY($y_pie + 31);
         }
 
-        // Guardar PDF
+        // Pie: usuario | fecha/hora
+        $pdf->SetFont('Helvetica', '', 7);
+        $now = date('d/m/Y H:i A');
+        $pdf->Cell(92, 5, utf8_decode('USUARIO: ' . $vendedor_nombre), 0, 0, 'L');
+        $pdf->Cell(92, 5, $now, 0, 1, 'R');
+
+        // Guardar
         $pdf_dir = __DIR__ . '/../../storage/files/pdf';
-        if (!is_dir($pdf_dir)) {
-            mkdir($pdf_dir, 0777, true);
-        }
+        if (!is_dir($pdf_dir)) mkdir($pdf_dir, 0777, true);
         $pdf_path = $pdf_dir . '/' . $nombre . '_A4.pdf';
         $pdf->Output($pdf_path, 'F');
         return $pdf_path;

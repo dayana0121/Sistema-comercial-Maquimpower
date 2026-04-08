@@ -223,7 +223,7 @@ const VentasCreatePage = () => {
                         className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
                         title="Volver"
                     >
-                        <ChevronLeft size={20} className="text-slate-600" />
+                        <ChevronLeft size={20} className="text-white" />
                     </button>
                     <div>
                         <h1 className="text-2xl font-bold text-slate-800">Nueva Venta Electrónica</h1>

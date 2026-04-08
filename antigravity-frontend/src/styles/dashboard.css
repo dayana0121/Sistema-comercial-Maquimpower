@@ -1,3 +1,62 @@
+/*ITEMS DE LA COLUMNA*/
+td{
+    text-align: center;
+    justify-content: center;
+}
+.status-actions-cell{
+    display: flex;
+    justify-items: center;
+    justify-content: center;
+}
+
+/*COLOR DE OS BADGES DEL ESTADO DE SUNAT*/
+/* Clase base para todos los badges */
+.badge-status {
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+    min-width: 85px; /* Para que todos tengan el mismo ancho */
+    text-align: center;
+}
+
+/* Color para PENDIENTE (Naranja suave) */
+.badge-status.pendiente {
+    background-color: #fff7ed;
+    color: #f97316;
+    border: 1px solid #fdba74;
+}
+
+/* Color para ANULADO (Gris oscuro / Rojo suave) */
+.badge-status.anulado {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+/* Color para RECHAZADO (Rojo fuerte) */
+.badge-status.rechazado {
+    background-color: #fef2f2;
+    color: #ef4444;
+    border: 1px solid #fecaca;
+}
+
+/* Color para ACEPTADO (Verde) */
+.badge-status.aceptado {
+    background-color: #f0fdf4;
+    color: #22c55e;
+    border: 1px solid #bbf7d0;
+}
+
+/* Color para ERROR (Morado o Fucsia) */
+.badge-status.error {
+    background-color: #faf5ff;
+    color: #a855f7;
+    border: 1px solid #e9d5ff;
+}
+
 .dashboard-header {
     margin-bottom: 2rem;
 }

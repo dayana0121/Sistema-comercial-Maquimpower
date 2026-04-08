@@ -1,0 +1,57 @@
+.productos-page .productos-toolbar {
+    display: grid;
+    grid-template-columns: minmax(180px, 220px) minmax(280px, 1fr) auto auto auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.productos-page .productos-toolbar-select {
+    min-height: 42px;
+    width: 100%;
+}
+
+.productos-page .productos-toolbar-search {
+    width: 100%;
+    min-width: 280px;
+}
+
+.productos-page .productos-toolbar-search input {
+    min-height: 42px;
+}
+
+.productos-page .productos-toolbar-btn {
+    min-height: 42px;
+    white-space: nowrap;
+    padding: 0 14px !important;
+    box-shadow: none !important;
+}
+
+/* Yo neutralizo hover global de ventas.css para que en Productos se vea ordenado y estable. */
+.productos-page .productos-toolbar-btn:hover {
+    transform: none !important;
+}
+
+@media (max-width: 1280px) {
+    .productos-page .productos-toolbar {
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
+    }
+
+    .productos-page .productos-toolbar-search {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 768px) {
+    .productos-page .productos-toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .productos-page .productos-toolbar-search {
+        min-width: 0;
+    }
+
+    .productos-page .productos-toolbar-btn,
+    .productos-page .productos-toolbar-select {
+        width: 100%;
+    }
+}

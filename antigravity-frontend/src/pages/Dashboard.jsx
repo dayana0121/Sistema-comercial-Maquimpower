@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 // ❌ Supabase ELIMINADO
 // import { supabase } from '../lib/supabaseClient';
 import { LuReceipt, LuChartBar, LuTriangleAlert, LuUsers, LuEye, LuCheck, LuPlus, LuPackageSearch, LuDoorClosed, LuUserPlus, LuFileText } from 'react-icons/lu';
@@ -7,6 +8,7 @@ import { useToast } from '../hooks/useToast';
 import '../styles/dashboard.css';
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const toast = useToast();
     const [stats, setStats] = useState({
         ventasHoy: 0,
@@ -18,27 +20,76 @@ const Dashboard = () => {
     const [lastVentas, setLastVentas] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                setLoading(true);
-                // ✅ Consulta única al backend PHP local
-                const res = await apiClient.get('/dashboard/stats');
+    const getTipoComprobanteLabel = (venta) => {
+        // Yo determino el tipo por prefijo del comprobante: B=Boleta, F=Factura.
+        const base = String(venta?.numero_completo || venta?.serie || '').trim().toUpperCase();
+        if (base.startsWith('B')) return 'Boleta';
+        if (base.startsWith('F')) return 'Factura';
+        return 'Comprobante';
+    };
 
-                if (res.success) {
-                    setStats(res.data.stats);
-                    setLastVentas(res.data.lastVentas);
-                    console.log('lastVentas:', res.data.lastVentas);
-                }
-            } catch (error) {
-                console.error("Error cargando dashboard:", error);
+    const fetchDashboardData = async (showLoader = true) => {
+        try {
+            if (showLoader) setLoading(true);
+            const res = await apiClient.get('/dashboard/stats');
+
+            if (res.success) {
+                setStats(res.data?.stats || {
+                    ventasHoy: 0,
+                    clientesActivos: 0,
+                    productosBajoStock: 0,
+                    totalVentasMes: 0,
+                    monto_hoy: 0
+                });
+                setLastVentas(res.data?.lastVentas || []);
+            }
+        } catch (error) {
+            console.error("Error cargando dashboard:", error);
+            if (showLoader) {
                 toast.error("No se pudieron cargar los indicadores");
-            } finally {
-                setLoading(false);
+            }
+        } finally {
+            if (showLoader) setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        // Yo cargo al entrar al dashboard.
+        fetchDashboardData(true);
+
+        // Yo refresco periodicamente para mantener KPIs sincronizados con cambios de otras pantallas.
+        const intervalId = window.setInterval(() => {
+            fetchDashboardData(false);
+        }, 20000);
+
+        // Yo refresco al volver a la pestaña del navegador.
+        const onFocus = () => fetchDashboardData(false);
+        const onVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                fetchDashboardData(false);
             }
         };
 
-        fetchDashboardData();
+        // Yo escucho cambios disparados desde otras pestañas del navegador.
+        const onStorage = (e) => {
+            if (e.key === 'mq_dashboard_refresh') {
+                fetchDashboardData(false);
+            }
+        };
+        const onInternalRefresh = () => fetchDashboardData(false);
+
+        window.addEventListener('focus', onFocus);
+        document.addEventListener('visibilitychange', onVisibility);
+        window.addEventListener('storage', onStorage);
+        window.addEventListener('mq:dashboard-refresh', onInternalRefresh);
+
+        return () => {
+            window.clearInterval(intervalId);
+            window.removeEventListener('focus', onFocus);
+            document.removeEventListener('visibilitychange', onVisibility);
+            window.removeEventListener('storage', onStorage);
+            window.removeEventListener('mq:dashboard-refresh', onInternalRefresh);
+        };
     }, []);
 
     if (loading) return <div className="loading-screen">Cargando indicadores...</div>;
@@ -108,7 +159,7 @@ const Dashboard = () => {
                         <table className="erp-table">
                             <thead>
                                 <tr>
-                                    <th>Número</th>
+                                    <th>Comprobante</th>
                                     <th>Cliente</th>
                                     <th>Total</th>
                                     <th>Estado SUNAT</th>
@@ -118,24 +169,22 @@ const Dashboard = () => {
                                 {lastVentas.length > 0 ? lastVentas.map((v) => (
                                     <tr key={v.id}>
                                         <td>
-                                            <span className="doc-number">{`${v.serie}-${v.correlativo}`}</span>
-                                            <span className="doc-type">Factura</span>
+                                            <span className="doc-number">{v.numero_completo || `${v.serie}-${v.correlativo}`}</span>
+                                            <span className="doc-type">{getTipoComprobanteLabel(v)}</span>
                                         </td>
                                         <td>{v.clientes?.razon_social || 'Cliente final'}</td>
                                         <td>S/ {parseFloat(v.total).toFixed(2)}</td>
-                                        <td>
-                                            <div className="status-actions-cell">
+                                        <td className='text-center py-3'>
+                                            <div className="flex justify-center items-center gap-2 w-full">
                                                 <span className={`badge-status ${(v.estado_sunat || 'PENDIENTE').toLowerCase()}`}>
                                                     {v.estado_sunat || 'PENDIENTE'}
                                                 </span>
-                                                <div className="row-actions">
+                                                <div className="flex items-center">
                                                     {(v.estado_sunat === 'ACEPTADO') && (
                                                         <span className="action-circle text-naranja" title="PDF">
                                                             <LuFileText size={14} />
                                                         </span>
                                                     )}
-                                                    <button className="action-btn"><LuEye size={16}/></button>
-                                                    <button className="action-btn text-verde"><LuCheck size={16}/></button>
                                                 </div>
                                             </div>
                                         </td>
@@ -168,10 +217,7 @@ const Dashboard = () => {
                     <button className="btn-action btn-blanco" onClick={() => window.location.href='/inventario'}>
                         <LuPackageSearch size={18} /> Ver Inventario
                     </button>
-                    <button className="btn-action btn-blanco" onClick={() => document.querySelector('.topbar-logout').click()}>
-                        <LuDoorClosed size={18} /> Cerrar
-                    </button>
-                    <button className="btn-action btn-azul" onClick={() => window.location.href='/clientes/nuevo'}>
+                    <button className="btn-action btn-azul" onClick={() => navigate('/clientes/nuevo')}>
                         <LuUserPlus size={18} /> Agregar Cliente
                     </button>
                 </div>

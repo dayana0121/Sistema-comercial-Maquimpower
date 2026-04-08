@@ -3,7 +3,11 @@ import { cotizacionesApi } from '../../api/cotizaciones';
 import { useToast } from '../../hooks/useToast';
 import Button from '../../components/ui/Button';
 import CotizacionForm from './CotizacionForm';
-import { LuPencil, LuDownload, LuX, LuMessageCircle } from 'react-icons/lu';
+// Unificamos las importaciones de iconos
+import { LuPencil, LuX, LuMessageCircle } from 'react-icons/lu';
+import { FileText } from 'lucide-react'; 
+import { abrirPdfVenta } from "../../utils/pdf";
+ import Swal from 'sweetalert2'; //Importar SweetAlert2
 import '../../styles/cotizaciones.css';
 
 const CotizacionesPage = () => {
@@ -17,10 +21,10 @@ const CotizacionesPage = () => {
         setLoading(true);
         try {
             const res = await cotizacionesApi.listar();
-            if (res?.success && Array.isArray(res.data)) {
-                setCotizaciones(res.data || []);
-            } else if (res?.success && res.data && Array.isArray(res.data.cotizaciones)) {
-                setCotizaciones(res.data.cotizaciones || []);
+            if (res?.success) {
+                // Manejamos ambas estructuras posibles de respuesta
+                const data = Array.isArray(res.data) ? res.data : (res.data?.cotizaciones || []);
+                setCotizaciones(data);
             } else {
                 setCotizaciones([]);
                 toast.error(res?.message || 'Error al cargar las cotizaciones');
@@ -37,12 +41,12 @@ const CotizacionesPage = () => {
         fetchCotizaciones();
     }, []);
 
-    const handleDescargarPdf = async (id) => {
+    const handleVerPdf = async (id) => {
         try {
-            toast.success('Generando PDF...');
-            await cotizacionesApi.generarPdf(id);
+            // Usamos la utilidad para abrir el PDF en una pestaña nueva
+            await abrirPdfCotizacion(id, import.meta.env.VITE_API_URL);
         } catch (error) {
-            toast.error('Error al descargar el documento');
+            toast.error('Error al generar el PDF A4');
         }
     };
 
@@ -57,14 +61,40 @@ const CotizacionesPage = () => {
     };
 
     const handleEliminar = async (id) => {
-        if (!window.confirm('¿Estás seguro de que deseas eliminar esta cotización?')) return;
-
-        try {
-            toast.success('Cotización eliminada');
-            fetchCotizaciones();
-        } catch (error) {
-            toast.error('Error al eliminar la cotización');
-        }
+        // 2. Reemplazamos window.confirm por Swal.fire
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Esta acción no se puede revertir",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            background: '#ffffff',
+            customClass: {
+                popup: 'rounded-lg border shadow-xl'
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await cotizacionesApi.eliminar(id); 
+                    if (res.success) {
+                        // 3. Alerta de éxito con estilo
+                        Swal.fire(
+                            '¡Eliminado!',
+                            'La cotización ha sido borrada.',
+                            'success'
+                        );
+                        fetchCotizaciones(); 
+                    } else {
+                        toast.error(res.message || "No se pudo eliminar");
+                    }
+                } catch (err) {
+                    toast.error("Error al procesar la solicitud");
+                }
+            }
+        });
     };
 
     const getEstadoBadge = (estado) => {
@@ -110,35 +140,35 @@ const CotizacionesPage = () => {
                                 <th className="acciones px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white divide-y divide-gray-200 text-center justify-center">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-8 text-center text-gray-500">Cargando cotizaciones...</td>
+                                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">Cargando cotizaciones...</td>
                                 </tr>
                             ) : cotizaciones.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="px-6 py-8 text-center text-gray-500">No hay cotizaciones</td>
+                                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">No hay cotizaciones</td>
                                 </tr>
                             ) : (
                                 cotizaciones.map((cot) => (
-                                    <tr key={cot.id} className="transition-colors hover:bg-gray-50 text-center">
-                                        <td className="px-8 py-5 text-[14.5px] text-slate-700 font-medium text-center">#{cot.numero_correlativo}</td>
+                                    <tr key={cot.id} className="transition-colors hover:bg-gray-50">
+                                        <td className="px-8 py-5 text-[14.5px] text-slate-700 font-medium">#{cot.numero_correlativo}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600">
                                             {cot.cliente?.razon_social || cot.cliente?.nombre || 'Sin nombre'}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
                                             {cot['fecha_emisión'] ? new Date(cot['fecha_emisión']).toLocaleDateString() : '-'}
                                         </td>
-                                        <td className="px-6 py-4 text-center font-semibold text-gray-900">
+                                        <td className="px-6 py-4 font-semibold text-center justify-center text-gray-900">
                                             S/ {parseFloat(cot.total).toFixed(2)}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-3 py-1 text-xs font-semibold ${getEstadoBadge(cot.estado)}`}>
+                                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getEstadoBadge(cot.estado)}`}>
                                                 {cot.estado}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <div className="cotizacion-actions-inline">
+                                            <div className="flex justify-center gap-2">
                                                 <button
                                                     onClick={() => {
                                                         setSelectedCotizacion(cot);
@@ -149,28 +179,25 @@ const CotizacionesPage = () => {
                                                 >
                                                     <LuPencil size={14} />
                                                 </button>
+
                                                 <button
-                                                    onClick={() => {
-                                                        handleDescargarPdf(cot.id);
-                                                    }}
+                                                    onClick={() => handleVerPdf(cot.id)}
                                                     className="cotizacion-action-chip is-blue"
-                                                    title="Descargar PDF"
+                                                    title="Ver PDF A4"
                                                 >
-                                                    <LuDownload size={14} />
+                                                    <FileText size={14} />
                                                 </button>
+
                                                 <button
-                                                    onClick={() => {
-                                                        handleEnviarWhatsapp(cot);
-                                                    }}
+                                                    onClick={() => handleEnviarWhatsapp(cot)}
                                                     className="cotizacion-action-chip is-green"
                                                     title="Enviar WhatsApp"
                                                 >
                                                     <LuMessageCircle size={14} />
                                                 </button>
+
                                                 <button
-                                                    onClick={() => {
-                                                        handleEliminar(cot.id);
-                                                    }}
+                                                    onClick={() => handleEliminar(cot.id)}
                                                     className="cotizacion-action-chip is-red"
                                                     title="Eliminar"
                                                 >

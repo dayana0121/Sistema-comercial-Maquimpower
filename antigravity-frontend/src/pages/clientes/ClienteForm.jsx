@@ -85,7 +85,7 @@ const ClienteForm = ({ clienteToEdit = null, isReadOnly = false, onSuccess, onCa
             <div>
                 <SectionTitle icon={Building2} title="Identificación Legal" />
                 {!isReadOnly && (
-                    <div className="modal-clientes-sunat mb-4 bg-slate-50 p-3 rounded-lg border border-dashed border-slate-300">
+                    <div className="modal-clientes-sunat mb-4 bg-blue-50 p-3 rounded-lg border border-dashed border-slate-300">
                         <BuscadorDocumento
                             label="Búsqueda Rápida (SUNAT/RENIEC)"
                             onFound={(data) => {

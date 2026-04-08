@@ -6,7 +6,7 @@
     margin-bottom: 15px;
     border-style: solid;
     border-color: #e7edf5;
-    background: #f8fafc;
+    background: oklch(97% 0.014 254.604);
     border-radius: 14px;
     padding: 1rem;
 }
