@@ -239,26 +239,36 @@ class VentaPdfController
 
     private function generarQR($venta, $empresa, $nombre)
     {
-        $tipo = ($venta['tipo_comprobante'] === '01') ? 'FACTURA' : 'BOLETA';
-        $tipo_doc_cliente = ($venta['cliente_tipo_doc'] === 'RUC' || $venta['cliente_tipo_doc'] === '6') ? '6' : '1';
-
-        $textoQR = $empresa['ruc'] . '|' .
-            $tipo . '|' .
-            $venta['serie'] . '|' .
-            str_pad($venta['correlativo'], 8, '0', STR_PAD_LEFT) . '|' .
-            number_format((float) $venta['igv'], 2) . '|' .
-            number_format((float) $venta['importe_total'], 2) . '|' .
-            $venta['fecha_emision'] . '|' .
-            $tipo_doc_cliente . '|' .
-            ($venta['cliente_documento'] ?? '') . '|';
-
-        $qr_dir = __DIR__ . '/../../storage/files/qr';
-        if (!is_dir($qr_dir)) {
-            mkdir($qr_dir, 0777, true);
+        if (!extension_loaded('gd')) {
+            error_log('VentaPdf: extensión PHP gd no disponible; PDF sin código QR.');
+            return null;
         }
-        $qr_path = $qr_dir . '/' . $nombre . '.png';
-        QRcode::png($textoQR, $qr_path, QR_ECLEVEL_L, 5, 2);
-        return $qr_path;
+
+        try {
+            $tipo = ($venta['tipo_comprobante'] === '01') ? 'FACTURA' : 'BOLETA';
+            $tipo_doc_cliente = ($venta['cliente_tipo_doc'] === 'RUC' || $venta['cliente_tipo_doc'] === '6') ? '6' : '1';
+
+            $textoQR = $empresa['ruc'] . '|' .
+                $tipo . '|' .
+                $venta['serie'] . '|' .
+                str_pad((string) $venta['correlativo'], 8, '0', STR_PAD_LEFT) . '|' .
+                number_format((float) $venta['igv'], 2) . '|' .
+                number_format((float) $venta['importe_total'], 2) . '|' .
+                $venta['fecha_emision'] . '|' .
+                $tipo_doc_cliente . '|' .
+                ($venta['cliente_documento'] ?? '') . '|';
+
+            $qr_dir = __DIR__ . '/../../storage/files/qr';
+            if (!is_dir($qr_dir)) {
+                mkdir($qr_dir, 0777, true);
+            }
+            $qr_path = $qr_dir . '/' . $nombre . '.png';
+            QRcode::png($textoQR, $qr_path, QR_ECLEVEL_L, 5, 2);
+            return $qr_path;
+        } catch (Throwable $e) {
+            error_log('VentaPdf QR: ' . $e->getMessage());
+            return null;
+        }
     }
 
     private function generarPDFA4($empresa, $venta, $detalles, $nombre, $vendedor_nombre = 'SISTEMA')

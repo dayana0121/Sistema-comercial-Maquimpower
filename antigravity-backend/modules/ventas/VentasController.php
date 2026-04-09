@@ -57,7 +57,7 @@ class VentasController
                 (new VentaPdfController())->generarGuiaEnvio($paramId);
             } else
                 $this->sendResponse(false, "Ruta no permitida.", null, 405);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->sendResponse(false, "Error: " . $e->getMessage(), null, 500);
         }
     }
