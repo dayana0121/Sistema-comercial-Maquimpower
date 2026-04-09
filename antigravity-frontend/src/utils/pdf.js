@@ -1,29 +1,30 @@
-import { BASE_URL as DEFAULT_API_ROOT } from '../api/client';
+import { joinApiBase, joinWithBase } from '../api/client';
 
-/** Misma base que apiClient: ej. `/api` en prod o URL completa en local. */
-function resolveApiRoot(explicit) {
-  if (explicit !== undefined && explicit !== null && String(explicit).trim() !== '') {
-    return String(explicit).replace(/\/$/, '');
+function resolveUrl(path, explicitBase) {
+  if (explicitBase !== undefined && explicitBase !== null && String(explicitBase).trim() !== '') {
+    return joinWithBase(explicitBase, path);
   }
-  return String(DEFAULT_API_ROOT || '').replace(/\/$/, '');
+  return joinApiBase(path);
 }
 
 export async function abrirPdfVenta(ventaId, apiUrl, formato = 'a4') {
   const token = localStorage.getItem('token');
-  const root = resolveApiRoot(apiUrl);
-  const url = `${root}/ventas/${encodeURIComponent(ventaId)}/pdf?formato=${encodeURIComponent(formato)}`;
+  const path = `/ventas/${encodeURIComponent(ventaId)}/pdf?formato=${encodeURIComponent(formato)}`;
+  const url = resolveUrl(path, apiUrl);
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!res.ok) throw new Error('Error al generar PDF A4');
+  if (!res.ok) {
+    throw new Error(formato === 'a4' ? 'Error al generar PDF A4' : 'Error al generar PDF ticket');
+  }
   const blob = await res.blob();
   window.open(URL.createObjectURL(blob), '_blank');
 }
 
 export async function abrirPdfCotizacion(cotizacionId, apiUrl) {
   const token = localStorage.getItem('token');
-  const root = resolveApiRoot(apiUrl);
-  const url = `${root}/cotizaciones/${encodeURIComponent(cotizacionId)}/pdf`;
+  const path = `/cotizaciones/${encodeURIComponent(cotizacionId)}/pdf`;
+  const url = resolveUrl(path, apiUrl);
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -34,8 +35,8 @@ export async function abrirPdfCotizacion(cotizacionId, apiUrl) {
 
 export async function abrirTicketVenta(ventaId, apiUrl) {
   const token = localStorage.getItem('token');
-  const root = resolveApiRoot(apiUrl);
-  const url = `${root}/ventas/${encodeURIComponent(ventaId)}/ticket`;
+  const path = `/ventas/${encodeURIComponent(ventaId)}/ticket`;
+  const url = resolveUrl(path, apiUrl);
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -46,8 +47,8 @@ export async function abrirTicketVenta(ventaId, apiUrl) {
 
 export async function abrirGuiaEnvio(ventaId, apiUrl) {
   const token = localStorage.getItem('token');
-  const root = resolveApiRoot(apiUrl);
-  const url = `${root}/ventas/${encodeURIComponent(ventaId)}/guia_envio`;
+  const path = `/ventas/${encodeURIComponent(ventaId)}/guia_envio`;
+  const url = resolveUrl(path, apiUrl);
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` }
   });

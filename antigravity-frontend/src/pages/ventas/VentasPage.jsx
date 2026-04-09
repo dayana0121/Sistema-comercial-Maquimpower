@@ -11,6 +11,7 @@ import { useToast } from "../../hooks/useToast";
 import VentaDetalle from "./VentaDetalle"; // Componente simple de visualización
 import { exportToExcel } from "../../utils/exportar";
 import { abrirPdfVenta, abrirTicketVenta, abrirGuiaEnvio } from "../../utils/pdf";
+import { toAbsoluteApiUrl } from "../../api/client";
 import { FileSpreadsheet } from "lucide-react";
 import '../../styles/ventas.css';
 import '../../styles/modal-ventas.css';
@@ -111,8 +112,7 @@ const VentasPage = () => {
         
         const numero = venta.cliente_telefono.replace(/\D/g, '');
         // Yo uso el mismo fallback del proyecto actual para que el link de WhatsApp no apunte a otra copia.
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost/Sistema-comercial-Maquimpower/antigravity-backend';
-        const linkPdf = `${baseUrl}/api/ventas/${venta.id}/pdf`;
+        const linkPdf = toAbsoluteApiUrl(`/ventas/${venta.id}/pdf`);
         const mensaje = encodeURIComponent(
             `Estimado/a ${venta.cliente_nombre},\n\nAdjuntamos su ${venta.tipo_comprobante === '01' ? 'factura' : 'boleta'} ${venta.numero_completo} por el monto de S/ ${parseFloat(venta.importe_total).toFixed(2)}.\n\nPuede ver y descargar su comprobante aquí:\n${linkPdf}\n\n¡Gracias por su preferencia!`
         );

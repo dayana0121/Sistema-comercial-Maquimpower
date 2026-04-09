@@ -2,6 +2,31 @@
 // Yo dejo este fallback alineado al repo actual para no consumir accidentalmente un backend antiguo.
 export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/Sistema-comercial-Maquimpower/antigravity-backend';
 
+/**
+ * Une base + path evitando /api/api/... cuando la base termina en /api y el path empieza con /api/.
+ */
+export function joinWithBase(base, path) {
+    const b = String(base || '').replace(/\/$/, '');
+    let p = path.startsWith('/') ? path : `/${path}`;
+    const baseEndsWithApi = b === '/api' || b.endsWith('/api');
+    if (baseEndsWithApi && p.startsWith('/api/')) {
+        p = p.substring(4);
+    }
+    return `${b}${p}`;
+}
+
+export function joinApiBase(path) {
+    return joinWithBase(BASE_URL, path);
+}
+
+/** URL absoluta (p. ej. para WhatsApp) si la base es relativa tipo /api */
+export function toAbsoluteApiUrl(path) {
+    const full = joinApiBase(path);
+    if (/^https?:\/\//i.test(full)) return full;
+    if (typeof window !== 'undefined') return `${window.location.origin}${full}`;
+    return full;
+}
+
 async function getToken() {
     // ✅ Obtenemos el token que guardamos en AuthController.php
     return localStorage.getItem('token');
@@ -23,7 +48,7 @@ async function fetchWithAuth(url, options = {}) {
     }
 
     try {
-        const res = await fetch(`${BASE_URL}${url}`, {
+        const res = await fetch(joinApiBase(url), {
             ...options,
             headers: {
                 'Content-Type': 'application/json',
