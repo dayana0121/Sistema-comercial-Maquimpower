@@ -8,6 +8,67 @@ require_once dirname(__DIR__, 2) . "/middleware/AuthMiddleware.php";
 
 class AuthController
 {
+    /**
+     * Despacho central para el prefijo /auth (mismo patrón que ClientesController::handle).
+     */
+    public function handle(string $route, string $method): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $parts = array_values(array_filter(explode('/', trim($route, '/'))));
+        $sub = $parts[1] ?? '';
+        $id = $parts[2] ?? null;
+
+        if ($sub === 'login' && $method === 'POST') {
+            $this->login();
+            return;
+        }
+        if ($sub === 'me' && $method === 'GET') {
+            $this->me();
+            return;
+        }
+        if (($sub === 'cambiar-password' || $sub === 'cambiar_password') && ($method === 'POST' || $method === 'PUT')) {
+            $this->cambiarPassword();
+            return;
+        }
+        if ($sub === 'usuarios') {
+            if ($method === 'GET' && $id !== null && $id !== '') {
+                $this->obtenerUsuario($id);
+                return;
+            }
+            if ($method === 'GET') {
+                $this->listarUsuarios();
+                return;
+            }
+            if ($method === 'POST') {
+                $this->crearUsuario();
+                return;
+            }
+            if ($method === 'PUT' && $id !== null && $id !== '') {
+                $this->editarUsuario($id);
+                return;
+            }
+            if ($method === 'DELETE' && $id !== null && $id !== '') {
+                $this->eliminarUsuario($id);
+                return;
+            }
+        }
+
+        Response::error('Ruta auth no encontrada: ' . $method . ' ' . $route, 404);
+    }
+
+    public function obtenerUsuario(string $id): void
+    {
+        AuthMiddleware::verificarPermiso('usuarios', 'ver');
+        $db = getDB();
+        $stmt = $db->prepare('SELECT id, nombres, apellidos, email, rol, activo, ultimo_acceso FROM usuarios WHERE id = ?');
+        $stmt->execute([$id]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) {
+            Response::error('Usuario no encontrado', 404);
+        }
+        Response::success($user);
+    }
+
     // ==========================================
     // SECCIÓN: AUTENTICACIÓN (PÚBLICA / PRIVADA)
     // ==========================================
