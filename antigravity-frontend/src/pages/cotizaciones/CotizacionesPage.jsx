@@ -6,7 +6,7 @@ import CotizacionForm from './CotizacionForm';
 // Unificamos las importaciones de iconos
 import { LuPencil, LuX, LuMessageCircle } from 'react-icons/lu';
 import { FileText } from 'lucide-react'; 
-import { abrirPdfVenta } from "../../utils/pdf";
+import { abrirPdfCotizacion } from "../../utils/pdf";
  import Swal from 'sweetalert2'; //Importar SweetAlert2
 import '../../styles/cotizaciones.css';
 
