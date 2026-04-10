@@ -7,7 +7,8 @@ import CotizacionForm from './CotizacionForm';
 import { LuPencil, LuX, LuMessageCircle } from 'react-icons/lu';
 import { FileText } from 'lucide-react'; 
 import { abrirPdfVenta } from "../../utils/pdf";
- import Swal from 'sweetalert2'; //Importar SweetAlert2
+import ConfirmModal from '../../components/ui/ConfirmModal';
+import { useConfirmModal } from '../../hooks/useConfirmModal';
 import '../../styles/cotizaciones.css';
 
 const CotizacionesPage = () => {
@@ -16,6 +17,7 @@ const CotizacionesPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedCotizacion, setSelectedCotizacion] = useState(null);
     const toast = useToast();
+    const { confirmData, showConfirm, closeConfirm } = useConfirmModal();
 
     const fetchCotizaciones = async () => {
         setLoading(true);
@@ -60,40 +62,27 @@ const CotizacionesPage = () => {
         window.open(url, '_blank');
     };
 
-    const handleEliminar = async (id) => {
-        // 2. Reemplazamos window.confirm por Swal.fire
-        Swal.fire({
-            title: '¿Estás seguro?',
-            text: "Esta acción no se puede revertir",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar',
-            background: '#ffffff',
-            customClass: {
-                popup: 'rounded-lg border shadow-xl'
-            }
-        }).then(async (result) => {
-            if (result.isConfirmed) {
+    const handleEliminar = (id) => {
+        showConfirm({
+            title: 'Confirmar eliminación',
+            message: '¿Eliminar esta cotización? Esta acción no se puede revertir.',
+            type: 'warning',
+            confirmLabel: 'Sí, eliminar',
+            cancelLabel: 'Cancelar',
+            onConfirm: async () => {
+                closeConfirm();
                 try {
-                    const res = await cotizacionesApi.eliminar(id); 
+                    const res = await cotizacionesApi.eliminar(id);
                     if (res.success) {
-                        // 3. Alerta de éxito con estilo
-                        Swal.fire(
-                            '¡Eliminado!',
-                            'La cotización ha sido borrada.',
-                            'success'
-                        );
-                        fetchCotizaciones(); 
+                        toast.success('Cotización eliminada correctamente');
+                        fetchCotizaciones();
                     } else {
                         toast.error(res.message || "No se pudo eliminar");
                     }
                 } catch (err) {
                     toast.error("Error al procesar la solicitud");
                 }
-            }
+            },
         });
     };
 
@@ -225,6 +214,17 @@ const CotizacionesPage = () => {
                     fetchCotizaciones();
                 }}
                 cotizacion={selectedCotizacion}
+            />
+
+            <ConfirmModal
+                isOpen={confirmData.isOpen}
+                title={confirmData.title}
+                message={confirmData.message}
+                type={confirmData.type}
+                confirmLabel={confirmData.confirmLabel}
+                cancelLabel={confirmData.cancelLabel}
+                onConfirm={confirmData.onConfirm}
+                onClose={closeConfirm}
             />
         </div>
     );

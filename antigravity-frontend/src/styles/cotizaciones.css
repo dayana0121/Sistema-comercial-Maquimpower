@@ -15,10 +15,6 @@ i:hover{
     background-color: var(--primary);
 }
 
-.bg-blue-600.text-white:hover{
-    background-color: var(--primary-dark);
-}
-
 .flex.shrink-0.border-b-0{
     padding-top: 10px;
     padding-left: 20px;

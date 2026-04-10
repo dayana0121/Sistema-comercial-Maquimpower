@@ -2,12 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { LuPlus, LuSearch, LuPencil, LuTrash2 } from 'react-icons/lu';
+import AlertModal from '../../components/ui/AlertModal';
+import ConfirmModal from '../../components/ui/ConfirmModal';
+import { useAlertModal } from '../../hooks/useAlertModal';
+import { useConfirmModal } from '../../hooks/useConfirmModal';
 import '../../styles/business.css';
 
 const ClientesList = () => {
     const [clientes, setClientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
+    const { showAlert, closeAlert, alertData } = useAlertModal();
+    const { confirmData, showConfirm, closeConfirm } = useConfirmModal();
 
     useEffect(() => {
         fetchClientes();
@@ -31,14 +37,27 @@ const ClientesList = () => {
         fetchClientes(search);
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('¿Está seguro de querer desactivar este cliente?')) return;
-        try {
-            await apiClient.delete(`/api/clientes/${id}`);
-            fetchClientes(search);
-        } catch (error) {
-            alert("Error eliminando cliente: " + error.message);
-        }
+    const handleDelete = (id) => {
+        showConfirm({
+            title: 'Confirmar desactivación',
+            message: '¿Está seguro de querer desactivar este cliente?',
+            type: 'warning',
+            confirmLabel: 'Sí, desactivar',
+            cancelLabel: 'Cancelar',
+            onConfirm: async () => {
+                closeConfirm();
+                try {
+                    await apiClient.delete(`/api/clientes/${id}`);
+                    fetchClientes(search);
+                } catch (error) {
+                    showAlert(
+                        'Error al eliminar',
+                        `Error eliminando cliente: ${error.message}`,
+                        'error'
+                    );
+                }
+            },
+        });
     };
 
     if (loading && clientes.length === 0) return <div>Cargando catálogo de clientes...</div>;
@@ -99,6 +118,26 @@ const ClientesList = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* Modal de Alerta para reemplazar window.alert() */}
+            <AlertModal
+                isOpen={alertData.isOpen}
+                title={alertData.title}
+                message={alertData.message}
+                type={alertData.type}
+                onClose={closeAlert}
+            />
+
+            <ConfirmModal
+                isOpen={confirmData.isOpen}
+                title={confirmData.title}
+                message={confirmData.message}
+                type={confirmData.type}
+                confirmLabel={confirmData.confirmLabel}
+                cancelLabel={confirmData.cancelLabel}
+                onConfirm={confirmData.onConfirm}
+                onCancel={closeConfirm}
+            />
         </div>
     );
 };

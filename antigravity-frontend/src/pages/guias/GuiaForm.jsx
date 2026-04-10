@@ -4,12 +4,13 @@ import { ventasApi } from '../../api/ventas';
 import { useToast } from '../../hooks/useToast';
 import BuscadorDocumento from '../../components/ui/BuscadorDocumento';
 import Modal from '../../components/ui/Modal';
+import '../../styles/guias.css';
 
 const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
     const toast = useToast();
     const [activeTab, setActiveTab] = useState(1);
     const [loading, setLoading] = useState(false);
-    
+
     // Estados para la importación
     const [showImportModal, setShowImportModal] = useState(false);
     const [loadingVentas, setLoadingVentas] = useState(false);
@@ -43,7 +44,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
             unidad_medida: d.unidad_medida || 'NIU'
         })),
         observaciones: ''
-        });
+    });
 
     const [itemActual, setItemActual] = useState({
         codigo: '', descripcion: '', cantidad: 1, unidad_medida: 'NIU'
@@ -72,7 +73,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
         }));
     };
 
-     // ==========================================
+    // ==========================================
     // LÓGICA DE IMPORTACIÓN MULTIPLE
     // ==========================================
     const abrirImportador = async () => {
@@ -140,7 +141,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
             // Usamos datos del cliente de la primera venta para auto-completar destinatorio
             const primera = ventasSeleccionadas[0];
             const nuevaObs = `Doc. Asociados: ${documentosAsociados.join(', ')}`;
-            
+
             setForm(prev => ({
                 ...prev,
                 destinatario_ruc: primera.cliente_documento || prev.destinatario_ruc,
@@ -188,6 +189,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
     };
 
     return (
+        
         <form onSubmit={handleSubmit} className="modal-guias-form flex flex-col h-full">
             {/* Tabs Navigation */}
             <div className="modal-guias-tabs flex items-center border-b border-slate-200 mb-6 sticky top-0 bg-white z-10 w-full overflow-x-auto">
@@ -201,7 +203,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
 
                 {/* TAB 1: GENERAL */}
                 {activeTab === 1 && (
-                    <div className="modal-guias-tab-panel space-y-6 mt-4">
+                    <div className="modal-guias-tab-panel space-y-6">
                         <div className="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-100 mb-2">
                             <div>
                                 <h3 className="text-sm font-bold text-blue-800">Importación Rápida</h3>
@@ -216,7 +218,6 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
                                 <label className="form-label-custom">Serie y Correlativo</label>
                                 <div className="flex gap-3">
                                     <input type="text" name="serie" value={form.serie} onChange={handleChange} className="form-input-custom w-[100px] bg-slate-50" readOnly />
-                                    <input type="text" name="numero" placeholder="Auto" disabled className="form-input-custom bg-slate-100 flex-1" />
                                 </div>
                             </div>
                             <div className="form-group-custom">
@@ -378,12 +379,12 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
                 )}
             </div>
 
-             {/* Modal de Importación Multiples Ventas */}
+            {/* Modal de Importación Multiples Ventas */}
             <Modal isOpen={showImportModal} onClose={() => setShowImportModal(false)} title="Importar Comprobantes de Venta">
                 <div className="p-4 w-[600px] max-w-full">
-                    <p className="text-sm text-gray-600 mb-4">Seleccione una o más ventas para consolidar sus productos en esta guía de remisión.</p>
-                    
-                    <div className="h-64 overflow-y-auto border rounded-lg bg-gray-50 p-2 space-y-2">
+                    <p className="texto text-sm text-gray-600 mb-4">Seleccione una o más ventas para consolidar sus productos en esta guía de remisión.</p>
+
+                    <div className="cuadro h-64 overflow-y-auto border rounded-lg bg-gray-50 p-2 space-y-2">
                         {loadingVentas ? (
                             <div className="text-center py-4 text-gray-500">Cargando comprobantes...</div>
                         ) : ventasDisponibles.length === 0 ? (
@@ -392,19 +393,33 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
                             ventasDisponibles.map(v => {
                                 const isSelected = ventasSeleccionadas.find(sel => sel.id === v.id);
                                 return (
-                                    <label key={v.id} className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'bg-blue-100 border-blue-400' : 'bg-white hover:bg-gray-100 border-gray-200'}`}>
-                                        <input 
-                                            type="checkbox" 
+                                    <label key={v.id} className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? 'btn-primary border-blue-400 text-white' : 'bg-white hover:bg-gray-100 border-gray-200'}`}>
+                                        <input
+                                            type="checkbox"
                                             className="w-5 h-5 text-blue-600 rounded border-gray-300"
                                             checked={!!isSelected}
                                             onChange={() => toggleSeleccionVenta(v)}
                                         />
                                         <div className="ml-3 flex-1">
-                                            <div className="font-bold text-gray-800">{v.numero_completo} <span className="text-xs font-normal text-gray-500 bg-gray-200 px-1.5 rounded">{v.fecha_emision}</span></div>
-                                            <div className="text-sm text-gray-600 truncate">{v.cliente_nombre}</div>
+                                            {/* Cambiamos text-gray-800 por blanco si está seleccionado */}
+                                            <div className={`font-bold ${isSelected ? 'text-white' : 'text-gray-800'}`}>
+                                                {v.numero_completo}
+                                                {/* El badge de la fecha también debería cambiar para que no se pierda */}
+                                                <span className={`text-xs font-normal ml-1 px-1.5 rounded ${isSelected ? 'bg-gray-200 text-gray-500' : 'bg-gray-200 text-gray-500'}`}>
+                                                    {v.fecha_emision}
+                                                </span>
+                                            </div>
+
+                                            {/* Cambiamos text-gray-600 por una variante clara si está seleccionado */}
+                                            <div className={`text-sm truncate ${isSelected ? 'text-blue-100' : 'text-gray-600'}`}>
+                                                {v.cliente_nombre}
+                                            </div>
                                         </div>
+
                                         <div className="text-right">
-                                            <span className="font-bold text-blue-800">S/ {parseFloat(v.importe_total).toFixed(2)}</span>
+                                            <span className={`font-bold ${isSelected ? 'text-white' : 'text-blue-800'}`}>
+                                                S/ {parseFloat(v.importe_total).toFixed(2)}
+                                            </span>
                                         </div>
                                     </label>
                                 );
@@ -414,10 +429,12 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
 
                     <div className="mt-4 flex justify-between items-center pt-3 border-t">
                         <span className="text-sm font-medium text-gray-600">
-                            Seleccionados: <span className="font-bold text-blue-600">{ventasSeleccionadas.length}</span> comprobantes
+                            Seleccionados: 
+                            <br />
+                            <span className="font-bold text-blue-600">{ventasSeleccionadas.length}</span> comprobantes
                         </span>
                         <div className="flex gap-2">
-                            <button type="button" onClick={() => setShowImportModal(false)} className="px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50">Cancelar</button>
+                            <button type="button" onClick={() => setShowImportModal(false)} className="px-4 py-2 border rounded-md text-white cancelar">Cancelar</button>
                             <button type="button" onClick={confirmarImportacion} disabled={loading || ventasSeleccionadas.length === 0} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
                                 {loading ? 'Importando...' : 'Confirmar Importación'}
                             </button>

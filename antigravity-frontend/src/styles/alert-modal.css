@@ -1,0 +1,169 @@
+/* ================================================================
+   ESTILOS: AlertModal
+   Descripción: Estilos CSS reutilizables para el componente AlertModal
+   Estos estilos son opcionales y complementan las clases de Tailwind
+   utilizadas en AlertModal.jsx
+   
+   Clases CSS únicas:
+   - alert-modal-backdrop
+   - alert-modal-container
+   - alert-modal-card
+   - alert-modal-header
+   - alert-modal-icon
+   - alert-modal-title
+   - alert-modal-content
+   - alert-modal-message
+   - alert-modal-actions
+   - alert-modal-button-close
+   
+   ================================================================ */
+
+/* Contenedor de overlay (fondo oscuro) del modal de alerta */
+.alert-modal-backdrop {
+    /* Estilos aplicados in JSX: fixed inset-0 bg-black/40 z-50 transition-opacity */
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+/* Contenedor central que centra el modal */
+.alert-modal-container {
+    /* Estilos aplicados in JSX: fixed inset-0 flex items-center justify-center z-50 p-4 */
+    animation: slideUp 0.3s ease-out;
+}
+
+/* Tarjeta principal del modal */
+.alert-modal-card {
+    /* Estilos base aplicados in JSX: bg-white rounded-2xl shadow-2xl max-w-md w-full border-2 */
+    /* Colores de border y background varían según el tipo de alerta */
+}
+
+/* Encabezado del modal (icono + título) */
+.alert-modal-header {
+    /* Estilos aplicados in JSX: flex items-center gap-3 p-6 border-b border-slate-100 */
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Icono dentro del encabezado */
+.alert-modal-icon {
+    /* Estilos aplicados in JSX: w-12 h-12 rounded-full flex items-center justify-center */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* Título de la alerta */
+.alert-modal-title {
+    /* Estilos aplicados in JSX: text-xl font-bold */
+    flex: 1;
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+/* Contenedor del contenido (mensaje) */
+.alert-modal-content {
+    /* Estilos aplicados in JSX: p-6 */
+    padding: 1.5rem;
+}
+
+/* Texto del mensaje de alerta */
+.alert-modal-message {
+    /* Estilos aplicados in JSX: text-base */
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+/* Contenedor de acciones (botones) */
+.alert-modal-actions {
+    /* Estilos aplicados in JSX: p-6 border-t border-slate-100 flex justify-end gap-3 */
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+/* Botón de cierre/aceptación */
+.alert-modal-button-close {
+    /* Estilos aplicados in JSX: px-6 py-2.5 rounded-lg font-bold transition-colors shadow-sm */
+    /* Color de fondo varía según el tipo de alerta (success, error, warning, info) */
+    padding: 0.625rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Hover del botón de cierre */
+.alert-modal-button-close:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Focus del botón para accesibilidad */
+.alert-modal-button-close:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+/* ================================================================
+   ANIMACIONES
+   ================================================================ */
+
+/* Animación de entrada del backdrop */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Animación de entrada del modal (slide up desde abajo) */
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ================================================================
+   RESPONSIVE (móvil)
+   ================================================================ */
+
+@media (max-width: 640px) {
+    /* Permitir que el modal sea más pequeño en dispositivos móviles */
+    .alert-modal-card {
+        max-width: 90%;
+    }
+
+    /* Reducir padding en móvil */
+    .alert-modal-header {
+        padding: 1rem;
+    }
+
+    .alert-modal-content {
+        padding: 1rem;
+    }
+
+    .alert-modal-actions {
+        padding: 1rem;
+    }
+
+    /* Botón a ancho completo en móvil */
+    .alert-modal-button-close {
+        width: 100%;
+    }
+}

@@ -3,13 +3,16 @@ import { comprasApi, proveedoresApi } from '../../api/compras';
 import { useToast } from '../../hooks/useToast';
 import { Plus, Eye, X, Search, ShoppingCart, Package } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 import apiClient from '../../api/client';
+import { useConfirmModal } from '../../hooks/useConfirmModal';
 import '../../styles/modal-compras.css';
 
 const itemVacio = { producto_id: '', descripcion: '', unidad_medida: 'NIU', cantidad: 1, costo_unitario: 0, tipo_afectacion_igv: '10', incluye_igv: false };
 
 export default function ComprasPage() {
   const toast = useToast();
+  const { confirmData, showConfirm, closeConfirm } = useConfirmModal();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [proveedores, setProveedores] = useState([]);
@@ -97,10 +100,24 @@ export default function ComprasPage() {
     if (res?.success) { setCompraDetalle(res.data); setDetalleOpen(true); }
   };
 
-  const handleAnular = async (id) => {
-    if (!window.confirm('¿Anular esta compra?')) return;
-    const res = await comprasApi.anular(id);
-    if (res?.success) { toast.success('Compra anulada'); cargar(); }
+  const handleAnular = (id) => {
+    showConfirm({
+      title: 'Confirmar anulación',
+      message: '¿Anular esta compra? Esta acción no se puede deshacer.',
+      type: 'warning',
+      confirmLabel: 'Sí, anular',
+      cancelLabel: 'Cancelar',
+      onConfirm: async () => {
+        closeConfirm();
+        const res = await comprasApi.anular(id);
+        if (res?.success) {
+          toast.success('Compra anulada');
+          cargar();
+        } else {
+          toast.error(res?.message || 'No se pudo anular la compra');
+        }
+      },
+    });
   };
 
   const badgeEstado = (e) => {
@@ -124,7 +141,7 @@ export default function ComprasPage() {
             <option value="ANULADO">Anulado</option>
           </select>
           <button onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg">
+            className=" bnueva-compra flex items-center gap-2 px-4 py-2 text-white text-sm font-semibold rounded-lg">
             <Plus size={16} /> Nueva Compra
           </button>
         </div>
@@ -207,7 +224,7 @@ export default function ComprasPage() {
               </select>
             </div>
             {form.metodo_pago === 'PERSONALIZADO' && (
-              <div className="flex flex-col gap-1">
+              <div className="metodo-pago flex flex-col gap-1">
                 <label className="text-xs font-bold text-slate-500 uppercase">Plazo (Días)</label>
                 <input type="number" min="1" value={form.termino_pago_dias} onChange={e => setForm(f=>({...f, termino_pago_dias: parseInt(e.target.value)||0}))}
                   className="px-3 py-2 border border-slate-200 rounded-lg text-sm outline-none" />
@@ -219,7 +236,7 @@ export default function ComprasPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold text-slate-500 uppercase">Ítems de Compra</label>
-              <button onClick={agregarItem} className="text-xs text-orange-500 hover:text-orange-600 font-semibold flex items-center gap-1"><Plus size={12}/>Agregar ítem</button>
+              <button onClick={agregarItem} className="agregar-item text-xs text-white hover:text-white font-semibold flex items-center gap-1"><Plus size={12}/>Agregar ítem</button>
             </div>
             <div className="border border-slate-200 rounded-lg overflow-hidden mt-3 shadow-sm">
               <table className="w-full text-sm">
@@ -272,7 +289,7 @@ export default function ComprasPage() {
                               return (it.tipo_afectacion_igv==='10' ? sb * 1.18 : sb).toFixed(2);
                           })()}
                       </td>
-                      <td className="px-2 py-1.5 align-top pt-2"><button onClick={() => quitarItem(idx)} className="text-red-400 hover:text-red-600"><X size={14}/></button></td>
+                      <td className="px-2 py-1.5 align-top pt-2"><button onClick={() => quitarItem(idx)} className="equis text-red-400 hover:text-red-600"><X size={14}/></button></td>
                     </tr>
                   ))}
                 </tbody>
@@ -282,12 +299,12 @@ export default function ComprasPage() {
 
           {/* Totales */}
           <div className="flex justify-end">
-            <div className="bg-slate-50 rounded-lg p-4 text-sm space-y-1 min-w-[240px]">
+            <div className="contenedor-total bg-slate-50 rounded-lg p-4 text-sm space-y-1 min-w-[240px]">
               {totales.exonerada > 0 && <div className="flex justify-between text-slate-600 text-xs"><span>Op. Exonerada:</span><span>S/ {totales.exonerada.toFixed(2)}</span></div>}
               {totales.inafecta > 0 && <div className="flex justify-between text-slate-600 text-xs"><span>Op. Inafecta:</span><span>S/ {totales.inafecta.toFixed(2)}</span></div>}
               <div className="flex justify-between text-slate-600"><span>Op. Gravada:</span><span>S/ {totales.gravada.toFixed(2)}</span></div>
               <div className="flex justify-between text-slate-600"><span>IGV (18%):</span><span>S/ {totales.igv.toFixed(2)}</span></div>
-              <div className="flex justify-between font-bold text-lg border-t border-slate-200 pt-2 text-slate-800"><span>TOTAL:</span><span className="text-orange-600">S/ {totales.total.toFixed(2)}</span></div>
+              <div className="flex justify-between font-bold border-t border-slate-200 pt-2 text-slate-800"><span class="text-left">TOTAL:</span><span className="text-right text-orange-600">S/ {totales.total.toFixed(2)}</span></div>
             </div>
           </div>
 
@@ -338,6 +355,17 @@ export default function ComprasPage() {
           </div>
         )}
       </Modal>
+
+      <ConfirmModal
+        isOpen={confirmData.isOpen}
+        title={confirmData.title}
+        message={confirmData.message}
+        type={confirmData.type}
+        confirmLabel={confirmData.confirmLabel}
+        cancelLabel={confirmData.cancelLabel}
+        onConfirm={confirmData.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }

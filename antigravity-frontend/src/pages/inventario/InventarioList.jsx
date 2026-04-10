@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { LuPackage, LuSearch, LuFilter, LuTrendingUp, LuTrendingDown, LuInfo, LuCheck } from 'react-icons/lu';
 import '../../styles/business.css';
+import '../../styles/inventario.css';
 
 // Componentes modales
 import MovimientoModal from './MovimientoModal';
@@ -100,14 +101,14 @@ const InventarioList = () => {
         <div className="inventario-list">
             <header className="page-header" style={{ marginBottom: '1rem' }}>
                 <div>
-                    <h1>Inventario y Kardex</h1>
+                    <h1 className='titulo text-2xl font-bold text-gray-800'>Inventario y Kardex</h1>
                     <p className="text-secundario">Gestión de existencias y movimientos</p>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                     <button onClick={() => abrirMovimiento('TRASLADO')} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', borderColor: 'var(--color-naranja)', color: 'var(--color-naranja)' }}>
+                     <button onClick={() => abrirMovimiento('TRASLADO')} id="btn" className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem'}}>
                         <LuTrendingUp size={18} style={{ transform: 'rotate(90deg)' }} /> Traslado Físico
                     </button>
-                    <button onClick={() => abrirMovimiento('AJUSTE')} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <button onClick={() => abrirMovimiento('AJUSTE')} id="btn" className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                         <LuTrendingDown size={18} /> Ajuste/Salida
                     </button>
                     <button onClick={() => abrirMovimiento('ENTRADA')} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -158,7 +159,7 @@ const InventarioList = () => {
                         onChange={(e) => setSearch(e.target.value)}
                         style={{ flex: 1 }}
                     />
-                    <button type="submit" className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <button type="submit" id="btn" className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                         <LuSearch size={18} /> Buscar
                     </button>
                 </form>
@@ -180,7 +181,7 @@ const InventarioList = () => {
             <div className="table-container">
                 <table>
                     <thead>
-                        <tr>
+                        <tr className='encabezado'>
                             <th>SKU</th>
                             <th>Producto</th>
                             <th>Categoría</th>

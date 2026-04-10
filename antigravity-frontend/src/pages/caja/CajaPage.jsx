@@ -3,9 +3,11 @@ import { cajaApi } from '../../api/caja';
 import { useToast } from '../../hooks/useToast';
 import { Plus, ArrowUpCircle, ArrowDownCircle, Wallet, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
+import "../../styles/caja.css";
+
 
 const FORMAS_PAGO = ['EFECTIVO', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'TARJETA', 'CHEQUE'];
-const ORIGENES    = ['MANUAL', 'VENTA', 'COMPRA', 'GASTO', 'PRESTAMO', 'OTRO'];
+const ORIGENES = ['MANUAL', 'VENTA', 'COMPRA', 'GASTO', 'PRESTAMO', 'OTRO'];
 
 const estadoInicial = {
   tipo: 'INGRESO', monto: '', forma_pago: 'EFECTIVO',
@@ -62,7 +64,7 @@ export default function CajaPage() {
   const fmt = (n) => `S/ ${parseFloat(n || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`;
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto space-y-6">
+    <div className="p-6 mx-auto space-y-6">
 
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -87,13 +89,13 @@ export default function CajaPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: 'Saldo Actual',    value: fmt(resumen.saldo_actual),  color: 'border-orange-500', icon: Wallet },
-          { label: 'Ingresos Hoy',    value: fmt(resumen.ingresos_hoy),  color: 'border-green-500',  icon: TrendingUp },
-          { label: 'Egresos Hoy',     value: fmt(resumen.egresos_hoy),   color: 'border-red-500',    icon: TrendingDown },
-          { label: 'Ingresos Mes',    value: fmt(resumen.ingresos_mes),  color: 'border-blue-500',   icon: TrendingUp },
-          { label: 'Egresos Mes',     value: fmt(resumen.egresos_mes),   color: 'border-purple-500', icon: TrendingDown },
+          { label: 'Saldo Actual', value: fmt(resumen.saldo_actual), color: 'border-orange-500', icon: Wallet },
+          { label: 'Ingresos Hoy', value: fmt(resumen.ingresos_hoy), color: 'border-green-500', icon: TrendingUp },
+          { label: 'Egresos Hoy', value: fmt(resumen.egresos_hoy), color: 'border-red-500', icon: TrendingDown },
+          { label: 'Ingresos Mes', value: fmt(resumen.ingresos_mes), color: 'border-blue-500', icon: TrendingUp },
+          { label: 'Egresos Mes', value: fmt(resumen.egresos_mes), color: 'border-purple-500', icon: TrendingDown },
         ].map(({ label, value, color, icon: Icon }) => (
-          <div key={label} className={`bg-white rounded-xl border-t-4 ${color} shadow-sm p-4`}>
+          <div key={label} className={`tarjetas bg-white rounded-xl border-t-4 ${color} shadow-sm p-4`}>
             <div className="flex items-center gap-2 mb-1">
               <Icon size={14} className="text-slate-400" />
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">{label}</p>
@@ -104,7 +106,7 @@ export default function CajaPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex gap-3 flex-wrap items-center bg-white border border-slate-200 rounded-xl p-4">
+      <div className="filtros flex gap-3 flex-wrap items-center bg-white border border-slate-200 rounded-xl p-4">
         <Calendar size={14} className="text-slate-400" />
         <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)}
           className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm outline-none" />
@@ -120,37 +122,40 @@ export default function CajaPage() {
       </div>
 
       {/* Tabla movimientos */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 border-b border-slate-200">
+      <div className="caja-table-container bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden">
+        <table className="caja-table w-full text-center">
+          <thead className="caja-table-head bg-[#F8F9FA] border-b border-slate-100">
             <tr>
-              {['Fecha','Tipo','Origen','Descripción','Forma Pago','Monto','Saldo Anterior','Saldo Nuevo'].map(h =>
-                <th key={h} className="px-4 py-3 text-xs font-bold text-slate-500 uppercase">{h}</th>)}
+              {['Fecha', 'Tipo', 'Origen', 'Descripción', 'Forma Pago', 'Monto', 'Saldo Anterior', 'Saldo Nuevo'].map((h, index) =>
+                <th key={h} className="caja-table-th px-8 py-5 text-[11.5px] font-bold text-slate-500 uppercase tracking-wider text-center">{h}</th>)}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="caja-table-body">
             {loading
               ? <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">Cargando...</td></tr>
               : movimientos.length === 0
                 ? <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">Sin movimientos en el periodo</td></tr>
-                : movimientos.map(m => (
-                  <tr key={m.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 text-sm text-slate-600">{m.fecha}</td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${m.tipo === 'INGRESO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {m.tipo}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{m.origen}</td>
-                    <td className="px-4 py-3 text-sm text-slate-700 max-w-xs truncate">{m.descripcion || '—'}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{m.forma_pago}</td>
-                    <td className={`px-4 py-3 text-sm font-bold ${m.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-600'}`}>
-                      {m.tipo === 'INGRESO' ? '+' : '-'} {fmt(m.monto)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-slate-500">{fmt(m.saldo_anterior)}</td>
-                    <td className="px-4 py-3 text-sm font-bold text-slate-800">{fmt(m.saldo_nuevo)}</td>
-                  </tr>
-                ))
+                : movimientos.map((m, index) => {
+                  const rowClasses = `caja-table-row transition-colors hover:bg-[#FDEFE6] ${m.tipo === 'EGRESO' ? 'bg-[#FFF9F0]' : 'bg-white'}`;
+                  return (
+                    <tr key={m.id} className={rowClasses}>
+                      <td className="caja-table-td px-8 py-5 text-[14.5px] text-slate-700 font-medium text-center">{m.fecha}</td>
+                      <td className="caja-table-td px-8 py-5 text-[14.5px] text-slate-700 font-medium text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${m.tipo === 'INGRESO' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {m.tipo}
+                        </span>
+                      </td>
+                      <td className="caja-table-td px-8 py-5 text-[14.5px] text-slate-700 font-medium text-center">{m.origen}</td>
+                      <td className="caja-table-td px-8 py-5 text-[14.5px] text-slate-700 font-medium text-center max-w-xs truncate">{m.descripcion || '—'}</td>
+                      <td className="caja-table-td px-8 py-5 text-[14.5px] text-slate-700 font-medium text-center">{m.forma_pago}</td>
+                      <td className={`caja-table-td px-8 py-5 text-[14.5px] font-bold text-center ${m.tipo === 'INGRESO' ? 'text-green-600' : 'text-red-600'}`}>
+                        {m.tipo === 'INGRESO' ? '+' : '-'} {fmt(m.monto)}
+                      </td>
+                      <td className="caja-table-td px-8 py-5 text-[14.5px] text-slate-700 font-medium text-center">{fmt(m.saldo_anterior)}</td>
+                      <td className="caja-table-td px-8 py-5 text-[14.5px] text-slate-700 font-medium text-center font-bold text-slate-800">{fmt(m.saldo_nuevo)}</td>
+                    </tr>
+                  );
+                })
             }
           </tbody>
         </table>
@@ -164,12 +169,13 @@ export default function CajaPage() {
             <div className="form-group-custom">
               <label className="form-label-custom">Tipo</label>
               <div className="flex gap-2">
-                {['INGRESO','EGRESO'].map(t => (
+                {['INGRESO', 'EGRESO'].map(t => (
                   <button key={t} type="button"
-                    onClick={() => setForm(f => ({...f, tipo: t}))}
-                    className={`flex-1 py-1.5 rounded-lg text-sm font-bold transition-colors ${form.tipo === t
-                      ? t === 'INGRESO' ? 'bg-green-500 text-white shadow-sm' : 'bg-red-500 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                    onClick={() => setForm(f => ({ ...f, tipo: t }))}
+                    // Si el botón es el seleccionado, le ponemos 'btn-activo', si no, 'btn-inactivo'
+                    className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${form.tipo === t ? 'btn-tipo-activo' : 'btn-tipo-inactivo'
+                      }`}
+                  >
                     {t}
                   </button>
                 ))}

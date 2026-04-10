@@ -209,7 +209,7 @@ export default function ProductosPage() {
                         icon={Plus}
                         className="productos-toolbar-btn"
                     >
-                        Nuevo Producto
+                        + Nuevo Producto
                     </Button>
                 </div>
             </div>

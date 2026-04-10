@@ -1,0 +1,57 @@
+/*MODAL DE IMPORTAR NUEVA GUÍA*/
+.texto{
+    margin-bottom: 10px;
+}
+.cuadro{
+    padding: 10px;
+}
+.cuadro label{
+    padding: 5px;
+    margin-bottom: 10px;
+}
+
+/*FECHA*/
+.text-xs.font-normal.text-gray-500.bg-gray-200.rounded{
+    padding: 3px 6px;
+    margin-left: 5px;
+}
+.cuadro label:hover, .cuadro label:hover div, label:hover .font-bold{
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.cuadro label:hover{
+    background-color: var(--primary);
+}
+
+.cuadro label input{
+    margin-left: 5px;
+}
+
+.ml-3.flex-1{
+    margin-left: 10px;
+}
+
+.ml-3.flex-1 div{
+    padding: 3px 0;
+}
+
+/*BOTONES*/
+.flex.gap-2{
+    margin-top: 10px;
+}
+.cancelar:hover{
+    background-color: var(--dark) !important;
+    color: white !important;
+    box-shadow: 0px 5px 18px var(--dark) !important;
+    border-color: var(--dark)
+}
+label .text-right{
+    margin-right: 10px;
+}
+
+/*MARGIN DEL FONDO NEGRO*/
+.mq-modal-uno {
+    background: rgba(10, 10, 10, 0.5);
+    backdrop-filter: blur(2px);
+}

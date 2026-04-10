@@ -5,9 +5,13 @@ import Button from "../../components/ui/Button";
 import DataTable from "../../components/ui/DataTable";
 import SearchInput from "../../components/ui/SearchInput";
 import Modal from "../../components/ui/Modal";
+import AlertModal from "../../components/ui/AlertModal";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 import { ventasApi } from "../../api/ventas";
 import { notasCreditoApi } from "../../api/notas-credito";
 import { useToast } from "../../hooks/useToast";
+import { useAlertModal } from "../../hooks/useAlertModal";
+import { useConfirmModal } from "../../hooks/useConfirmModal";
 import VentaDetalle from "./VentaDetalle"; // Componente simple de visualización
 import { exportToExcel } from "../../utils/exportar";
 import { abrirPdfVenta, abrirTicketVenta, abrirGuiaEnvio } from "../../utils/pdf";
@@ -18,6 +22,8 @@ import '../../styles/modal-ventas.css';
 const VentasPage = () => {
     const navigate = useNavigate();
     const toast = useToast();
+    const { showAlert, closeAlert, alertData } = useAlertModal();
+    const { confirmData, showConfirm, closeConfirm } = useConfirmModal();
 
     // Estado local
     const [data, setData] = useState([]);
@@ -90,18 +96,28 @@ const VentasPage = () => {
         }
     };
 
-    const handleAnular = async (id) => {
-        if (window.confirm("¿Está seguro de anular este comprobante? Esta acción es irreversible.")) {
-            try {
-                const res = await ventasApi.anular(id);
-                if (res.success) {
-                    toast.success("Comprobante anulado correctamente");
-                    cargarVentas();
+    const handleAnular = (id) => {
+        showConfirm({
+            title: 'Confirmar anulación',
+            message: '¿Está seguro de anular este comprobante? Esta acción es irreversible.',
+            type: 'warning',
+            confirmLabel: 'Sí, anular',
+            cancelLabel: 'Cancelar',
+            onConfirm: async () => {
+                closeConfirm();
+                try {
+                    const res = await ventasApi.anular(id);
+                    if (res.success) {
+                        toast.success("Comprobante anulado correctamente");
+                        cargarVentas();
+                    } else {
+                        toast.error(res.message || "No se pudo anular el comprobante");
+                    }
+                } catch (err) {
+                    toast.error("No se pudo anular el comprobante");
                 }
-            } catch (err) {
-                toast.error("No se pudo anular el comprobante");
-            }
-        }
+            },
+        });
     };
 
     const handleWhatsApp = (venta) => {
@@ -121,8 +137,12 @@ const VentasPage = () => {
     };
 
     const handleNotaCredito = (venta) => {
-        // Modal para crear nota de crédito
-        alert(`Nota de Crédito para ${venta.numero_completo} - Implementar formulario modal`);
+        // Modal para crear nota de crédito - muestra alerta informativa con modal
+        showAlert(
+            'Nota de Crédito',
+            `Nota de Crédito para ${venta.numero_completo} - Implementar formulario modal`,
+            'info'
+        );
         // TODO: Implementar modal con formulario
     };
 
@@ -165,7 +185,7 @@ const VentasPage = () => {
                 </div>
             )
         },
-        { header: "Canal", render: (row) => <span className="text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded capitalize">{row.canal_venta?.replace('_', ' ') || 'Tienda'}</span> },
+        { header: "Canal", render: (row) => <span className="text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded capitalize inline-block">{row.canal_venta?.replace('_', ' ') || 'Tienda'}</span> },
         {
             header: "Acciones",
             render: (row) => (
@@ -321,6 +341,26 @@ const VentasPage = () => {
                     {ventaToView && <VentaDetalle id={ventaToView.id} />}
                 </div>
             </Modal>
+
+            {/* Modal de Alerta Modal para reemplazar window.alert() */}
+            <AlertModal
+                isOpen={alertData.isOpen}
+                title={alertData.title}
+                message={alertData.message}
+                type={alertData.type}
+                onClose={closeAlert}
+            />
+
+            <ConfirmModal
+                isOpen={confirmData.isOpen}
+                title={confirmData.title}
+                message={confirmData.message}
+                type={confirmData.type}
+                confirmLabel={confirmData.confirmLabel}
+                cancelLabel={confirmData.cancelLabel}
+                onConfirm={confirmData.onConfirm}
+                onCancel={closeConfirm}
+            />
         </div>
     );
 };

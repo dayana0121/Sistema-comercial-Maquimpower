@@ -194,16 +194,14 @@
 
 .mq-modal-body .btn-cancel-custom:hover {
     background: #111827;
+    border-color: #111827;
+    box-shadow: 0 8px 20px var(--dark) !important;
 }
 
 .mq-modal-body .btn-submit-custom {
     background: var(--primary);
     color: #ffffff;
     box-shadow: 0 8px 18px rgba(255, 69, 0, 0.2);
-}
-
-.mq-modal-body .btn-submit-custom:hover {
-    background: var(--primary-dark);
 }
 
 /* Better mobile behavior without changing layout structure */

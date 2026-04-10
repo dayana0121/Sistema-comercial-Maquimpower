@@ -39,6 +39,114 @@ El frontend enviaba una peticion `PUT /cotizaciones/:id`, pero el backend no ten
 ### Nota
 Desde ahora seguire actualizando este archivo cada vez que haga cambios, para que tengas una bitacora en la raiz del proyecto.
 
+## 2026-04-10 - Unificación de estilos de tabla en módulo CAJA
+
+### Problema reportado
+El diseño visual de la tabla en la página de CAJA no coincidía con el de la tabla en el módulo de comprobantes de ventas (DataTable), específicamente en colores y hover.
+
+### Solución aplicada
+- Se modificó la tabla en `CajaPage.jsx` para usar los mismos estilos que `DataTable.jsx`:
+  - Contenedor: `bg-white rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] border border-slate-100 overflow-hidden`
+  - Encabezado: `bg-[#F8F9FA] border-b border-slate-100`
+  - Hover de filas: `hover:bg-[#FDEFE6]`
+  - Filas alternas: impares `bg-[#FFF9F0]`, pares `bg-white`
+  - Celdas: `px-8 py-5 text-[14.5px] text-slate-700 font-medium text-center`
+  - Encabezados: `px-8 py-5 text-[11.5px] font-bold text-slate-500 uppercase tracking-wider text-center`
+- Se agregaron clases CSS específicas en `caja.css` con comentarios explicativos para mantener consistencia.
+- Se cambió la alineación de la tabla de `text-left` a `text-center` para coincidir con DataTable.
+
+### Archivos modificados
+- `antigravity-frontend/src/pages/caja/CajaPage.jsx`
+- `antigravity-frontend/src/styles/caja.css`
+
+### Verificación realizada
+- Validación de sintaxis JSX sin errores.
+- Estilos aplicados correctamente para coincidir con DataTable de ventas.
+
+## 2026-04-10 - Sombreado condicional en tabla de CAJA
+
+### Problema reportado
+Se requería que solo las filas de egresos tuvieran sombreado (hover y filas alternas), mientras que los ingresos permanecieran sin sombreado.
+
+### Solución aplicada
+- Se modificó la clase de las filas en `CajaPage.jsx` para condicionar el sombreado basado en `m.tipo`:
+  - Ingresos: solo `bg-white`, sin hover ni filas alternas.
+  - Egresos: `hover:bg-[#FDEFE6]` y filas alternas `bg-[#FFF9F0]` para impares.
+- Se actualizaron los comentarios en `caja.css` para reflejar el cambio.
+
+### Archivos modificados
+- `antigravity-frontend/src/pages/caja/CajaPage.jsx`
+- `antigravity-frontend/src/styles/caja.css`
+
+### Verificación realizada
+- Validación de sintaxis JSX sin errores.
+- Sombreado aplicado solo a egresos.
+
+## 2026-04-10 - Reemplazo de window.alert() por Modales personalizados
+
+### Problema reportado
+Era necesario reemplazar todos los `window.alert()` y alertas nativas con modales estilizados usando la paleta de colores del sistema para mantener consistencia visual.
+
+### Solución aplicada
+Se crearon dos nuevos componentes reutilizables:
+
+1. **AlertModal.jsx** (`src/components/ui/AlertModal.jsx`)
+   - Componente modal reutilizable para alertas
+   - Soporta 4 tipos: `success`, `error`, `warning`, `info`
+   - Usa clases CSS únicas con prefijo `alert-modal-*` para cada elemento
+   - Mapeo de colores según el tipo de alerta
+   - Iconos contextuales para cada tipo
+
+2. **useAlertModal.js** (`src/hooks/useAlertModal.js`)
+   - Hook personalizado para manejar estado del modal de alerta
+   - Métodos: `showAlert(title, message, type)` y `closeAlert()`
+   - Retorna `alertData` con estado actual del modal
+
+### Cambios en componentes existentes:
+
+- **VentasPage.jsx**
+  - Importar `AlertModal` y hook `useAlertModal`
+  - Reemplazar `alert()` en `handleNotaCredito()` por `showAlert()`
+  - Agregar `<AlertModal>` en el JSX de retorno
+
+- **VentaDetalle.jsx**
+  - Importar `AlertModal` y hook `useAlertModal`
+  - Reemplazar `alert()` en `verPDF()` por `showAlert()` con tipo `error`
+  - Agregar `<AlertModal>` en el JSX de retorno
+
+- **ClientesList.jsx**
+  - Importar `AlertModal` y hook `useAlertModal`
+  - Reemplazar `alert()` en `handleDelete()` por `showAlert()` con tipo `error`
+  - Agregar `<AlertModal>` en el JSX de retorno
+
+### Clases CSS únicas utilizadas:
+
+- `.alert-modal-backdrop` — Overlay oscuro del modal
+- `.alert-modal-container` — Contenedor central del modal
+- `.alert-modal-card` — Tarjeta principal del modal
+- `.alert-modal-header` — Sección de encabezado
+- `.alert-modal-icon` — Icono contexto de alerta
+- `.alert-modal-title` — Título de la alerta
+- `.alert-modal-content` — Contenido del mensaje
+- `.alert-modal-message` — Mensaje de texto
+- `.alert-modal-actions` — Sección de acciones/botones
+- `.alert-modal-button-close` — Botón de cierre
+
+### Archivos creados:
+- `antigravity-frontend/src/components/ui/AlertModal.jsx`
+- `antigravity-frontend/src/hooks/useAlertModal.js`
+- `antigravity-frontend/src/styles/alert-modal.css` (estilos CSS opcionales para el modal)
+
+### Archivos modificados:
+- `antigravity-frontend/src/pages/ventas/VentasPage.jsx`
+- `antigravity-frontend/src/pages/ventas/VentaDetalle.jsx`
+- `antigravity-frontend/src/pages/clientes/ClientesList.jsx`
+
+### Verificación realizada
+- Validación de sintaxis JSX sin errores en todos los archivos.
+- Componentes AlertModal con comentarios explicativos en cada clase CSS.
+- Hook useAlertModal documentado con ejemplo de uso.
+
 ## 2026-04-08 - Auditoria de conexion DB y rutas backend/frontend
 
 ### Lo que revise

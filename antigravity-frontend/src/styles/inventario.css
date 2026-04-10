@@ -1,0 +1,25 @@
+#btn:hover{
+    background-color: var(--primary) !important;
+    color: white !important;
+    border-color: var(--primary);
+}
+.encabezado{
+    background-color: #f9fafb;
+}
+/*ENCABEZADO DE TABLA*/
+.stats-grid {
+  display: grid;
+  /* Esto divide el espacio disponible en 4 partes iguales exactamente */
+  grid-template-columns: repeat(4, 1fr); 
+  gap: 1.5rem;
+  width: 100%; /* Asegura que el contenedor use todo el ancho */
+}
+
+/*TITULO*/
+.text-secundario{
+    margin-top: 10px;
+    font-weight: bold;
+}
+.titulo{
+    font-size: 3.2em !important;
+}

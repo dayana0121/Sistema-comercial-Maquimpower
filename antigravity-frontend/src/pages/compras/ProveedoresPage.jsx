@@ -3,7 +3,10 @@ import { proveedoresApi } from '../../api/compras';
 import { useToast } from '../../hooks/useToast';
 import { Plus, Edit, Trash2, Search, Building2, Phone, Mail, FileText, CreditCard } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 import BuscadorDocumento from '../../components/ui/BuscadorDocumento';
+import { useConfirmModal } from '../../hooks/useConfirmModal';
+import "../../styles/proveedores.css";
 
 const estadoInicial = {
   tipo_documento: 'RUC',
@@ -23,6 +26,7 @@ const estadoInicial = {
 
 export default function ProveedoresPage() {
   const toast = useToast();
+  const { confirmData, showConfirm, closeConfirm } = useConfirmModal();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -75,15 +79,24 @@ export default function ProveedoresPage() {
     }
   };
 
-  const handleEliminar = async (id) => {
-    if (!window.confirm('¿Desactivar este proveedor?')) return;
-    const res = await proveedoresApi.eliminar(id);
-    if (res?.success) {
-      toast.success('Proveedor desactivado');
-      cargar();
-    } else {
-      toast.error(res?.message || 'Error');
-    }
+  const handleEliminar = (id) => {
+    showConfirm({
+      title: 'Confirmar desactivación',
+      message: '¿Desactivar este proveedor? Esta acción afectará los futuros movimientos.',
+      type: 'warning',
+      confirmLabel: 'Sí, desactivar',
+      cancelLabel: 'Cancelar',
+      onConfirm: async () => {
+        closeConfirm();
+        const res = await proveedoresApi.eliminar(id);
+        if (res?.success) {
+          toast.success('Proveedor desactivado');
+          cargar();
+        } else {
+          toast.error(res?.message || 'Error');
+        }
+      },
+    });
   };
 
   const filtrados = data.filter(
@@ -109,7 +122,7 @@ export default function ProveedoresPage() {
           </div>
           <button
             onClick={abrirNuevo}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors"
+            className="b-nuevo-proveedor flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors"
           >
             <Plus size={16} /> Nuevo Proveedor
           </button>
@@ -125,7 +138,7 @@ export default function ProveedoresPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtrados.map((p, index) => {
-            const borderColors = ['border-t-orange-400', 'border-t-green-400', 'border-t-blue-400'];
+            const borderColors = ['border-t-orange-400'];
             const borderColor = borderColors[index % borderColors.length];
 
             return (
@@ -134,9 +147,9 @@ export default function ProveedoresPage() {
                 className={`bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow flex flex-col relative overflow-hidden ${borderColor}`}
                 style={{ borderTopWidth: '4px' }}
               >
-                <div className="p-5 flex-1">
+                <div className="contenedor p-5 flex-1">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
+                    <div class="nombre">
                       <h3 className="font-bold text-slate-800 text-[15px] leading-tight mb-1">{p.razon_social}</h3>
                       <p className="text-xs text-slate-500">
                         {p.tipo_documento}: {p.numero_documento}
@@ -146,20 +159,21 @@ export default function ProveedoresPage() {
                     <div className="flex gap-1 shrink-0 bg-slate-100 rounded-md p-0.5">
                       <button
                         onClick={() => abrirEditar(p)}
-                        className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white rounded transition-colors"
+                        className="editar p-1.5 text-white hover:text-white hover:bg-white rounded transition-colors"
                       >
                         <Edit size={14} strokeWidth={2.5} />
                       </button>
                       <button
                         onClick={() => handleEliminar(p.id)}
-                        className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-white rounded transition-colors"
+                        className="eliminar p-1.5 text-red-500 hover:text-red-600 !hover:bg-white rounded transition-colors"
                       >
                         <Trash2 size={14} strokeWidth={2.5} />
                       </button>
                     </div>
                   </div>
 
-                  <div className="mt-5 space-y-2 text-[13px] text-slate-600">
+
+                  <div className="datos mt-5 space-y-2 text-[13px] text-slate-600">
                     {p.telefono && (
                       <div className="flex items-center gap-2">
                         <Phone size={14} className="text-orange-400" />
@@ -263,6 +277,17 @@ export default function ProveedoresPage() {
           </button>
         </div>
       </Modal>
+
+      <ConfirmModal
+        isOpen={confirmData.isOpen}
+        title={confirmData.title}
+        message={confirmData.message}
+        type={confirmData.type}
+        confirmLabel={confirmData.confirmLabel}
+        cancelLabel={confirmData.cancelLabel}
+        onConfirm={confirmData.onConfirm}
+        onClose={closeConfirm}
+      />
     </div>
   );
 }

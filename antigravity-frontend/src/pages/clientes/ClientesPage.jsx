@@ -7,13 +7,16 @@ import Button from "../../components/ui/Button";
 import SearchInput from "../../components/ui/SearchInput";
 import DataTable from "../../components/ui/DataTable";
 import Modal from "../../components/ui/Modal";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 import { useToast } from '../../hooks/useToast';
+import { useConfirmModal } from '../../hooks/useConfirmModal';
 import ClienteForm from "./ClienteForm";
 import "../../styles/clientes.css"
 import "../../styles/modal-clientes.css";
 
 export default function ClientesPage() {
     const toast = useToast();
+    const { confirmData, showConfirm, closeConfirm } = useConfirmModal();
 
     // Estados de datos
     const [data, setData] = useState([]);
@@ -65,15 +68,28 @@ export default function ClientesPage() {
         setIsModalOpen(true);
     };
 
-    const handleDesactivar = async (id) => {
-        if (!window.confirm("¿Estás seguro de desactivar este cliente? No aparecerá en nuevas ventas.")) return;
-        try {
-            const res = await apiClient.delete(`/clientes/${id}`);
-            if (res.success) {
-                toast.success("Cliente desactivado correctamente");
-                cargarClientes();
-            } else toast.error(res.message);
-        } catch (e) { toast.error("Error al conectar con el servidor."); }
+    const handleDesactivar = (id) => {
+        showConfirm({
+            title: 'Confirmar desactivación',
+            message: '¿Estás seguro de desactivar este cliente? No aparecerá en nuevas ventas.',
+            type: 'warning',
+            confirmLabel: 'Sí, desactivar',
+            cancelLabel: 'Cancelar',
+            onConfirm: async () => {
+                closeConfirm();
+                try {
+                    const res = await apiClient.delete(`/clientes/${id}`);
+                    if (res.success) {
+                        toast.success("Cliente desactivado correctamente");
+                        cargarClientes();
+                    } else {
+                        toast.error(res.message);
+                    }
+                } catch (e) {
+                    toast.error("Error al conectar con el servidor.");
+                }
+            },
+        });
     };
 
     // Lógica de Filtrado (Búsqueda + Tipo de Documento)
@@ -229,6 +245,17 @@ export default function ClientesPage() {
                     />
                 </div>
             </Modal>
+
+            <ConfirmModal
+                isOpen={confirmData.isOpen}
+                title={confirmData.title}
+                message={confirmData.message}
+                type={confirmData.type}
+                confirmLabel={confirmData.confirmLabel}
+                cancelLabel={confirmData.cancelLabel}
+                onConfirm={confirmData.onConfirm}
+                onCancel={closeConfirm}
+            />
         </div>
     );
 }

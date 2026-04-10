@@ -11,9 +11,6 @@
 .font-semibold.shadow-sm.transition-colors.flex.items-center.gap-2.text-sm{
     background-color: var(--primary);
 }
-.rounded-md.font-semibold:hover, .font-semibold.shadow-sm.transition-colors.flex.items-center.gap-2.text-sm:hover{
-    background-color: var(--primary-dark);
-}
 .text-slate-700.rounded-md.font-medium.text-sm.shadow-sm.transition-colors.flex.items-center.gap-2{
     background-color: var(--grey-light);
     border-color: var(--dark);
@@ -130,12 +127,36 @@ i:hover{
 }
 
 .w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm:hover{
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm:hover .font-semibold.text-slate-800,
+.w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm:hover .text-xs.text-slate-600.mt-1.flex.justify-between,
+.w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm:hover .font-bold.text-green-700{
+    color: white !important;
+}
+
+.w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm.producto-seleccionado {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: white !important;
+}
+
+.w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm.producto-seleccionado .font-semibold,
+.w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm.producto-seleccionado .text-xs,
+.w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm.producto-seleccionado .font-bold {
+    color: white !important;
+}
+
+
+/*.w-full.p-3.bg-gradient-to-r.border.rounded-lg.text-left.transition-colors.text-sm:hover{
     transform: translateY(-4px) !important;
     background-color: #ff6600 ;
     color: var(--grey-light) !important;
     box-shadow: 0 10px 48px var(--primary) !important;
     border-color: var(--primary);
-}
+}/*
 
 /* Cantidad input carrito */
 [class*="w-16 px-2 py-1 border"] {
@@ -327,9 +348,9 @@ button {
 
 /* Botones oscuros (Ver detalle, PDF, WhatsApp) */
 button:hover {
-  background-color: #3b3f4f;
+  background-color: var(--primary);
   transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+  box-shadow: 0px 5px 18px var(--primary) !important;
 }
 
 /* Botones de color (Ticket, Reintentar, Nota, Guía, Anular) */
@@ -353,4 +374,47 @@ button:hover .icon {
 /* Suaviza el color del texto en hover */
 button:hover {
   color: #fff;
+}
+
+/*RESULTADO DE BUSQUEDA EN BASE DE DATOS*/
+.busqueda-db{
+    margin-top: 15px;
+}
+.busqueda-db:hover{
+    background-color: var(--dark);
+    border-color: var(--dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    color: white;
+}
+.busqueda-db:hover .cursor-pointer .nombre-empresa,
+.busqueda-db:hover .cursor-pointer .ruc {
+    color: white !important;
+}
+
+/*Carrito - Lista de productos*/
+.carrito-producto {
+    margin-bottom: 12px;
+    padding: 10px;
+}
+
+/*DETRACCION*/
+.detraccion {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding: 10px;
+}
+
+.detraccion .space-y-2{
+    margin-top: 10px;
+}
+.detraccion .space-y-2 select{
+    margin-bottom: 10px;
+}
+
+/*CONTENEDOR CUANDO SELECCIONAS UN CLIENTE EN LA SECCION DE NUEVA VENTA*/
+.bg-gradient-to-r.from-blue-50.to-indigo-50.p-4.rounded-lg.border-2.border-blue-300{
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
 }

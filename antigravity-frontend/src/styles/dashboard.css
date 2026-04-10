@@ -191,7 +191,8 @@ td{
 }
 
 .erp-table th {
-    background-color: var(--color-bg-principal);
+    background-color: #f9fafb;
+    border-color: gray;
     padding: 1rem 1.5rem;
     text-align: left;
     font-size: 0.75rem;

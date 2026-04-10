@@ -1,0 +1,36 @@
+/*TARJETAS DE LOS DATOS*/
+.tarjetas{
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+
+/*Filtros*/
+.filtros{
+    padding: 12px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+/*BOTONES DE INGRESO Y EGRESO*/
+/* Estado: Seleccionado (Naranja) */
+.btn-tipo-activo {
+    background-color: #ff4500 !important; /* Naranja rojizo / International Orange */
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(255, 69, 0, 0.3);
+    border: none;
+}
+
+/* Estado: No seleccionado (Negro con letra blanca) */
+.btn-tipo-inactivo {
+    background-color: #1a1a1a !important; /* Negro mate */
+    color: #ffffff !important;
+    border: 1px solid #333;
+    opacity: 0.8;
+}
+
+/* Efecto hover para el botón negro para que se note que se puede clickear */
+.btn-tipo-inactivo:hover {
+    background-color: #333 !important;
+    opacity: 1;
+}

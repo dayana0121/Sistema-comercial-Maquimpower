@@ -3,13 +3,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { abrirPdfVenta } from '../../utils/pdf';
 import Modal from '../../components/ui/Modal';
+import AlertModal from '../../components/ui/AlertModal';
 import GuiaForm from '../guias/GuiaForm';
+import { useAlertModal } from '../../hooks/useAlertModal';
 import '../../styles/business.css';
 
 const VentaDetalle = ({ id: propId }) => {
     const { id: paramId } = useParams();
     const id = propId || paramId;
     const navigate = useNavigate();
+    const { showAlert, closeAlert, alertData } = useAlertModal();
     const [venta, setVenta] = useState(null);
     const [loading, setLoading] = useState(true);
     const [generandoPdf, setGenerandoPdf] = useState(false);
@@ -21,7 +24,12 @@ const VentaDetalle = ({ id: propId }) => {
             await abrirPdfVenta(id, import.meta.env.VITE_API_URL, formato);
         } catch (e) {
             console.error(`Error al generar PDF ${formato}:`, e);
-            alert(`Error al generar el PDF en formato ${formato}`);
+            // Mostrar alerta modal en lugar de window.alert()
+            showAlert(
+                'Error en PDF',
+                `Error al generar el PDF en formato ${formato}`,
+                'error'
+            );
         } finally {
             setGenerandoPdf(false);
         }
@@ -164,6 +172,15 @@ const VentaDetalle = ({ id: propId }) => {
                     onCancel={() => setIsGuiaModalOpen(false)}
                 />
             </Modal>
+
+            {/* Modal de Alerta para reemplazar window.alert() */}
+            <AlertModal
+                isOpen={alertData.isOpen}
+                title={alertData.title}
+                message={alertData.message}
+                type={alertData.type}
+                onClose={closeAlert}
+            />
         </div >
     );
 };

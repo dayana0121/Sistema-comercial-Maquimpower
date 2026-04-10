@@ -131,8 +131,6 @@ const VentasCreatePage = () => {
             }]);
             toast.success(`${producto.descripcion} agregado al carrito`);
         }
-        setSearchProducto('');
-        setProductosOptions([]);
     };
 
     const actualizarLinea = (id, campo, valor) => {
@@ -267,11 +265,11 @@ const VentasCreatePage = () => {
 
                         {/* Opciones búsqueda */}
                         {clientesOptions.length > 0 && (
-                            <div className="border rounded-lg overflow-hidden bg-white">
+                            <div className="busqueda-db border rounded-lg overflow-hidden bg-white">
                                 {clientesOptions.map(cli => (
                                     <div
                                         key={cli.id}
-                                        className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-0 transition-colors"
+                                        className="p-3 cursor-pointer border-b last:border-0 transition-colors"
                                         onClick={() => {
                                             setSelectedCliente(cli);
                                             setForm(prev => ({ ...prev, cliente_id: cli.id }));
@@ -279,8 +277,8 @@ const VentasCreatePage = () => {
                                             setSearchCliente('');
                                         }}
                                     >
-                                        <div className="font-semibold text-slate-800 text-sm">{cli.razon_social}</div>
-                                        <div className="text-xs text-slate-500">
+                                        <div className="nombre-empresa font-semibold text-slate-800 text-sm">{cli.razon_social}</div>
+                                        <div className="ruc text-xs text-slate-500">
                                             {cli.tipo_documento === '6' ? 'RUC' : 'DNI'}: {cli.numero_documento}
                                         </div>
                                     </div>
@@ -379,19 +377,23 @@ const VentasCreatePage = () => {
                         {searchProducto && productosOptions.length > 0 && (
                             <div className="space-y-2 pb-2">
                                 <div className="text-xs font-semibold text-slate-500 uppercase">Resultados ({productosOptions.length})</div>
-                                {productosOptions.map(p => (
-                                    <button
-                                        key={p.id}
-                                        onClick={() => agregarProducto(p)}
-                                        className="w-full p-3 bg-gradient-to-r border rounded-lg text-left transition-colors text-sm"
-                                    >
-                                        <div className="font-semibold text-slate-800">{p.descripcion}</div>
-                                        <div className="text-xs text-slate-600 mt-1 flex justify-between">
-                                            <span>Stock: {p.stock_actual || 0}</span>
-                                            <span className="font-bold text-green-700">S/ {p.precio_venta}</span>
-                                        </div>
-                                    </button>
-                                ))}
+                                {productosOptions.map(p => {
+                                    const isSelected = detalles.some(det => det.producto_id === p.id);
+                                    return (
+                                        <button
+                                            key={p.id}
+                                            type="button"
+                                            onClick={() => agregarProducto(p)}
+                                            className={`w-full p-3 bg-gradient-to-r border rounded-lg text-left transition-colors text-sm ${isSelected ? 'producto-seleccionado' : 'hover:bg-blue-50'}`}
+                                        >
+                                            <div className={`font-semibold ${isSelected ? 'text-white' : 'text-slate-800'}`}>{p.descripcion}</div>
+                                            <div className={`text-xs mt-1 flex justify-between ${isSelected ? 'text-white/80' : 'text-slate-600'}`}>
+                                                <span>Stock: {p.stock_actual || 0}</span>
+                                                <span className={`font-bold ${isSelected ? 'text-white' : 'text-green-700'}`}>S/ {p.precio_venta}</span>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
 
@@ -424,7 +426,7 @@ const VentasCreatePage = () => {
                         ) : (
                             <div className="space-y-3">
                                 {detalles.map(det => (
-                                    <div key={det.producto_id} className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                    <div key={det.producto_id} className="carrito-producto bg-slate-50 p-3 rounded-lg border border-slate-200">
                                         <div className="flex justify-between items-start mb-2">
                                             <div className="flex-1">
                                                 <div className="font-semibold text-sm text-slate-800">{det.descripcion}</div>
@@ -477,7 +479,7 @@ const VentasCreatePage = () => {
 
                         {/* Detracción (si aplica) */}
                         {form.tipo_comprobante === '01' && totales.total >= 700 && (
-                            <details className="bg-orange-50 p-3 rounded-lg border border-orange-200" open>
+                            <details className="detraccion bg-orange-50 p-3 rounded-lg border border-orange-200" open>
                                 <summary className="font-bold text-orange-800 text-sm cursor-pointer mb-2">
                                     ⚠️ Detracción (expandir)
                                 </summary>
