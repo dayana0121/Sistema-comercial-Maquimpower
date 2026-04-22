@@ -167,10 +167,6 @@
     box-shadow: 0 8px 18px rgba(255, 69, 0, 0.2);
 }
 
-.mq-modal-body .sunat-search-button:hover {
-    background: var(--primary-dark);
-    border-color: var(--primary-dark);
-}
 
 .mq-modal-body .form-actions-custom {
     margin-top: 1.5rem;
@@ -189,7 +185,7 @@
 
 .mq-modal-body .btn-cancel-custom {
     background: #1f2937;
-    color: #ffffff;
+    color: #ffffff !important;
 }
 
 .mq-modal-body .btn-cancel-custom:hover {

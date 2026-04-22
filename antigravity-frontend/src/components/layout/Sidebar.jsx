@@ -96,8 +96,6 @@ const Sidebar = () => {
                 <span>SISTEMA COMERCIAL</span>
             </div>
             
-            <div className="sidebar-divider"></div>
-
             <nav className="sidebar-nav">
                 <div className="nav-group">
                     <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>

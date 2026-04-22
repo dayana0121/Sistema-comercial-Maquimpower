@@ -1,7 +1,6 @@
 /* ================================================================
    COMPONENTE: ConfirmModal
    Descripción: Modal de confirmación reutilizable para acciones críticas.
-   Reemplaza `window.confirm()` con un modal visual consistente.
 
    Uso:
    <ConfirmModal
@@ -48,12 +47,12 @@ export default function ConfirmModal({
             iconColor: 'text-red-500',
         },
         warning: {
-            bgClass: 'bg-amber-50',
-            borderClass: 'border-amber-200',
+            bgClass: 'bg-[#FF450015]',
+            borderClass: 'border-red-500',
             titleClass: 'text-amber-900',
-            messageClass: 'text-amber-700',
+            messageClass: 'text-orange-900',
             confirmClass: 'bg-amber-500 hover:bg-amber-600',
-            iconColor: 'text-amber-500',
+            iconColor: 'text-red-500',
         },
         info: {
             bgClass: 'bg-blue-50',
@@ -107,13 +106,13 @@ export default function ConfirmModal({
                     <div className="confirm-modal-actions p-6 border-t border-slate-100 flex justify-end gap-3">
                         <button
                             onClick={onCancel}
-                            className="confirm-modal-button-cancel bg-slate-200 hover:bg-slate-300 text-slate-800 px-6 py-2.5 rounded-lg font-bold transition-colors shadow-sm"
+                            className="confirm-modal-button-cancel bg-slate-200 hover:bg-slate-300 text-white px-6 py-2.5 rounded-lg font-bold transition-colors shadow-sm"
                         >
                             {cancelLabel}
                         </button>
                         <button
                             onClick={onConfirm}
-                            className={`confirm-modal-button-confirm text-white px-6 py-2.5 rounded-lg font-bold transition-colors shadow-sm ${config.confirmClass}`}
+                            className={`confirm-modal-button-confirm bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-lg font-bold transition-colors shadow-sm ${config.confirmClass}`}
                         >
                             {confirmLabel}
                         </button>

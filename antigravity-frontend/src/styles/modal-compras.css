@@ -77,3 +77,28 @@
 .flex.justify-between.font-bold.border-t.border-slate-200.pt-2.text-slate-800{
     font-size: 1.125rem
 }
+
+/*ENCABEZADO DE LA TABLA DE ÓRDENES DE COMPRA*/
+div table thead tr th{
+    padding: 12px !important;
+}
+
+/*SELECT DE ESTADOS*/
+.estados{
+    margin-top: 6px !important;
+}
+
+/*MODAL DEL DETALLE*/
+.uno{
+    margin-bottom: 18px;
+}
+
+/*TABLAA*/
+.tabla{
+    border-color: gray !important;
+}
+
+/*BOTONES DE ITEM*/
+.btn-cancel-custom{
+    color: red !important;
+}

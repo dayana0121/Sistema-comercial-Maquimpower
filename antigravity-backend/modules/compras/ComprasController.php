@@ -58,7 +58,7 @@ class ComprasController {
             if ($hasta)  { $where .= " AND c.fecha_comprobante <= :hasta"; $params[':hasta'] = $hasta; }
 
             $stmt = $this->conn->prepare("
-                SELECT c.*, CONCAT(IFNULL(c.serie,''), '-', IFNULL(c.correlativo,'')) AS numero_comprobante, p.razon_social AS proveedor_nombre, p.numero_documento AS proveedor_ruc
+                SELECT c.*, COALESCE(NULLIF(c.numero_comprobante, ''), CONCAT(IFNULL(c.serie,''), '-', IFNULL(c.correlativo,''))) AS numero_comprobante, p.razon_social AS proveedor_nombre, p.numero_documento AS proveedor_ruc
                 FROM compras c
                 LEFT JOIN proveedores p ON c.proveedor_id = p.id
                 $where
@@ -74,7 +74,7 @@ class ComprasController {
     private function obtener($id) {
         try {
             $stmt = $this->conn->prepare("
-                SELECT c.*, CONCAT(IFNULL(c.serie,''), '-', IFNULL(c.correlativo,'')) AS numero_comprobante, p.razon_social AS proveedor_nombre, p.numero_documento AS proveedor_ruc,
+                SELECT c.*, COALESCE(NULLIF(c.numero_comprobante, ''), CONCAT(IFNULL(c.serie,''), '-', IFNULL(c.correlativo,''))) AS numero_comprobante, p.razon_social AS proveedor_nombre, p.numero_documento AS proveedor_ruc,
                        p.email AS proveedor_email, p.telefono AS proveedor_telefono
                 FROM compras c
                 LEFT JOIN proveedores p ON c.proveedor_id = p.id
@@ -124,15 +124,23 @@ class ComprasController {
             }
             $importeTotal = $opGravada + $opExonerada + $opInafecta + $igvTotal;
 
+            $serie = $data->serie ?? null;
+            $correlativo = $data->correlativo ?? null;
+            $numeroComprobante = null;
+            if ($serie && $correlativo) {
+                $numeroComprobante = $serie . '-' . $correlativo;
+            }
+
             $stmt = $this->conn->prepare("INSERT INTO compras
-                (id, proveedor_id, tipo_comprobante, serie, correlativo, fecha_comprobante,
+                (id, proveedor_id, tipo_comprobante, serie, correlativo, numero_comprobante, fecha_comprobante,
                  fecha_vencimiento, metodo_pago, termino_pago_dias, op_gravada, igv, importe_total, moneda, estado, observacion, usuario_id)
-                VALUES (:id,:prov,:tipo,:serie,:correl,:fecha,:fvenc,:mpago,:tpago,:grav,:igv,:total,:mon,:est,:obs,:user)");
+                VALUES (:id,:prov,:tipo,:serie,:correl,:num_comp,:fecha,:fvenc,:mpago,:tpago,:grav,:igv,:total,:mon,:est,:obs,:user)");
             $stmt->bindValue(':id', $id);
             $stmt->bindValue(':prov', $data->proveedor_id);
             $stmt->bindValue(':tipo', $data->tipo_comprobante ?? 'FACTURA');
-            $stmt->bindValue(':serie', $data->serie ?? null);
-            $stmt->bindValue(':correl', $data->correlativo ?? null);
+            $stmt->bindValue(':serie', $serie);
+            $stmt->bindValue(':correl', $correlativo);
+            $stmt->bindValue(':num_comp', $numeroComprobante);
             $stmt->bindValue(':fecha', $data->fecha_comprobante ?? date('Y-m-d'));
             
             // Fechas y créditos

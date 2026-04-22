@@ -141,7 +141,7 @@ const GuiasPage = () => {
                                             )}
                                             <button
                                                 onClick={() => handleDescargarPdf(guia.id)}
-                                                className="text-gray-600 hover:text-gray-900"
+                                                className="text-white hover:text-white"
                                             >
                                                 PDF
                                             </button>

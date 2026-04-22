@@ -34,7 +34,6 @@
 .sidebar-nav {
     flex: 1;
     overflow-y: auto;
-    padding: 1rem 0; /* Espaciado sin margins laterales para que el active state toque el borde */
 }
 
 .nav-item {
@@ -164,9 +163,9 @@
 }
 
 .logout-btn:hover {
-    background-color: rgba(255,255,255,0.05);
+    background-color: var(--primary);
     color: #fff;
-    border-color: #fff;
+    border-color: var(--primary);
 }
 
 .submenu-arrow {

@@ -4,6 +4,9 @@
     margin-bottom: 15px;
 }
 
+.texto-card{
+    margin-top: -5px !important;
+}
 
 /*Filtros*/
 .filtros{
@@ -33,4 +36,9 @@
 .btn-tipo-inactivo:hover {
     background-color: #333 !important;
     opacity: 1;
+}
+
+/*BOTON DE REGISTRO*/
+.registrar{
+    background-color: var(--primary);
 }

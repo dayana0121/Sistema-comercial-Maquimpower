@@ -55,3 +55,8 @@ label .text-right{
     background: rgba(10, 10, 10, 0.5);
     backdrop-filter: blur(2px);
 }
+
+/*MODAL*/
+.text-xs.text-blue-600{
+    padding-right:32px;
+}

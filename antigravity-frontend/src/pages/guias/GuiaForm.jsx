@@ -189,7 +189,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
     };
 
     return (
-        
+
         <form onSubmit={handleSubmit} className="modal-guias-form flex flex-col h-full">
             {/* Tabs Navigation */}
             <div className="modal-guias-tabs flex items-center border-b border-slate-200 mb-6 sticky top-0 bg-white z-10 w-full overflow-x-auto">
@@ -364,7 +364,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
             </div>
 
             {/* Footer / Botones de Acción */}
-            <div className="form-actions-custom border-t border-slate-100 bg-white sticky bottom-0 z-10">
+            <div className="form-actions-custom border-t border-slate-100 bg-white sticky z-10">
                 <button type="button" onClick={onCancel} className="btn-cancel-custom">
                     Cancelar
                 </button>
@@ -393,10 +393,16 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
                             ventasDisponibles.map(v => {
                                 const isSelected = ventasSeleccionadas.find(sel => sel.id === v.id);
                                 return (
-                                    <label key={v.id} className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${isSelected ? 'btn-primary border-blue-400 text-white' : 'bg-white hover:bg-gray-100 border-gray-200'}`}>
+                                    <label
+                                        key={v.id}
+                                        className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all duration-200 ${isSelected
+                                                ? 'bg-[#FF4500] border-[#FF4500] text-white shadow-lg transform scale-[1.01]'
+                                                : 'bg-white hover:bg-[#FDECDA] border-gray-200 text-gray-800'
+                                            }`}
+                                    >
                                         <input
                                             type="checkbox"
-                                            className="w-5 h-5 text-blue-600 rounded border-gray-300"
+                                            className="w-5 h-5 accent-[#fff8f4] rounded border-none focus:ring-0"
                                             checked={!!isSelected}
                                             onChange={() => toggleSeleccionVenta(v)}
                                         />
@@ -429,7 +435,7 @@ const GuiaForm = ({ onSuccess, onCancel, preData = null }) => {
 
                     <div className="mt-4 flex justify-between items-center pt-3 border-t">
                         <span className="text-sm font-medium text-gray-600">
-                            Seleccionados: 
+                            Seleccionados:
                             <br />
                             <span className="font-bold text-blue-600">{ventasSeleccionadas.length}</span> comprobantes
                         </span>

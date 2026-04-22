@@ -96,7 +96,7 @@ export default function CajaPage() {
           { label: 'Egresos Mes', value: fmt(resumen.egresos_mes), color: 'border-purple-500', icon: TrendingDown },
         ].map(({ label, value, color, icon: Icon }) => (
           <div key={label} className={`tarjetas bg-white rounded-xl border-t-4 ${color} shadow-sm p-4`}>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="texto-card flex items-center gap-2 mb-1">
               <Icon size={14} className="text-slate-400" />
               <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">{label}</p>
             </div>
@@ -218,7 +218,7 @@ export default function CajaPage() {
             <button onClick={() => setIsModalOpen(false)}
               className="btn-cancel-custom">Cancelar</button>
             <button onClick={handleGuardar} disabled={guardando}
-              className={`px-4 py-2 text-white text-sm font-semibold rounded-md disabled:opacity-50 transition-colors ${form.tipo === 'INGRESO' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>
+              className={`registrar px-4 py-2 text-white text-sm font-semibold rounded-md disabled:opacity-50 transition-colors ${form.tipo === 'INGRESO' ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>
               {guardando ? 'Registrando...' : `Registrar ${form.tipo}`}
             </button>
           </div>

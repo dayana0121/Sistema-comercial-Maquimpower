@@ -126,7 +126,7 @@ export default function ComprasPage() {
   };
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="p-6 mx-auto">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Órdenes de Compra</h1>
@@ -134,7 +134,7 @@ export default function ComprasPage() {
         </div>
         <div className="flex gap-3 items-center flex-wrap">
           <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}
-            className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white outline-none">
+            className="estados px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white outline-none">
             <option value="">Todos los estados</option>
             <option value="PENDIENTE">Pendiente</option>
             <option value="RECIBIDO">Recibido</option>
@@ -159,7 +159,7 @@ export default function ComprasPage() {
               : data.length === 0
                 ? <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No hay compras registradas</td></tr>
                 : data.map(c => (
-                  <tr key={c.id} className="hover:bg-slate-50">
+                  <tr key={c.id} className={c.estado === 'ANULADO' ? 'bg-[#FFF9F0]' : ''}>
                     <td className="px-4 py-3 text-sm font-bold">{c.numero_comprobante || '—'}<br/><span className="text-xs font-normal text-slate-400">{c.tipo_comprobante}</span></td>
                     <td className="px-4 py-3 text-sm">{c.proveedor_nombre}<br/><span className="text-xs text-slate-400">{c.proveedor_ruc}</span></td>
                     <td className="px-4 py-3 text-sm text-slate-600">{c.fecha_comprobante}</td>
@@ -168,8 +168,8 @@ export default function ComprasPage() {
                     <td className="px-4 py-3">{badgeEstado(c.estado_pago)}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-1">
-                        <button onClick={() => verDetalle(c.id)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg"><Eye size={15}/></button>
-                        {c.estado !== 'ANULADO' && <button onClick={() => handleAnular(c.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><X size={15}/></button>}
+                        <button onClick={() => verDetalle(c.id)} className="p-1.5 text-white hover:text-blue-500 hover:bg-blue-50 rounded-lg"><Eye size={15}/></button>
+                        {c.estado !== 'ANULADO' && <button onClick={() => handleAnular(c.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"><X size={15}/></button>}
                       </div>
                     </td>
                   </tr>
@@ -328,7 +328,7 @@ export default function ComprasPage() {
       <Modal isOpen={detalleOpen} onClose={() => setDetalleOpen(false)} title={`Detalle: ${compraDetalle?.numero_comprobante || ''}`} size="lg">
         {compraDetalle && (
           <div className="modal-compras-detalle space-y-6">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-sm bg-slate-50 p-6 rounded-xl border border-dashed border-slate-200">
+            <div className="uno grid grid-cols-2 lg:grid-cols-4 gap-6 text-sm bg-slate-50 p-6 rounded-xl border border-dashed border-slate-200">
               <div><span className="text-slate-500 text-xs uppercase font-bold">Proveedor</span><p className="font-semibold">{compraDetalle.proveedor_nombre}</p></div>
               <div><span className="text-slate-500 text-xs uppercase font-bold">Estado</span><p>{compraDetalle.estado}</p></div>
               <div><span className="text-slate-500 text-xs uppercase font-bold">Fecha</span><p>{compraDetalle.fecha_comprobante}</p></div>

@@ -109,11 +109,6 @@
     box-shadow: 0 10px 20px rgba(255, 69, 0, 0.22);
 }
 
-/* Hover del botón importar */
-.modal-guias-form .modal-guias-tab-panel .bg-blue-50 button:hover {
-    background: var(--primary-dark);
-}
-
 /* =========================================================
    LABELS E INPUTS DEL FORMULARIO
    ========================================================= */
@@ -203,11 +198,6 @@
     color: #ffffff;
     font-weight: 800;
     box-shadow: 0 8px 18px rgba(255, 69, 0, 0.2);
-}
-
-/* Hover del botón principal */
-.modal-guias-form .btn-submit-custom:hover {
-    background: var(--primary-dark);
 }
 
 /* =========================================================
